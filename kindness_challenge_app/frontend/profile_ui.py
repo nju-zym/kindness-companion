@@ -36,7 +36,7 @@ class ProfileWidget(QWidget):
 
         # Header
         self.title_label = QLabel("个人信息")
-        self.title_label.setFont(QFont("Helvetica Neue", 20, QFont.Bold)) # Adjusted font
+        self.title_label.setObjectName("title_label")  # Set object name for styling
         self.main_layout.addWidget(self.title_label)
 
         self.main_layout.addSpacing(20)
@@ -70,7 +70,6 @@ class ProfileWidget(QWidget):
 
         # Username
         self.username_label = QLabel()
-        self.username_label.setFont(QFont("Arial", 12))
         info_layout.addRow("用户名:", self.username_label)
 
         # Email
@@ -113,6 +112,7 @@ class ProfileWidget(QWidget):
 
         # Save button
         self.save_button = QPushButton("保存修改")
+        self.save_button.setObjectName("save_button")  # Set object name for styling
         self.save_button.clicked.connect(self.save_profile)
         profile_layout.addWidget(self.save_button)
 
@@ -128,7 +128,6 @@ class ProfileWidget(QWidget):
 
         # Total check-ins
         self.total_label = QLabel("0")
-        self.total_label.setFont(QFont("Arial", 24, QFont.Bold))
         self.total_label.setAlignment(Qt.AlignCenter)
 
         total_title = QLabel("总打卡次数")
@@ -139,7 +138,6 @@ class ProfileWidget(QWidget):
 
         # Longest streak
         self.streak_label = QLabel("0")
-        self.streak_label.setFont(QFont("Arial", 24, QFont.Bold))
         self.streak_label.setAlignment(Qt.AlignCenter)
 
         streak_title = QLabel("最长连续打卡")
@@ -150,7 +148,6 @@ class ProfileWidget(QWidget):
 
         # Challenges
         self.challenges_label = QLabel("0")
-        self.challenges_label.setFont(QFont("Arial", 24, QFont.Bold))
         self.challenges_label.setAlignment(Qt.AlignCenter)
 
         challenges_title = QLabel("已订阅挑战")
@@ -170,7 +167,6 @@ class ProfileWidget(QWidget):
         # Beginner achievement
         beginner_layout = QHBoxLayout()
         beginner_title = QLabel("善行初学者")
-        beginner_title.setFont(QFont("Arial", 12, QFont.Bold))
         self.beginner_progress = QProgressBar()
         self.beginner_progress.setRange(0, 10)
         self.beginner_progress.setFormat("完成 %v/10 次打卡")
@@ -183,7 +179,6 @@ class ProfileWidget(QWidget):
         # Consistent achievement
         consistent_layout = QHBoxLayout()
         consistent_title = QLabel("坚持不懈")
-        consistent_title.setFont(QFont("Arial", 12, QFont.Bold))
         self.consistent_progress = QProgressBar()
         self.consistent_progress.setRange(0, 7)
         self.consistent_progress.setFormat("连续打卡 %v/7 天")
@@ -196,7 +191,6 @@ class ProfileWidget(QWidget):
         # Explorer achievement
         explorer_layout = QHBoxLayout()
         explorer_title = QLabel("善行探索者")
-        explorer_title.setFont(QFont("Arial", 12, QFont.Bold))
         self.explorer_progress = QProgressBar()
         self.explorer_progress.setRange(0, 5)
         self.explorer_progress.setFormat("订阅 %v/5 个挑战")
@@ -209,7 +203,6 @@ class ProfileWidget(QWidget):
         # Master achievement
         master_layout = QHBoxLayout()
         master_title = QLabel("善行大师")
-        master_title.setFont(QFont("Arial", 12, QFont.Bold))
         self.master_progress = QProgressBar()
         self.master_progress.setRange(0, 30)
         self.master_progress.setFormat("完成 %v/30 次打卡")

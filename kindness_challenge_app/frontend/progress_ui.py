@@ -41,7 +41,7 @@ class ProgressWidget(QWidget):
 
         # Title
         self.title_label = QLabel("打卡记录")
-        self.title_label.setFont(QFont("Helvetica Neue", 20, QFont.Bold))  # Adjusted font
+        self.title_label.setObjectName("title_label")  # Set object name for styling
         self.header_layout.addWidget(self.title_label)
 
         # Filter layout
@@ -100,17 +100,14 @@ class ProgressWidget(QWidget):
 
         # Total check-ins
         self.total_label = QLabel("总打卡次数: 0")
-        self.total_label.setFont(QFont("Arial", 12))
         self.stats_layout.addWidget(self.total_label)
 
         # Current streak
         self.streak_label = QLabel("当前连续打卡: 0 天")
-        self.streak_label.setFont(QFont("Arial", 12))
         self.stats_layout.addWidget(self.streak_label)
 
         # Completion rate
         self.rate_label = QLabel("完成率: 0%")
-        self.rate_label.setFont(QFont("Arial", 12))
         self.stats_layout.addWidget(self.rate_label)
 
         self.main_layout.addLayout(self.stats_layout)
@@ -281,6 +278,7 @@ class ProgressWidget(QWidget):
 
             # Action button
             undo_button = QPushButton("撤销")
+            undo_button.setObjectName("undo_button")  # Set object name for styling
             undo_button.clicked.connect(lambda checked, ci=check_in: self.undo_check_in(ci))
             self.progress_table.setCellWidget(i, 3, undo_button)
 

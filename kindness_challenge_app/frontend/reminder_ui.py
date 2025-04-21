@@ -39,7 +39,7 @@ class ReminderWidget(QWidget):
 
         # Header
         self.title_label = QLabel("提醒设置")
-        self.title_label.setFont(QFont("Helvetica Neue", 20, QFont.Bold))  # Adjusted font
+        self.title_label.setObjectName("title_label")  # Set object name for styling
         self.main_layout.addWidget(self.title_label)
 
         self.subtitle_label = QLabel("设置善行挑战的提醒，帮助您坚持完成挑战")
@@ -99,6 +99,7 @@ class ReminderWidget(QWidget):
 
         # Create button
         self.create_button = QPushButton("创建提醒")
+        self.create_button.setObjectName("add_button")  # Use 'add_button' style
         self.create_button.clicked.connect(self.create_reminder)
         form_layout.addRow("", self.create_button)
 
@@ -192,6 +193,7 @@ class ReminderWidget(QWidget):
 
             # Action button
             delete_button = QPushButton("删除")
+            delete_button.setObjectName("delete_button")  # Set object name for styling
             delete_button.clicked.connect(
                 lambda checked, r=reminder: self.delete_reminder(r["id"])
             )

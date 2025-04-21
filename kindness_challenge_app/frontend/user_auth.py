@@ -9,99 +9,130 @@ from PySide6.QtGui import QFont
 # Common stylesheet for auth widgets
 AUTH_STYLESHEET = """
 QWidget {
-    background-color: #f0f0f0; /* Light gray background */
+    background-color: palette(window); /* Use window background */
+    font-family: "Helvetica Neue", Arial, sans-serif; /* Consistent font */
+    color: palette(windowText); /* Use window text color */
 }
 
 QLabel#title_label {
-    font-size: 20pt; /* Adjusted title size */
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 10px;
-    font-family: "Helvetica Neue", Arial, sans-serif; /* Ensure font family */
+    font-size: 18pt;
+    font-weight: bold; /* Make title bolder */
+    color: palette(highlight); /* Use highlight color for title */
+    margin-bottom: 15px; /* Adjust margin */
+    padding-bottom: 8px; /* Adjust padding */
+    border-bottom: 1px solid palette(mid); /* Use mid border */
 }
 
 QLabel#subtitle_label {
-    font-size: 14px;
-    color: #555;
-    margin-bottom: 25px;
+    font-size: 11pt;
+    color: palette(text); /* Use text color for subtitle */
+    margin-bottom: 30px; /* Adjust margin */
 }
 
 QLineEdit {
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-    min-width: 280px; /* Increased min-width */
+    background-color: palette(base); /* Use base background */
+    border: 1px solid palette(mid);
+    border-radius: 5px; /* Consistent radius */
+    padding: 9px 12px; /* Adjust padding */
+    color: palette(text);
+    min-width: 280px;
+    min-height: 28px; /* Adjust height */
+    font-size: 11pt;
+}
+
+QLineEdit:focus {
+    border-color: palette(highlight);
+    outline: 0;
 }
 
 QPushButton {
-    padding: 10px 15px;
-    font-size: 14px;
-    font-weight: bold;
-    color: white;
-    background-color: #007bff; /* Blue */
+    padding: 9px 20px; /* Adjust padding */
+    font-size: 10pt;
+    color: palette(buttonText);
+    background-color: palette(button);
     border: none;
-    border-radius: 4px;
-    min-height: 35px; /* Adjusted height */
+    border-radius: 5px; /* Consistent radius */
+    min-height: 34px; /* Adjust height */
+    font-weight: 500;
 }
 
 QPushButton:hover {
-    background-color: #0056b3; /* Darker blue on hover */
+    background-color: palette(dark);
 }
 
 QPushButton:pressed {
-    background-color: #004085; /* Even darker blue when pressed */
+    background-color: palette(shadow);
 }
 
-QPushButton#register_button, QPushButton#login_button { /* Specific styles for flat buttons */
+QPushButton:disabled {
+    background-color: palette(disabled, button);
+    color: palette(disabled, buttonText);
+}
+
+/* Link-style buttons */
+QPushButton#register_button,
+QPushButton#login_button,
+QPushButton#terms_button {
     background-color: transparent;
-    color: #007bff; /* Blue text */
+    color: palette(link);
     font-weight: normal;
+    font-size: 10pt;
     text-decoration: underline;
     border: none;
-    padding: 2px; /* Minimal padding */
-    min-height: auto; /* Reset min-height */
+    padding: 2px;
+    min-height: auto;
 }
 
-QPushButton#register_button:hover, QPushButton#login_button:hover {
-    color: #0056b3; /* Darker blue on hover */
-    background-color: transparent;
-}
-
-QPushButton#terms_button { /* Style for terms button */
-     background-color: transparent;
-     color: #007bff; /* Blue text */
-     font-weight: normal;
-     text-decoration: underline;
-     border: none;
-     padding: 2px; /* Minimal padding */
-     min-height: auto; /* Reset min-height */
-}
-
+QPushButton#register_button:hover,
+QPushButton#login_button:hover,
 QPushButton#terms_button:hover {
-    color: #0056b3; /* Darker blue on hover */
+    color: palette(linkVisited);
     background-color: transparent;
+    text-decoration: underline;
 }
 
+QPushButton#register_button:pressed,
+QPushButton#login_button:pressed,
+QPushButton#terms_button:pressed {
+    color: palette(linkVisited);
+    background-color: transparent;
+    text-decoration: underline;
+}
 
 QCheckBox {
-    spacing: 5px;
-    color: #333;
+    spacing: 10px; /* Increase spacing */
+    color: palette(text);
+    font-size: 10pt;
 }
 
 QCheckBox::indicator {
-    width: 15px;
-    height: 15px;
+    width: 18px; /* Slightly larger */
+    height: 18px;
+    border: 1px solid palette(mid);
+    border-radius: 4px; /* Consistent radius */
+    background-color: palette(base);
+}
+
+QCheckBox::indicator:checked {
+    background-color: palette(highlight);
+    border-color: palette(highlight);
+    /* Consider using a theme-aware icon or SVG */
+    /* image: url(path/to/your/checkmark.svg); */
+}
+
+QCheckBox::indicator:hover {
+    border-color: palette(dark);
 }
 
 QFormLayout {
-    spacing: 12px; /* Spacing between rows */
+    spacing: 18px; /* Adjust spacing */
+    vertical-spacing: 12px; /* Adjust vertical spacing */
 }
 
 QFormLayout QLabel { /* Style for form labels */
-    font-size: 14px;
-    color: #333;
-    padding-top: 8px; /* Align vertically with input */
+    font-size: 11pt;
+    color: palette(text);
+    padding-top: 9px; /* Align with input padding */
 }
 """
 
@@ -128,10 +159,11 @@ class LoginWidget(QWidget):
 
     def setup_ui(self):
         """Set up the user interface."""
+        self.setStyleSheet(AUTH_STYLESHEET)  # Apply the stylesheet
         # Main layout
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setAlignment(Qt.AlignCenter)
-        self.main_layout.setContentsMargins(50, 50, 50, 50)
+        self.main_layout.setContentsMargins(30, 30, 30, 30) # Reduced margins
 
         # Title
         self.title_label = QLabel("欢迎回来")
@@ -243,10 +275,11 @@ class RegisterWidget(QWidget):
 
     def setup_ui(self):
         """Set up the user interface."""
+        self.setStyleSheet(AUTH_STYLESHEET)  # Apply the stylesheet
         # Main layout
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setAlignment(Qt.AlignCenter)
-        self.main_layout.setContentsMargins(50, 50, 50, 50)
+        self.main_layout.setContentsMargins(30, 30, 30, 30) # Reduced margins
 
         # Title
         self.title_label = QLabel("创建账号")

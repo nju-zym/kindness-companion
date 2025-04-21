@@ -36,9 +36,10 @@ class ChallengeCard(QFrame):
 
     def setup_ui(self):
         """Set up the user interface."""
-        # Set frame style
+        # Set frame style and object name
+        self.setObjectName("challenge_card")  # Set object name for styling
         self.setFrameShape(QFrame.StyledPanel)
-        self.setFrameShadow(QFrame.Raised)
+        self.setFrameShadow(QFrame.Raised)  # Keep shadow for card effect
         self.setLineWidth(1)
 
         # Main layout
@@ -47,7 +48,7 @@ class ChallengeCard(QFrame):
 
         # Title
         self.title_label = QLabel(self.challenge["title"])
-        self.title_label.setFont(QFont("Arial", 14, QFont.Bold))
+        self.title_label.setObjectName("title_label")  # Use object name if specific styling needed
         self.main_layout.addWidget(self.title_label)
 
         # Description
@@ -70,7 +71,7 @@ class ChallengeCard(QFrame):
         # Streak (if subscribed)
         if self.is_subscribed and self.streak > 0:
             self.streak_label = QLabel(f"连续打卡: {self.streak}天")
-            self.streak_label.setStyleSheet("color: #007bff;")
+            self.streak_label.setObjectName("streak_label")  # Add object name if needed
             self.meta_layout.addWidget(self.streak_label)
 
         self.main_layout.addLayout(self.meta_layout)
@@ -82,24 +83,21 @@ class ChallengeCard(QFrame):
         # Subscribe/Unsubscribe button
         if self.is_subscribed:
             self.subscribe_button = QPushButton("取消订阅")
+            self.subscribe_button.setObjectName("unsubscribe_button")  # Set object name
             self.subscribe_button.clicked.connect(
                 lambda: self.unsubscribe_clicked.emit(self.challenge["id"])
             )
 
             # Check-in button
             self.check_in_button = QPushButton("今日打卡")
-            self.check_in_button.setStyleSheet(
-                "background-color: #28a745; color: white;"
-            )
+            self.check_in_button.setObjectName("check_in_button")  # Set object name
             self.check_in_button.clicked.connect(
                 lambda: self.check_in_clicked.emit(self.challenge["id"])
             )
             self.button_layout.addWidget(self.check_in_button)
         else:
             self.subscribe_button = QPushButton("订阅挑战")
-            self.subscribe_button.setStyleSheet(
-                "background-color: #007bff; color: white;"
-            )
+            self.subscribe_button.setObjectName("subscribe_button")  # Set object name
             self.subscribe_button.clicked.connect(
                 lambda: self.subscribe_clicked.emit(self.challenge["id"])
             )
@@ -157,7 +155,7 @@ class ChallengeListWidget(QWidget):
 
         # Title
         self.title_label = QLabel("善行挑战列表")
-        self.title_label.setFont(QFont("Helvetica Neue", 20, QFont.Bold))  # Adjusted font
+        self.title_label.setObjectName("title_label")  # Set object name for styling
         self.header_layout.addWidget(self.title_label)
 
         # Filter layout

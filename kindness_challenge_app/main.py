@@ -22,7 +22,7 @@ def main():
     app.setApplicationName("善行挑战")
 
     # Set application font
-    font = QFont("Helvetica Neue", 12)  # Use Helvetica Neue, size 12
+    font = QFont("Helvetica Neue", 13)  # Use Helvetica Neue, size 13
     app.setFont(font)
 
     # Initialize backend components

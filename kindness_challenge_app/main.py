@@ -1,6 +1,6 @@
 import sys
 from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QFont
 
 from frontend.main_window import MainWindow
 from backend.database_manager import DatabaseManager
@@ -20,6 +20,10 @@ def main():
     # Create application
     app = QApplication(sys.argv)
     app.setApplicationName("善行挑战")
+
+    # Set application font
+    font = QFont("Helvetica Neue", 12)  # Use Helvetica Neue, size 12
+    app.setFont(font)
 
     # Initialize backend components
     db_manager = DatabaseManager()

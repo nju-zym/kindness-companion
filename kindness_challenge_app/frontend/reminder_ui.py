@@ -39,7 +39,7 @@ class ReminderWidget(QWidget):
 
         # Header
         self.title_label = QLabel("提醒设置")
-        self.title_label.setFont(QFont("Arial", 18, QFont.Bold))
+        self.title_label.setFont(QFont("Helvetica Neue", 20, QFont.Bold))  # Adjusted font
         self.main_layout.addWidget(self.title_label)
 
         self.subtitle_label = QLabel("设置善行挑战的提醒，帮助您坚持完成挑战")

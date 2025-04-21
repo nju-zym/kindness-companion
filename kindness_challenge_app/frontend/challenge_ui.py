@@ -157,7 +157,7 @@ class ChallengeListWidget(QWidget):
 
         # Title
         self.title_label = QLabel("善行挑战列表")
-        self.title_label.setFont(QFont("Arial", 18, QFont.Bold))
+        self.title_label.setFont(QFont("Helvetica Neue", 20, QFont.Bold))  # Adjusted font
         self.header_layout.addWidget(self.title_label)
 
         # Filter layout

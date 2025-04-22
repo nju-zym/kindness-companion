@@ -61,15 +61,18 @@ class LoginWidget(QWidget):
         self.form_layout.addRow("密码:", self.password_edit)
 
         self.main_layout.addLayout(self.form_layout)
+        self.main_layout.addSpacing(25)  # Add spacing before main login button
 
         icon_size = QSize(16, 16)  # Icon size for auth buttons
 
         # Login button
         self.login_button = QPushButton("登录")
+        self.login_button.setObjectName("main_login_button")  # Add object name
         self.login_button.setIcon(QIcon("kindness_challenge_app/resources/icons/log-in.svg"))  # Add icon
         self.login_button.setIconSize(icon_size)
         self.login_button.clicked.connect(self.login)
         self.main_layout.addWidget(self.login_button, 0, Qt.AlignCenter)  # Center button
+        self.main_layout.addSpacing(10)  # Add spacing before register link
 
         # Register link
         self.register_layout = QHBoxLayout()
@@ -169,30 +172,25 @@ class RegisterWidget(QWidget):
         # Username field
         self.username_edit = QLineEdit()
         self.username_edit.setPlaceholderText("请输入用户名")
-        self.username_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.username_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)  # Changed vertical policy
         self.form_layout.addRow("用户名:", self.username_edit)
-
-        # Email field
-        self.email_edit = QLineEdit()
-        self.email_edit.setPlaceholderText("请输入电子邮箱（可选）")
-        self.email_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.form_layout.addRow("电子邮箱:", self.email_edit)
 
         # Password field
         self.password_edit = QLineEdit()
         self.password_edit.setEchoMode(QLineEdit.Password)
         self.password_edit.setPlaceholderText("请输入密码")
-        self.password_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.password_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)  # Changed vertical policy
         self.form_layout.addRow("密码:", self.password_edit)
 
         # Confirm password field
         self.confirm_password_edit = QLineEdit()
         self.confirm_password_edit.setEchoMode(QLineEdit.Password)
         self.confirm_password_edit.setPlaceholderText("请再次输入密码")
-        self.confirm_password_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.confirm_password_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)  # Changed vertical policy
         self.form_layout.addRow("确认密码:", self.confirm_password_edit)
 
         self.main_layout.addLayout(self.form_layout)
+        self.main_layout.addSpacing(15)  # Add spacing after the form layout
 
         icon_size = QSize(16, 16)  # Icon size for auth buttons
 
@@ -210,13 +208,16 @@ class RegisterWidget(QWidget):
         self.terms_layout.addWidget(self.terms_button)
 
         self.main_layout.addLayout(self.terms_layout)
+        self.main_layout.addSpacing(25)  # Add spacing before main register button
 
         # Register button
         self.register_button = QPushButton("注册")
+        self.register_button.setObjectName("main_register_button")  # Add object name
         self.register_button.setIcon(QIcon("kindness_challenge_app/resources/icons/user-plus.svg"))  # Add icon
         self.register_button.setIconSize(icon_size)
         self.register_button.clicked.connect(self.register)
         self.main_layout.addWidget(self.register_button, 0, Qt.AlignCenter)  # Center button
+        self.main_layout.addSpacing(10)  # Add spacing before login link
 
         # Login link
         self.login_layout = QHBoxLayout()
@@ -234,8 +235,7 @@ class RegisterWidget(QWidget):
         self.main_layout.addLayout(self.login_layout)
 
         # Set tab order
-        self.setTabOrder(self.username_edit, self.email_edit)
-        self.setTabOrder(self.email_edit, self.password_edit)
+        self.setTabOrder(self.username_edit, self.password_edit)
         self.setTabOrder(self.password_edit, self.confirm_password_edit)
         self.setTabOrder(self.confirm_password_edit, self.terms_checkbox)
         self.setTabOrder(self.terms_checkbox, self.register_button)
@@ -247,7 +247,6 @@ class RegisterWidget(QWidget):
     def register(self):
         """Attempt to register with the provided information."""
         username = self.username_edit.text().strip()
-        email = self.email_edit.text().strip()
         password = self.password_edit.text()
         confirm_password = self.confirm_password_edit.text()
 
@@ -274,7 +273,7 @@ class RegisterWidget(QWidget):
             return
 
         # Corrected user registration call
-        user = self.user_manager.register_user(username, password, email if email else None)
+        user = self.user_manager.register_user(username, password)
 
         if user:
             self.register_successful.emit(user)
@@ -299,7 +298,6 @@ class RegisterWidget(QWidget):
     def clear_fields(self):
         """Clear input fields."""
         self.username_edit.clear()
-        self.email_edit.clear()
         self.password_edit.clear()
         self.confirm_password_edit.clear()
         self.terms_checkbox.setChecked(False)

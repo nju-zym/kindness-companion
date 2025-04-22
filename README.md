@@ -108,5 +108,5 @@ pytest
 
 如有任何问题或建议，请联系项目维护者：
 
-- 电子邮件：your.email@example.com
-- GitHub：[yourusername](https://github.com/yourusername)
+- 电子邮件：241880200@smail.nju.edu.cn
+- GitHub：[nju-zym](https://github.com/nju-zym)

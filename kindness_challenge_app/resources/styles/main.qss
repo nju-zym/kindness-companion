@@ -169,9 +169,9 @@ QLineEdit, QTextEdit, QComboBox, QTimeEdit, QDateEdit, QSpinBox, QDoubleSpinBox 
     background-color: #FFFFFF; /* White background */
     border: 1px solid #BDBDBD; /* Grey 400 border */
     border-radius: 4px;
-    padding: 10px 14px;
+    padding: 4px 18px; /* Further reduced top/bottom, increased left/right padding */
     color: #212121; /* Dark Grey text */
-    min-height: 38px;
+    min-height: auto; /* Let padding determine height */
 }
 QLineEdit::placeholder, QTextEdit::placeholder {
     color: #BDBDBD; /* Grey 400 placeholder */
@@ -353,10 +353,10 @@ QPushButton#terms_button {
     background-color: transparent;
     color: #1976D2; /* Material Blue 700 */
     font-weight: normal;
-    font-size: 10pt;
+    font-size: 9pt; /* Reduced font size */
     text-decoration: underline;
     border: none;
-    padding: 2px;
+    padding: 2px 20px; /* Reduced padding */
     min-height: auto;
     text-align: center;
     qproperty-iconAlignment: AlignCenter;
@@ -376,6 +376,16 @@ QPushButton#terms_button:pressed {
     color: #0D47A1; /* Material Blue 900 */
     background-color: transparent;
     text-decoration: underline;
+}
+
+/* Adjust main login/register buttons if they are NOT link-style */
+QPushButton#main_login_button, /* Use object name */
+QPushButton#main_register_button { /* Use object name */
+    padding: 6px 40px; /* Reduced top/bottom, adjusted left/right padding */
+    font-size: 10pt; /* Keep font size consistent with general buttons or reduce slightly */
+    min-height: auto; /* Ensure padding controls height */
+    text-align: center; /* Center text for main buttons */
+    qproperty-iconAlignment: AlignCenter; /* Center icon if present */
 }
 
 /* CheckBox */
@@ -418,7 +428,7 @@ QProgressBar::chunk {
 /* Form Layout Specifics (Auth) */
 QFormLayout {
     spacing: 25px;
-    vertical-spacing: 18px;
+    vertical-spacing: 22px; /* Increased vertical spacing between rows */
 }
 
 QFormLayout QLabel {

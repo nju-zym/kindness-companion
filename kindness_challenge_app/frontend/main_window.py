@@ -7,9 +7,11 @@ from PySide6.QtGui import QIcon, QFont
 
 from .user_auth import LoginWidget, RegisterWidget
 from .challenge_ui import ChallengeListWidget
+from .checkin_ui import CheckinWidget
 from .progress_ui import ProgressWidget
 from .reminder_ui import ReminderWidget
 from .profile_ui import ProfileWidget
+from .community_ui import CommunityWidget
 
 
 class MainWindow(QMainWindow):
@@ -85,8 +87,10 @@ class MainWindow(QMainWindow):
         # Define navigation items with icons
         nav_items = [
             ("challenges", "挑战列表", self.show_challenges, "kindness_challenge_app/resources/icons/list.svg"),
-            ("progress", "打卡记录", self.show_progress, "kindness_challenge_app/resources/icons/calendar-check.svg"),
+            ("checkin", "每日打卡", self.show_checkin, "kindness_challenge_app/resources/icons/check-square.svg"),
+            ("progress", "我的进度", self.show_progress, "kindness_challenge_app/resources/icons/calendar-check.svg"),
             ("reminders", "提醒设置", self.show_reminders, "kindness_challenge_app/resources/icons/bell.svg"),
+            ("community", "善意墙", self.show_community, "kindness_challenge_app/resources/icons/users.svg"),
             ("profile", "个人信息", self.show_profile, "kindness_challenge_app/resources/icons/user.svg"),
         ]
 
@@ -95,11 +99,18 @@ class MainWindow(QMainWindow):
         for item_id, label, callback, icon_path in nav_items:
             button = QPushButton(label)
             if icon_path:
-                button.setIcon(QIcon(icon_path))
-                button.setIconSize(icon_size)
+                try:
+                    icon = QIcon(icon_path)
+                    if icon.isNull():
+                        print(f"Warning: Icon not found at {icon_path}")
+                    button.setIcon(icon)
+                    button.setIconSize(icon_size)
+                except Exception as e:
+                    print(f"Error loading icon {icon_path}: {e}")
+
             button.setCheckable(True)  # Make buttons checkable
             button.clicked.connect(callback)
-            button.clicked.connect(lambda checked, b=button: self.update_button_style(b))
+            button.clicked.connect(lambda checked=False, b=button: self.update_button_style(b))
             self.nav_buttons[item_id] = button
             self.nav_button_group.addButton(button)  # Add to group
             self.nav_layout.addWidget(button)
@@ -128,16 +139,20 @@ class MainWindow(QMainWindow):
         self.login_widget = LoginWidget(self.user_manager)
         self.register_widget = RegisterWidget(self.user_manager)
         self.challenge_widget = ChallengeListWidget(self.challenge_manager, self.progress_tracker)
+        self.checkin_widget = CheckinWidget(self.progress_tracker, self.challenge_manager)
         self.progress_widget = ProgressWidget(self.progress_tracker, self.challenge_manager)
         self.reminder_widget = ReminderWidget(self.reminder_scheduler, self.challenge_manager)
+        self.community_widget = CommunityWidget()
         self.profile_widget = ProfileWidget(self.user_manager, self.progress_tracker, self.challenge_manager)
 
         # Add pages to stacked widget
         self.content_widget.addWidget(self.login_widget)
         self.content_widget.addWidget(self.register_widget)
         self.content_widget.addWidget(self.challenge_widget)
+        self.content_widget.addWidget(self.checkin_widget)
         self.content_widget.addWidget(self.progress_widget)
         self.content_widget.addWidget(self.reminder_widget)
+        self.content_widget.addWidget(self.community_widget)
         self.content_widget.addWidget(self.profile_widget)
 
         # Add content to main layout
@@ -155,8 +170,10 @@ class MainWindow(QMainWindow):
 
         # Connect user_changed signal to widgets
         self.user_changed.connect(self.challenge_widget.set_user)
+        self.user_changed.connect(self.checkin_widget.set_user)
         self.user_changed.connect(self.progress_widget.set_user)
         self.user_changed.connect(self.reminder_widget.set_user)
+        self.user_changed.connect(self.community_widget.set_user)
         self.user_changed.connect(self.profile_widget.set_user)
 
         # Connect profile widget signals
@@ -185,6 +202,9 @@ class MainWindow(QMainWindow):
 
         # Show challenges page and set its button as checked
         self.show_challenges()
+        if "challenges" in self.nav_buttons:
+            self.nav_buttons["challenges"].setChecked(True)
+            self.update_button_style(self.nav_buttons["challenges"])
 
         # Show welcome message
         QMessageBox.information(
@@ -249,38 +269,26 @@ class MainWindow(QMainWindow):
     def show_challenges(self):
         """Show the challenges page."""
         self.content_widget.setCurrentWidget(self.challenge_widget)
-        if "challenges" in self.nav_buttons:
-            button = self.nav_buttons["challenges"]
-            if not button.isChecked():
-                button.setChecked(True)
-            self.update_button_style(button)
+
+    def show_checkin(self):
+        """Show the check-in page."""
+        self.content_widget.setCurrentWidget(self.checkin_widget)
 
     def show_progress(self):
         """Show the progress page."""
         self.content_widget.setCurrentWidget(self.progress_widget)
-        if "progress" in self.nav_buttons:
-            button = self.nav_buttons["progress"]
-            if not button.isChecked():
-                button.setChecked(True)
-            self.update_button_style(button)
 
     def show_reminders(self):
         """Show the reminders page."""
         self.content_widget.setCurrentWidget(self.reminder_widget)
-        if "reminders" in self.nav_buttons:
-            button = self.nav_buttons["reminders"]
-            if not button.isChecked():
-                button.setChecked(True)
-            self.update_button_style(button)
+
+    def show_community(self):
+        """Show the community page."""
+        self.content_widget.setCurrentWidget(self.community_widget)
 
     def show_profile(self):
         """Show the profile page."""
         self.content_widget.setCurrentWidget(self.profile_widget)
-        if "profile" in self.nav_buttons:
-            button = self.nav_buttons["profile"]
-            if not button.isChecked():
-                button.setChecked(True)
-            self.update_button_style(button)
 
     def show_reminder(self, reminder):
         """
@@ -297,7 +305,9 @@ class MainWindow(QMainWindow):
 
     def update_button_style(self, clicked_button=None):
         """Updates the style of navigation buttons based on the checked state."""
-        for button in self.nav_buttons.values():
+        for item_id, button in self.nav_buttons.items():
+            is_checked = (button == clicked_button and button.isCheckable() and button.isChecked())
+            button.setProperty("selected", is_checked)
             button.style().unpolish(button)
             button.style().polish(button)
 

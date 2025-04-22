@@ -1,7 +1,8 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QFrame, QCalendarWidget, QComboBox, QGridLayout,
-    QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QMessageBox
+    QScrollArea, QFrame, QCalendarWidget, QComboBox, QGridLayout,  # Added QGridLayout
+    QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QMessageBox,
+    QGroupBox  # Added QGroupBox for structure
 )
 from PySide6.QtCore import Qt, Signal, Slot, QDate, QSize
 from PySide6.QtGui import QFont, QColor, QIcon, QTextCharFormat, QBrush
@@ -71,7 +72,7 @@ class ProgressWidget(QWidget):
 
         self.main_layout.addLayout(self.header_layout)
 
-        # Content layout
+        # Content layout (Calendar and Table)
         self.content_layout = QHBoxLayout()
 
         # Calendar widget
@@ -91,12 +92,17 @@ class ProgressWidget(QWidget):
         self.progress_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.progress_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.progress_table.setAlternatingRowColors(True)
-        self.content_layout.addWidget(self.progress_table)
+        self.content_layout.addWidget(self.progress_table, 1)  # Give table more stretch factor
 
         self.main_layout.addLayout(self.content_layout)
 
-        # Stats layout
-        self.stats_layout = QHBoxLayout()
+        # Bottom layout for Stats and Achievements
+        self.bottom_layout = QHBoxLayout()
+
+        # Stats GroupBox
+        self.stats_group = QGroupBox("统计数据")
+        self.stats_layout = QVBoxLayout(self.stats_group)  # Use QVBoxLayout for vertical stats
+        self.stats_layout.setAlignment(Qt.AlignTop)
 
         # Total check-ins
         self.total_label = QLabel("总打卡次数: 0")
@@ -109,8 +115,22 @@ class ProgressWidget(QWidget):
         # Completion rate
         self.rate_label = QLabel("完成率: 0%")
         self.stats_layout.addWidget(self.rate_label)
+        self.stats_layout.addStretch()  # Push stats to the top
 
-        self.main_layout.addLayout(self.stats_layout)
+        self.bottom_layout.addWidget(self.stats_group, 1)  # Give stats some space
+
+        # Achievements GroupBox
+        self.achievements_group = QGroupBox("我的成就")
+        self.achievements_layout = QVBoxLayout(self.achievements_group)  # Main layout for achievements
+
+        # Placeholder for achievements/badges display
+        self.achievements_placeholder = QLabel("成就徽章将在此处展示。")
+        self.achievements_placeholder.setAlignment(Qt.AlignCenter)
+        self.achievements_layout.addWidget(self.achievements_placeholder)  # Using placeholder for now
+
+        self.bottom_layout.addWidget(self.achievements_group, 2)  # Give achievements more space
+
+        self.main_layout.addLayout(self.bottom_layout)  # Add the combined bottom layout
 
     @Slot(dict)
     def set_user(self, user):
@@ -160,7 +180,7 @@ class ProgressWidget(QWidget):
         end_date = datetime.date.today()
         start_date = None
         if days:
-            start_date = end_date - datetime.timedelta(days=days-1)
+            start_date = end_date - datetime.timedelta(days=days - 1)
 
         # Get check-ins
         if challenge_id:
@@ -187,7 +207,7 @@ class ProgressWidget(QWidget):
             # Update stats
             self.total_label.setText(f"总打卡次数: {len(check_ins)}")
             self.streak_label.setText(f"当前连续打卡: {streak} 天")
-            self.rate_label.setText(f"完成率: {rate*100:.1f}%")
+            self.rate_label.setText(f"完成率: {rate * 100:.1f}%")
         else:
             check_ins = self.progress_tracker.get_all_user_check_ins(
                 self.current_user["id"],
@@ -204,7 +224,7 @@ class ProgressWidget(QWidget):
 
             if days:
                 rate = len(unique_dates) / days
-                self.rate_label.setText(f"完成率: {rate*100:.1f}%")
+                self.rate_label.setText(f"完成率: {rate * 100:.1f}%")
             else:
                 self.rate_label.setText("完成率: - %")
 
@@ -213,6 +233,9 @@ class ProgressWidget(QWidget):
 
         # Update table
         self.update_table(check_ins)
+
+        # Load and display achievements
+        self.load_achievements()
 
     def update_calendar(self, check_ins):
         """Update the calendar view with check-in dates."""
@@ -297,6 +320,9 @@ class ProgressWidget(QWidget):
         self.streak_label.setText("当前连续打卡: 0 天")
         self.rate_label.setText("完成率: 0%")
 
+        # Clear achievements display
+        self.clear_achievements()
+
     def calendar_date_clicked(self, date):
         """
         Handle calendar date click.
@@ -364,3 +390,24 @@ class ProgressWidget(QWidget):
             if success:
                 # Reload progress
                 self.load_progress()
+
+    def load_achievements(self):
+        """Load and display user achievements/badges."""
+        if not self.current_user:
+            return
+
+        # TODO: Get achievements from progress_tracker
+        # achievements = self.progress_tracker.get_achievements(self.current_user["id"])
+        achievements = []  # Placeholder
+
+        if achievements:
+            self.achievements_placeholder.hide()
+            pass  # Replace with actual implementation
+        else:
+            self.achievements_placeholder.setText("暂无成就，继续努力吧！")
+            self.achievements_placeholder.show()
+
+    def clear_achievements(self):
+        """Clear the achievements display area."""
+        self.achievements_placeholder.setText("成就徽章将在此处展示。")
+        self.achievements_placeholder.show()

@@ -1,6 +1,7 @@
 import hashlib
 import secrets
 import time
+import sqlite3
 from .database_manager import DatabaseManager
 
 

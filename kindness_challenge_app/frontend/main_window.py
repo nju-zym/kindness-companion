@@ -130,7 +130,7 @@ class MainWindow(QMainWindow):
         self.challenge_widget = ChallengeListWidget(self.challenge_manager, self.progress_tracker)
         self.progress_widget = ProgressWidget(self.progress_tracker, self.challenge_manager)
         self.reminder_widget = ReminderWidget(self.reminder_scheduler, self.challenge_manager)
-        self.profile_widget = ProfileWidget(self.user_manager, self.progress_tracker)
+        self.profile_widget = ProfileWidget(self.user_manager, self.progress_tracker, self.challenge_manager)
 
         # Add pages to stacked widget
         self.content_widget.addWidget(self.login_widget)
@@ -158,6 +158,10 @@ class MainWindow(QMainWindow):
         self.user_changed.connect(self.progress_widget.set_user)
         self.user_changed.connect(self.reminder_widget.set_user)
         self.user_changed.connect(self.profile_widget.set_user)
+
+        # Connect profile widget signals
+        self.profile_widget.user_updated.connect(self.update_user_info)
+        self.profile_widget.user_logged_out.connect(self.handle_logout)
 
     @Slot(dict)
     def on_login_successful(self, user):
@@ -296,3 +300,16 @@ class MainWindow(QMainWindow):
         for button in self.nav_buttons.values():
             button.style().unpolish(button)
             button.style().polish(button)
+
+    def update_user_info(self, user_info):
+        """
+        Update user information in the application.
+
+        Args:
+            user_info (dict): Updated user information
+        """
+        self.user_changed.emit(user_info)
+
+    def handle_logout(self):
+        """Handle logout triggered from the profile widget."""
+        self.logout()

@@ -84,7 +84,7 @@ class ReminderWidget(QWidget):
 
         # Days selection
         self.days_group = QGroupBox("提醒日期")
-        days_layout = QVBoxLayout(self.days_group)
+        days_layout = QHBoxLayout(self.days_group)  # Change QVBoxLayout to QHBoxLayout for horizontal arrangement
 
         self.day_checkboxes = []
         days = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
@@ -93,7 +93,7 @@ class ReminderWidget(QWidget):
             checkbox = QCheckBox(day)
             checkbox.setChecked(True)  # Default to all days selected
             self.day_checkboxes.append(checkbox)
-            days_layout.addWidget(checkbox)
+            days_layout.addWidget(checkbox)  # Add widgets horizontally
 
         form_layout.addRow("", self.days_group)
 

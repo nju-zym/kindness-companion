@@ -33,7 +33,7 @@ def main():
         logger.info(f"Loaded application icon from {icon_path}")
 
     # Set application font
-    font = QFont("Helvetica Neue", 16)  # Use Helvetica Neue, size 16
+    font = QFont("Helvetica Neue", 18)  # Use Helvetica Neue, size 18
     app.setFont(font)
 
     # --- Theme Selection --- #

@@ -26,7 +26,7 @@ QWidget#nav_widget {
 }
 
 QWidget#nav_widget QLabel#title_label {
-    font-size: 22pt; /* Increased */
+    font-size: 24pt; /* Increased from 22pt */
     font-weight: bold;
     color: #42A5F5; /* Material Blue 400 */
     padding: 20px 10px 15px 10px;
@@ -37,7 +37,7 @@ QWidget#nav_widget QLabel#title_label {
 
 QWidget#nav_widget QPushButton {
     padding: 12px 15px 12px 25px;
-    font-size: 14pt; /* Increased */
+    font-size: 16pt; /* Increased from 14pt */
     text-align: left;
     color: #BDBDBD; /* Grey 400 text */
     background-color: transparent;
@@ -70,7 +70,7 @@ QWidget#nav_widget QPushButton#logout_button {
     text-align: center;
     font-weight: 500;
     border-radius: 4px;
-    font-size: 14pt; /* Increased */
+    font-size: 16pt; /* Increased from 14pt */
 }
 
 QWidget#nav_widget QPushButton#logout_button:hover {
@@ -95,21 +95,21 @@ QLabel {
     padding: 2px;
     margin-bottom: 6px;
     color: #E0E0E0; /* Default light text */
-    font-size: 14pt; /* Increased default label size */
+    font-size: 16pt; /* Increased default label size from 14pt */
 }
 /* Keep Auth labels small */
 QDialog#auth_dialog QLabel {
-    font-size: 10pt; /* Keep auth labels small */
+    font-size: 9pt; /* Reduced from 10pt */
     color: #BDBDBD; /* Grey 400 text */
     padding-top: 12px; /* Align with input field */
 }
 QLabel#error_label {
     color: #EF5350; /* Material Red 400 */
-    font-size: 11pt; /* Slightly increased error label */
+    font-size: 12pt; /* Slightly increased error label from 11pt */
 }
 /* General Title Label Style */
 QLabel.title_label, QLabel#title_label {
-    font-size: 22pt; /* Increased */
+    font-size: 24pt; /* Increased from 22pt */
     font-weight: bold;
     color: #42A5F5; /* Material Blue 400 */
     margin-bottom: 20px;
@@ -119,11 +119,11 @@ QLabel.title_label, QLabel#title_label {
 QLabel#streak_label {
     color: #66BB6A; /* Material Green 400 */
     font-weight: bold;
-    font-size: 16pt; /* Increased */
+    font-size: 18pt; /* Increased from 16pt */
 }
 /* Subtitle Label Style */
 QLabel.subtitle_label, QLabel#subtitle_label {
-    font-size: 13pt; /* Increased */
+    font-size: 15pt; /* Increased from 13pt */
     color: #BDBDBD; /* Grey 400 secondary text */
     margin-bottom: 30px;
     text-align: center;
@@ -138,7 +138,7 @@ QGroupBox {
     margin-top: 15px;
     padding: 25px 20px 20px 20px;
     color: #E0E0E0; /* Light Grey text */
-    font-size: 14pt; /* Increased group box font */
+    font-size: 16pt; /* Increased group box font from 14pt */
 }
 QGroupBox::title {
     subcontrol-origin: margin;
@@ -147,7 +147,7 @@ QGroupBox::title {
     margin-left: 20px;
     color: #E0E0E0; /* Light Grey text */
     font-weight: bold;
-    font-size: 15pt; /* Increased group box title */
+    font-size: 17pt; /* Increased group box title from 15pt */
     background-color: #333333; /* Darker Grey background */
     border: 1px solid #424242; /* Grey 800 border */
     border-bottom: none;
@@ -168,7 +168,7 @@ QFrame#challenge_card:hover {
 }
 /* Style for title inside challenge card */
 QFrame#challenge_card QLabel#title_label {
-     font-size: 16pt; /* Increased */
+     font-size: 18pt; /* Increased from 16pt */
      font-weight: bold;
      color: #E0E0E0; /* Light Grey text */
      margin-bottom: 10px;
@@ -177,7 +177,7 @@ QFrame#challenge_card QLabel#title_label {
 }
 /* Style for description inside challenge card */
 QFrame#challenge_card QLabel#description_label {
-     font-size: 13pt; /* Increased */
+     font-size: 15pt; /* Increased from 13pt */
      color: #BDBDBD; /* Grey 400 text */
      margin-bottom: 15px;
 }
@@ -191,12 +191,23 @@ QLineEdit, QTextEdit, QComboBox, QTimeEdit, QDateEdit, QSpinBox, QDoubleSpinBox 
     padding: 2px 22px; /* Further reduced top/bottom, increased left/right padding */
     color: #E0E0E0; /* Light Grey text */
     min-height: auto; /* Let padding determine height */
-    font-size: 14pt; /* Increased input font size */
+    font-size: 16pt; /* Increased input font size from 14pt */
+}
+/* Specific style for password fields in profile */
+QGroupBox#password_change_group QLineEdit {
+    font-size: 12pt; /* Smaller font for password fields */
+    padding: 4px 10px; /* Reduced padding */
+    min-height: auto;
+}
+/* Keep Auth input fields small */
+QDialog#auth_dialog QLineEdit {
+    font-size: 9pt; /* Reduced from 10pt */
+    padding: 3px 8px; /* Adjust padding for smaller font */
 }
 /* Keep Auth placeholders small */
 QDialog#auth_dialog QLineEdit::placeholder {
     color: #757575; /* Grey 600 placeholder */
-    font-size: 10pt; /* Keep auth placeholders small */
+    font-size: 9pt; /* Reduced from 10pt */
     /* font-style: italic; */ /* Optional: make placeholders italic */
 }
 QLineEdit::placeholder, QTextEdit::placeholder {
@@ -217,7 +228,7 @@ QComboBox QAbstractItemView { /* Style dropdown list */
     color: #E0E0E0; /* Light Grey text */
     selection-background-color: #42A5F5; /* Material Blue 400 */
     selection-color: #121212; /* Very Dark Grey text */
-    font-size: 14pt; /* Increased dropdown item size */
+    font-size: 16pt; /* Increased dropdown item size from 14pt */
 }
 QComboBox::drop-down {
     border-left: 1px solid #616161; /* Grey 700 border */
@@ -240,7 +251,7 @@ QTableWidget {
     border-radius: 4px;
     selection-background-color: #42A5F5; /* Material Blue 400 selection */
     selection-color: #121212; /* Very Dark Grey text on selection */
-    font-size: 13pt; /* Increased table content font size */
+    font-size: 15pt; /* Increased table content font size from 13pt */
 }
 QHeaderView::section {
     background-color: #333333; /* Darker Grey header */
@@ -249,7 +260,7 @@ QHeaderView::section {
     border: none;
     border-bottom: 1px solid #616161; /* Grey 700 border */
     font-weight: bold;
-    font-size: 14pt; /* Increased header font size */
+    font-size: 16pt; /* Increased header font size from 14pt */
 }
 QHeaderView::section:horizontal {
     border-right: 1px solid #424242; /* Grey 800 vertical lines */
@@ -267,7 +278,7 @@ QTableCornerButton::section {
 /* Calendar Widget */
 QCalendarWidget QWidget {
     alternate-background-color: #333333; /* Darker Grey alternate */
-    font-size: 13pt; /* Increased calendar base font */
+    font-size: 15pt; /* Increased calendar base font from 13pt */
 }
 QCalendarWidget QToolButton {
     color: #BDBDBD; /* Grey 400 text */
@@ -276,7 +287,7 @@ QCalendarWidget QToolButton {
     padding: 8px;
     margin: 3px;
     border-radius: 4px;
-    font-size: 14pt; /* Increased calendar button font */
+    font-size: 16pt; /* Increased calendar button font from 14pt */
 }
  QCalendarWidget QToolButton:hover {
      background-color: #424242; /* Grey 800 hover */
@@ -295,7 +306,7 @@ QCalendarWidget QToolButton {
      font-weight: bold;
      padding: 8px 14px;
      color: #E0E0E0; /* Light Grey text */
-     font-size: 15pt; /* Increased month/year button font */
+     font-size: 17pt; /* Increased month/year button font from 15pt */
 }
 #qt_calendar_calendarview {
      background-color: #212121; /* Dark Grey background */
@@ -320,14 +331,13 @@ QCalendarWidget QToolButton {
 /* General Button Style */
 QPushButton {
     padding: 12px 22px 12px 27px; /* Adjusted padding */
-    font-size: 14pt; /* Increased */
+    font-size: 16pt; /* Increased from 14pt */
     color: #121212; /* Very Dark Grey text */
     background-color: #42A5F5; /* Material Blue 400 */
     border: none;
     border-radius: 4px;
     min-height: 42px; /* Adjusted height */
     font-weight: 500;
-    qproperty-iconAlignment: AlignLeft;
     text-align: left;
 }
 QPushButton:hover {
@@ -400,29 +410,12 @@ QPushButton#terms_button {
     background-color: transparent;
     color: #81D4FA; /* Material Light Blue 300 */
     font-weight: normal;
-    font-size: 11pt; /* Reduced font size */
+    font-size: 12pt; /* Reduced font size from 11pt */
     text-decoration: underline;
     border: none;
     padding: 2px 20px; /* Reduced padding */
     min-height: auto;
     text-align: center;
-    qproperty-iconAlignment: AlignCenter;
-}
-
-QPushButton#register_button:hover,
-QPushButton#login_button:hover,
-QPushButton#terms_button:hover {
-    color: #B3E5FC; /* Material Light Blue 100 */
-    background-color: transparent;
-    text-decoration: underline;
-}
-
-QPushButton#register_button:pressed,
-QPushButton#login_button:pressed,
-QPushButton#terms_button:pressed {
-    color: #B3E5FC; /* Material Light Blue 100 */
-    background-color: transparent;
-    text-decoration: underline;
 }
 
 /* Adjust main login/register buttons if they are NOT link-style */
@@ -430,22 +423,21 @@ QPushButton#terms_button:pressed {
 QPushButton#main_login_button, /* Use object name */
 QPushButton#main_register_button { /* Use object name */
     padding: 6px 40px; /* Reduced top/bottom, adjusted left/right padding */
-    font-size: 13pt; /* Slightly reduced font size */
+    font-size: 15pt; /* Slightly reduced font size from 13pt */
     min-height: auto; /* Ensure padding controls height */
     text-align: center; /* Center text for main buttons */
-    qproperty-iconAlignment: AlignCenter; /* Center icon if present */
 }
 
 /* CheckBox */
 QCheckBox {
-    spacing: 12px;
-    color: #E0E0E0; /* Light Grey text */
-    font-size: 14pt; /* Increased checkbox text size */
+    spacing: 8px; /* Add spacing between indicator and text */
+    color: #E0E0E0; /* Set text color explicitly for dark theme */
+    font-size: 16pt; /* Increased checkbox text size from 14pt */
 }
 QCheckBox::indicator {
-    width: 20px;
-    height: 20px;
-    border: 1px solid #757575; /* Grey 600 border */
+    width: 18px; /* Slightly larger indicator */
+    height: 18px;
+    border: 1px solid #BDBDBD; /* Grey 400 border */
     border-radius: 3px;
     background-color: #333333; /* Darker Grey background */
 }
@@ -467,7 +459,7 @@ QProgressBar {
     color: #E0E0E0; /* Light Grey text */
     background-color: #424242; /* Grey 800 background */
     min-height: 28px; /* Adjusted height */
-    font-size: 12pt; /* Increased progress bar text size */
+    font-size: 14pt; /* Increased progress bar text size from 12pt */
 }
 QProgressBar::chunk {
     background-color: #66BB6A; /* Material Green 400 */
@@ -484,7 +476,7 @@ QFormLayout {
 QFormLayout QLabel {
     color: #BDBDBD; /* Grey 400 text */
     padding-top: 12px;
-    font-size: 10pt; /* Keep auth labels small */
+    font-size: 9pt; /* Keep auth labels small, reduced from 10pt */
 }
 
 /* Specific Margins (Auth) */

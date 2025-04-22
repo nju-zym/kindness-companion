@@ -1,10 +1,10 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QFrame, QCalendarWidget, QComboBox, QGridLayout,
-    QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy
+    QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QMessageBox
 )
 from PySide6.QtCore import Qt, Signal, Slot, QDate, QSize
-from PySide6.QtGui import QFont, QColor, QIcon
+from PySide6.QtGui import QFont, QColor, QIcon, QTextCharFormat, QBrush
 
 import datetime
 
@@ -215,29 +215,25 @@ class ProgressWidget(QWidget):
         self.update_table(check_ins)
 
     def update_calendar(self, check_ins):
-        """
-        Update the calendar with check-in dates.
+        """Update the calendar view with check-in dates."""
+        # Clear previous formatting
+        default_format = QTextCharFormat()  # Use QTextCharFormat
+        self.calendar_widget.setDateTextFormat(QDate(), default_format)  # Clear all formats first
 
-        Args:
-            check_ins (list): List of check-in dictionaries
-        """
-        # Reset calendar
-        self.calendar_widget.setDateTextFormat(QDate(), QCalendarWidget.TextFormat())
+        # Highlight check-in dates
+        check_in_format = QTextCharFormat()  # Use QTextCharFormat
+        check_in_format.setBackground(QBrush(QColor("#A5D6A7")))  # Use a color from main.qss
+        check_in_format.setForeground(QBrush(QColor("#212121")))  # Ensure text is readable
 
-        # Set format for check-in dates
-        format = self.calendar_widget.dateTextFormat(QDate())
-        format.setBackground(QColor(40, 167, 69))  # Green
-        format.setForeground(QColor(255, 255, 255))  # White
-
-        # Mark check-in dates
-        unique_dates = set()
+        # Apply format to each check-in date
         for check_in in check_ins:
-            date_str = check_in["check_in_date"]
-            if date_str not in unique_dates:
-                unique_dates.add(date_str)
-                year, month, day = map(int, date_str.split("-"))
-                date = QDate(year, month, day)
-                self.calendar_widget.setDateTextFormat(date, format)
+            date = QDate.fromString(check_in["check_in_date"], "yyyy-MM-dd")
+            if date.isValid():
+                # Retrieve existing format to avoid overwriting other formats (like today's highlight)
+                existing_format = self.calendar_widget.dateTextFormat(date)
+                # Merge formats - background from check-in, keep existing foreground/font etc.
+                existing_format.setBackground(check_in_format.background())
+                self.calendar_widget.setDateTextFormat(date, existing_format)
 
     def update_table(self, check_ins):
         """
@@ -291,7 +287,7 @@ class ProgressWidget(QWidget):
         self.challenge_combo.addItem("全部挑战", None)
 
         # Reset calendar
-        self.calendar_widget.setDateTextFormat(QDate(), QCalendarWidget.TextFormat())
+        self.calendar_widget.setDateTextFormat(QDate(), QTextCharFormat())
 
         # Clear table
         self.progress_table.setRowCount(0)
@@ -346,8 +342,6 @@ class ProgressWidget(QWidget):
             return
 
         # Ask for confirmation
-        from PySide6.QtWidgets import QMessageBox
-
         challenge = self.challenge_manager.get_challenge_by_id(check_in["challenge_id"])
         challenge_title = challenge["title"] if challenge else "未知挑战"
 

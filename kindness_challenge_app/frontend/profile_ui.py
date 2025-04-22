@@ -11,19 +11,24 @@ class ProfileWidget(QWidget):
     """
     Widget for displaying and editing user profile.
     """
+    # Define signals
+    user_updated = Signal(dict)
+    user_logged_out = Signal()
 
-    def __init__(self, user_manager, progress_tracker):
+    def __init__(self, user_manager, progress_tracker, challenge_manager):
         """
         Initialize the profile widget.
 
         Args:
             user_manager: User manager instance
             progress_tracker: Progress tracker instance
+            challenge_manager: Challenge manager instance
         """
         super().__init__()
 
         self.user_manager = user_manager
         self.progress_tracker = progress_tracker
+        self.challenge_manager = challenge_manager
         self.current_user = None
 
         self.setup_ui()
@@ -72,17 +77,13 @@ class ProfileWidget(QWidget):
         self.username_label = QLabel()
         info_layout.addRow("用户名:", self.username_label)
 
-        # Email
-        self.email_edit = QLineEdit()
-        self.email_edit.setPlaceholderText("请输入电子邮箱")
-        info_layout.addRow("电子邮箱:", self.email_edit)
-
         profile_layout.addLayout(info_layout)
 
         profile_layout.addSpacing(20)
 
         # Password change group
         password_group = QGroupBox("修改密码")
+        password_group.setObjectName("password_change_group")  # Add object name
         password_layout = QFormLayout(password_group)
         password_layout.setLabelAlignment(Qt.AlignRight)
         password_layout.setFormAlignment(Qt.AlignLeft)
@@ -229,7 +230,6 @@ class ProfileWidget(QWidget):
         if user:
             # Update profile info
             self.username_label.setText(user["username"])
-            self.email_edit.setText(user["email"] or "")
 
             # Clear password fields
             self.current_password_edit.clear()
@@ -241,7 +241,6 @@ class ProfileWidget(QWidget):
         else:
             # Clear profile info
             self.username_label.setText("")
-            self.email_edit.clear()
 
             # Clear password fields
             self.current_password_edit.clear()
@@ -269,9 +268,7 @@ class ProfileWidget(QWidget):
         longest_streak = 0
 
         # Get subscribed challenges
-        from .challenge_ui import ChallengeListWidget  # Avoid circular import
-        challenge_manager = ChallengeListWidget.challenge_manager
-        challenges = challenge_manager.get_user_challenges(self.current_user["id"])
+        challenges = self.challenge_manager.get_user_challenges(self.current_user["id"])
 
         for challenge in challenges:
             streak = self.progress_tracker.get_streak(
@@ -307,13 +304,9 @@ class ProfileWidget(QWidget):
             return
 
         # Get input values
-        email = self.email_edit.text().strip()
         current_password = self.current_password_edit.text()
         new_password = self.new_password_edit.text()
         confirm_password = self.confirm_password_edit.text()
-
-        # Validate email (optional)
-        # A more robust email validation would be used in a real app
 
         # Check if password change is requested
         if current_password or new_password or confirm_password:
@@ -359,41 +352,46 @@ class ProfileWidget(QWidget):
             # Update profile with new password
             success = self.user_manager.update_profile(
                 self.current_user["id"],
-                email if email != self.current_user["email"] else None,
                 new_password
             )
         else:
-            # Update profile without changing password
-            if email == self.current_user["email"]:
-                QMessageBox.information(
-                    self,
-                    "保存成功",
-                    "个人信息已保存"
-                )
-                return
-
-            success = self.user_manager.update_profile(
-                self.current_user["id"],
-                email
+            QMessageBox.information(
+                self,
+                "无更改",
+                "未检测到信息更改。"
             )
+            return  # No changes to save if only email was potentially changed
 
         if success:
-            # Update current user
-            self.current_user["email"] = email
-
             # Clear password fields
             self.current_password_edit.clear()
             self.new_password_edit.clear()
             self.confirm_password_edit.clear()
 
-            QMessageBox.information(
-                self,
-                "保存成功",
-                "个人信息已保存"
-            )
+            QMessageBox.information(self, "成功", "个人信息已更新！")
+            # Emit the signal with updated user info
+            updated_user = self.user_manager.get_user_by_id(self.current_user["id"])
+            if updated_user:
+                self.current_user = updated_user  # Update internal user state
+                self.user_updated.emit(self.current_user)  # Emit signal
         else:
             QMessageBox.warning(
                 self,
                 "保存失败",
                 "保存个人信息失败，请稍后重试"
             )
+
+    def logout(self):
+        """Log out the current user."""
+        reply = QMessageBox.question(
+            self,
+            "退出登录",
+            "确定要退出登录吗？",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            self.current_user = None
+            self.clear_profile()
+            self.reset_stats()
+            self.user_logged_out.emit()  # Emit signal

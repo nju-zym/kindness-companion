@@ -25,7 +25,7 @@ QWidget#nav_widget {
 }
 
 QWidget#nav_widget QLabel#title_label {
-    font-size: 18pt;
+    font-size: 20pt; /* Increased from 18pt */
     font-weight: bold;
     color: #1976D2; /* Material Blue 700 */
     padding: 20px 10px 15px 10px;
@@ -36,7 +36,7 @@ QWidget#nav_widget QLabel#title_label {
 
 QWidget#nav_widget QPushButton {
     padding: 12px 15px 12px 25px;
-    font-size: 11pt;
+    font-size: 13pt; /* Increased from 11pt */
     text-align: left;
     color: #424242; /* Grey 800 text */
     background-color: transparent;
@@ -85,6 +85,8 @@ QStackedWidget {
 /* Default font and color for widgets within the content area */
 QStackedWidget > QWidget {
     background-color: transparent;
+    /* Base font size is now set by QApplication, but can be overridden */
+    /* font-size: 12pt; */ /* Example: Uncomment to set a base size for content */
 }
 
 /* Labels */
@@ -93,14 +95,21 @@ QLabel {
     padding: 2px;
     margin-bottom: 6px;
     color: #212121; /* Default dark text */
+    /* font-size: 12pt; */ /* Example: Uncomment to set a default label size */
+}
+/* Keep Auth labels small */
+QDialog#auth_dialog QLabel {
+    font-size: 9pt; /* Reduced from 10pt */
+    color: #424242; /* Grey 800 text */
+    padding-top: 12px; /* Align with input field */
 }
 QLabel#error_label {
     color: #D32F2F; /* Material Red 700 */
-    font-size: 9pt;
+    font-size: 11pt; /* Increased from 9pt */
 }
 /* General Title Label Style */
 QLabel.title_label, QLabel#title_label {
-    font-size: 18pt;
+    font-size: 20pt; /* Increased from 18pt */
     font-weight: bold;
     color: #1976D2; /* Material Blue 700 */
     margin-bottom: 20px;
@@ -113,7 +122,7 @@ QLabel#streak_label {
 }
 /* Subtitle Label Style */
 QLabel.subtitle_label, QLabel#subtitle_label {
-    font-size: 11pt;
+    font-size: 13pt; /* Increased from 11pt */
     color: #757575; /* Grey 600 secondary text */
     margin-bottom: 30px;
     text-align: center;
@@ -155,7 +164,7 @@ QFrame#challenge_card:hover {
 }
 /* Style for title inside challenge card */
 QFrame#challenge_card QLabel#title_label {
-     font-size: 14pt;
+     font-size: 16pt; /* Increased from 14pt */
      font-weight: bold;
      color: #212121; /* Dark Grey text */
      margin-bottom: 10px;
@@ -172,9 +181,20 @@ QLineEdit, QTextEdit, QComboBox, QTimeEdit, QDateEdit, QSpinBox, QDoubleSpinBox 
     padding: 4px 18px; /* Further reduced top/bottom, increased left/right padding */
     color: #212121; /* Dark Grey text */
     min-height: auto; /* Let padding determine height */
+    /* font-size: 12pt; */ /* Example: Uncomment to set input field size */
+}
+/* Keep Auth input fields small */
+QDialog#auth_dialog QLineEdit {
+    font-size: 9pt; /* Reduced from 10pt */
+    padding: 3px 8px; /* Adjust padding for smaller font */
 }
 QLineEdit::placeholder, QTextEdit::placeholder {
     color: #BDBDBD; /* Grey 400 placeholder */
+}
+/* Keep Auth placeholders small */
+QDialog#auth_dialog QLineEdit::placeholder {
+    color: #BDBDBD; /* Grey 400 placeholder */
+    font-size: 9pt; /* Reduced from 10pt */
 }
 QLineEdit:focus, QTextEdit:focus, QComboBox:focus, QTimeEdit:focus, QDateEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus {
     border-color: #1976D2; /* Material Blue 700 */
@@ -273,14 +293,13 @@ QCalendarWidget QToolButton {
 /* General Button Style */
 QPushButton {
     padding: 10px 20px 10px 25px;
-    font-size: 10pt;
+    font-size: 12pt; /* Increased from 10pt */
     color: #FFFFFF; /* White text */
     background-color: #1976D2; /* Material Blue 700 */
     border: none;
     border-radius: 4px;
     min-height: 38px;
     font-weight: 500;
-    qproperty-iconAlignment: AlignLeft;
     text-align: left;
 }
 QPushButton:hover {
@@ -353,45 +372,30 @@ QPushButton#terms_button {
     background-color: transparent;
     color: #1976D2; /* Material Blue 700 */
     font-weight: normal;
-    font-size: 9pt; /* Reduced font size */
+    font-size: 11pt; /* Increased from 10pt */
     text-decoration: underline;
     border: none;
     padding: 2px 20px; /* Reduced padding */
     min-height: auto;
     text-align: center;
-    qproperty-iconAlignment: AlignCenter;
-}
-
-QPushButton#register_button:hover,
-QPushButton#login_button:hover,
-QPushButton#terms_button:hover {
-    color: #0D47A1; /* Material Blue 900 */
-    background-color: transparent;
-    text-decoration: underline;
-}
-
-QPushButton#register_button:pressed,
-QPushButton#login_button:pressed,
-QPushButton#terms_button:pressed {
-    color: #0D47A1; /* Material Blue 900 */
-    background-color: transparent;
-    text-decoration: underline;
+    /* qproperty-iconAlignment: AlignCenter; Removed invalid property */
 }
 
 /* Adjust main login/register buttons if they are NOT link-style */
 QPushButton#main_login_button, /* Use object name */
 QPushButton#main_register_button { /* Use object name */
     padding: 6px 40px; /* Reduced top/bottom, adjusted left/right padding */
-    font-size: 10pt; /* Keep font size consistent with general buttons or reduce slightly */
+    font-size: 12pt; /* Increased from 10pt */
     min-height: auto; /* Ensure padding controls height */
     text-align: center; /* Center text for main buttons */
-    qproperty-iconAlignment: AlignCenter; /* Center icon if present */
+    /* qproperty-iconAlignment: AlignCenter; Removed invalid property */
 }
 
 /* CheckBox */
 QCheckBox {
     spacing: 12px;
     color: #212121; /* Dark Grey text */
+    /* font-size: 12pt; */ /* Example: Uncomment to set checkbox text size */
 }
 QCheckBox::indicator {
     width: 20px;
@@ -418,6 +422,7 @@ QProgressBar {
     color: #212121; /* Dark Grey text */
     background-color: #EEEEEE; /* Grey 200 background */
     min-height: 24px;
+    /* font-size: 11pt; */ /* Example: Uncomment to set progress bar text size */
 }
 QProgressBar::chunk {
     background-color: #388E3C; /* Material Green 700 */
@@ -434,6 +439,7 @@ QFormLayout {
 QFormLayout QLabel {
     color: #424242; /* Grey 800 text */
     padding-top: 12px;
+    font-size: 9pt; /* Keep auth labels small, reduced from 10pt */
 }
 
 /* Specific Margins (Auth) */

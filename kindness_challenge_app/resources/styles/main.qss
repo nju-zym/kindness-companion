@@ -1,0 +1,431 @@
+/* Global Stylesheet for Kindness Challenge App - Material Inspired Theme */
+
+/* Define Color Palette (Inspired by Material Design) */
+/* Primary: Blue */
+/* Accent/Highlight: Light Blue */
+/* Background: White */
+/* Surface/Base: Light Grey */
+/* Text: Dark Grey */
+/* Error: Red */
+/* Positive: Green */
+
+/* General Widget Styling */
+QWidget {
+    background-color: #FFFFFF; /* White background */
+    color: #212121; /* Dark Grey text */
+    /* font-family/size rely on QApplication.setFont */
+}
+
+/* --- Navigation Sidebar Styles (#nav_widget) --- */
+QWidget#nav_widget {
+    background-color: #F5F5F5; /* Light Grey surface */
+    border-right: 1px solid #E0E0E0; /* Grey 300 border */
+    min-width: 180px;
+    max-width: 220px;
+}
+
+QWidget#nav_widget QLabel#title_label {
+    font-size: 18pt;
+    font-weight: bold;
+    color: #1976D2; /* Material Blue 700 */
+    padding: 20px 10px 15px 10px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #E0E0E0; /* Grey 300 border */
+    text-align: center;
+}
+
+QWidget#nav_widget QPushButton {
+    padding: 12px 15px 12px 25px;
+    font-size: 11pt;
+    text-align: left;
+    color: #424242; /* Grey 800 text */
+    background-color: transparent;
+    border: none;
+    border-radius: 4px; /* Slightly smaller radius */
+    margin: 4px 10px;
+    font-weight: 500;
+}
+
+QWidget#nav_widget QPushButton:hover {
+    background-color: #E3F2FD; /* Material Blue 50 */
+    color: #1976D2; /* Material Blue 700 */
+}
+
+QWidget#nav_widget QPushButton:checked {
+    background-color: #1976D2; /* Material Blue 700 */
+    color: #FFFFFF; /* White text */
+    font-weight: bold;
+}
+
+QWidget#nav_widget QPushButton:disabled {
+    color: #BDBDBD; /* Grey 400 disabled text */
+    background-color: transparent;
+}
+
+QWidget#nav_widget QPushButton#logout_button {
+    margin: 25px 10px 15px 10px;
+    background-color: #E0E0E0; /* Grey 300 background */
+    color: #424242; /* Grey 800 text */
+    text-align: center;
+    font-weight: 500;
+    border-radius: 4px;
+}
+
+QWidget#nav_widget QPushButton#logout_button:hover {
+    background-color: #BDBDBD; /* Grey 400 hover */
+    color: #212121; /* Dark Grey text */
+}
+
+/* --- Content Area Styles (QStackedWidget) --- */
+QStackedWidget {
+    background-color: #FFFFFF; /* White background */
+    padding: 25px; /* Increased padding */
+}
+
+/* Default font and color for widgets within the content area */
+QStackedWidget > QWidget {
+    background-color: transparent;
+}
+
+/* Labels */
+QLabel {
+    background-color: transparent;
+    padding: 2px;
+    margin-bottom: 6px;
+    color: #212121; /* Default dark text */
+}
+QLabel#error_label {
+    color: #D32F2F; /* Material Red 700 */
+    font-size: 9pt;
+}
+/* General Title Label Style */
+QLabel.title_label, QLabel#title_label {
+    font-size: 18pt;
+    font-weight: bold;
+    color: #1976D2; /* Material Blue 700 */
+    margin-bottom: 20px;
+    border-bottom: 1px solid #E0E0E0; /* Grey 300 border */
+    padding-bottom: 8px;
+}
+QLabel#streak_label {
+    color: #388E3C; /* Material Green 700 */
+    font-weight: bold;
+}
+/* Subtitle Label Style */
+QLabel.subtitle_label, QLabel#subtitle_label {
+    font-size: 11pt;
+    color: #757575; /* Grey 600 secondary text */
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+
+/* Group Boxes */
+QGroupBox {
+    background-color: #F5F5F5; /* Light Grey surface */
+    border: 1px solid #E0E0E0; /* Grey 300 border */
+    border-radius: 4px; /* Consistent radius */
+    margin-top: 15px;
+    padding: 25px 20px 20px 20px;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 6px 15px;
+    margin-left: 20px;
+    color: #424242; /* Grey 800 text */
+    font-weight: bold;
+    background-color: #FFFFFF; /* White background */
+    border: 1px solid #E0E0E0; /* Grey 300 border */
+    border-bottom: none;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+/* Frames (e.g., ChallengeCard) */
+QFrame#challenge_card {
+    background-color: #FFFFFF; /* White background */
+    border: 1px solid #E0E0E0; /* Grey 300 border */
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 15px;
+}
+QFrame#challenge_card:hover {
+     border-color: #1976D2; /* Material Blue 700 */
+}
+/* Style for title inside challenge card */
+QFrame#challenge_card QLabel#title_label {
+     font-size: 14pt;
+     font-weight: bold;
+     color: #212121; /* Dark Grey text */
+     margin-bottom: 10px;
+     border-bottom: none;
+     padding-bottom: 0;
+}
+
+
+/* Input Fields */
+QLineEdit, QTextEdit, QComboBox, QTimeEdit, QDateEdit, QSpinBox, QDoubleSpinBox {
+    background-color: #FFFFFF; /* White background */
+    border: 1px solid #BDBDBD; /* Grey 400 border */
+    border-radius: 4px;
+    padding: 10px 14px;
+    color: #212121; /* Dark Grey text */
+    min-height: 38px;
+}
+QLineEdit::placeholder, QTextEdit::placeholder {
+    color: #BDBDBD; /* Grey 400 placeholder */
+}
+QLineEdit:focus, QTextEdit:focus, QComboBox:focus, QTimeEdit:focus, QDateEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus {
+    border-color: #1976D2; /* Material Blue 700 */
+    outline: 0;
+}
+QComboBox::drop-down {
+    border-left: 1px solid #E0E0E0; /* Grey 300 border */
+    padding-right: 10px;
+}
+QComboBox::down-arrow {
+     /* Consider using a theme-aware icon or SVG */
+     width: 14px;
+     height: 14px;
+}
+
+/* Tables */
+QTableWidget {
+    background-color: #FFFFFF; /* White background */
+    color: #212121; /* Dark Grey text */
+    gridline-color: #EEEEEE; /* Grey 200 grid lines */
+    alternate-background-color: #F5F5F5; /* Light Grey alternate */
+    border: 1px solid #E0E0E0; /* Grey 300 border */
+    border-radius: 4px;
+    selection-background-color: #64B5F6; /* Material Blue 300 selection */
+    selection-color: #212121; /* Dark Grey text on selection */
+}
+QHeaderView::section {
+    background-color: #F5F5F5; /* Light Grey header */
+    color: #424242; /* Grey 800 text */
+    padding: 12px 8px;
+    border: none;
+    border-bottom: 1px solid #E0E0E0; /* Grey 300 border */
+    font-weight: bold;
+}
+QHeaderView::section:horizontal {
+    border-right: 1px solid #EEEEEE; /* Grey 200 vertical lines */
+}
+QHeaderView::section:vertical {
+     border-bottom: 1px solid #EEEEEE; /* Grey 200 horizontal lines */
+}
+QTableCornerButton::section {
+     background-color: #F5F5F5; /* Light Grey corner */
+     border: none;
+     border-bottom: 1px solid #E0E0E0; /* Grey 300 border */
+     border-right: 1px solid #E0E0E0; /* Grey 300 border */
+}
+
+/* Calendar Widget */
+QCalendarWidget QWidget {
+    alternate-background-color: #F5F5F5; /* Light Grey alternate */
+}
+QCalendarWidget QToolButton {
+    color: #424242; /* Grey 800 text */
+    background-color: transparent;
+    border: none;
+    padding: 8px;
+    margin: 3px;
+    border-radius: 4px;
+}
+ QCalendarWidget QToolButton:hover {
+     background-color: #E3F2FD; /* Material Blue 50 */
+     color: #1976D2; /* Material Blue 700 */
+ }
+#qt_calendar_navigationbar {
+     background-color: #F5F5F5; /* Light Grey header */
+     border-bottom: 1px solid #E0E0E0; /* Grey 300 border */
+}
+#qt_calendar_prevmonth, #qt_calendar_nextmonth {
+     qproperty-iconSize: 18px 18px;
+     padding: 6px;
+}
+#qt_calendar_monthbutton, #qt_calendar_yearbutton {
+     font-weight: bold;
+     padding: 8px 14px;
+}
+#qt_calendar_calendarview {
+     background-color: #FFFFFF; /* White background */
+     alternate-background-color: #F5F5F5; /* Light Grey alternate */
+     selection-background-color: #64B5F6; /* Material Blue 300 selection */
+     selection-color: #212121; /* Dark Grey text on selection */
+}
+/* Highlight today's date */
+#qt_calendar_calendarview::item:selected:!disabled {
+     background-color: #1976D2; /* Material Blue 700 */
+     color: #FFFFFF; /* White text */
+     border-radius: 4px;
+}
+/* Highlight dates with check-ins (using background role) */
+#qt_calendar_calendarview::item[dateTextFormat="true"] { /* Needs to be set via QCalendarWidget TextFormat */
+     background-color: #A5D6A7; /* Material Green 200 */
+     color: #212121; /* Dark Grey text */
+     border-radius: 4px;
+}
+
+
+/* General Button Style */
+QPushButton {
+    padding: 10px 20px 10px 25px;
+    font-size: 10pt;
+    color: #FFFFFF; /* White text */
+    background-color: #1976D2; /* Material Blue 700 */
+    border: none;
+    border-radius: 4px;
+    min-height: 38px;
+    font-weight: 500;
+    qproperty-iconAlignment: AlignLeft;
+    text-align: left;
+}
+QPushButton:hover {
+    background-color: #1565C0; /* Material Blue 800 */
+}
+QPushButton:pressed {
+    background-color: #0D47A1; /* Material Blue 900 */
+}
+QPushButton:disabled {
+    background-color: #E0E0E0; /* Grey 300 background */
+    color: #BDBDBD; /* Grey 400 text */
+}
+
+/* Specific Button Types */
+QPushButton#delete_button, QPushButton#undo_button {
+     background-color: #D32F2F; /* Material Red 700 */
+     color: #FFFFFF; /* White text */
+}
+QPushButton#delete_button:hover, QPushButton#undo_button:hover {
+     background-color: #C62828; /* Material Red 800 */
+}
+QPushButton#delete_button:pressed, QPushButton#undo_button:pressed {
+     background-color: #B71C1C; /* Material Red 900 */
+}
+
+QPushButton#check_in_button, QPushButton#save_button, QPushButton#add_button, QPushButton#create_button,
+QPushButton.primary_button {
+    background-color: #388E3C; /* Material Green 700 */
+    color: #FFFFFF; /* White text */
+}
+QPushButton#check_in_button:hover, QPushButton#save_button:hover, QPushButton#add_button:hover, QPushButton#create_button:hover,
+QPushButton.primary_button:hover {
+    background-color: #2E7D32; /* Material Green 800 */
+}
+ QPushButton#check_in_button:pressed, QPushButton#save_button:pressed, QPushButton#add_button:pressed, QPushButton#create_button:pressed,
+ QPushButton.primary_button:pressed {
+    background-color: #1B5E20; /* Material Green 900 */
+}
+
+QPushButton#subscribe_button {
+    background-color: #03A9F4; /* Material Light Blue 500 */
+    color: #FFFFFF; /* White text */
+}
+QPushButton#subscribe_button:hover {
+    background-color: #0288D1; /* Material Light Blue 700 */
+}
+ QPushButton#subscribe_button:pressed {
+    background-color: #01579B; /* Material Light Blue 900 */
+}
+
+QPushButton#unsubscribe_button, QPushButton#cancel_button,
+QPushButton.secondary_button {
+    background-color: #E0E0E0; /* Grey 300 background */
+    color: #424242; /* Grey 800 text */
+}
+QPushButton#unsubscribe_button:hover, QPushButton#cancel_button:hover,
+QPushButton.secondary_button:hover {
+    background-color: #BDBDBD; /* Grey 400 hover */
+    color: #212121; /* Dark Grey text */
+}
+ QPushButton#unsubscribe_button:pressed, QPushButton#cancel_button:pressed,
+ QPushButton.secondary_button:pressed {
+    background-color: #9E9E9E; /* Grey 500 pressed */
+}
+
+/* Link-style buttons (used in Auth) */
+QPushButton#register_button,
+QPushButton#login_button,
+QPushButton#terms_button {
+    background-color: transparent;
+    color: #1976D2; /* Material Blue 700 */
+    font-weight: normal;
+    font-size: 10pt;
+    text-decoration: underline;
+    border: none;
+    padding: 2px;
+    min-height: auto;
+    text-align: center;
+    qproperty-iconAlignment: AlignCenter;
+}
+
+QPushButton#register_button:hover,
+QPushButton#login_button:hover,
+QPushButton#terms_button:hover {
+    color: #0D47A1; /* Material Blue 900 */
+    background-color: transparent;
+    text-decoration: underline;
+}
+
+QPushButton#register_button:pressed,
+QPushButton#login_button:pressed,
+QPushButton#terms_button:pressed {
+    color: #0D47A1; /* Material Blue 900 */
+    background-color: transparent;
+    text-decoration: underline;
+}
+
+/* CheckBox */
+QCheckBox {
+    spacing: 12px;
+    color: #212121; /* Dark Grey text */
+}
+QCheckBox::indicator {
+    width: 20px;
+    height: 20px;
+    border: 1px solid #BDBDBD; /* Grey 400 border */
+    border-radius: 3px; /* Slightly smaller radius */
+    background-color: #FFFFFF; /* White background */
+}
+QCheckBox::indicator:checked {
+    background-color: #1976D2; /* Material Blue 700 */
+    border-color: #1976D2; /* Material Blue 700 */
+     /* Consider adding a checkmark icon */
+     /* image: url(path/to/your/checkmark-white.svg); */
+}
+QCheckBox::indicator:hover {
+    border-color: #757575; /* Grey 600 hover */
+}
+
+/* Progress Bar */
+QProgressBar {
+    border: 1px solid #E0E0E0; /* Grey 300 border */
+    border-radius: 4px;
+    text-align: center;
+    color: #212121; /* Dark Grey text */
+    background-color: #EEEEEE; /* Grey 200 background */
+    min-height: 24px;
+}
+QProgressBar::chunk {
+    background-color: #388E3C; /* Material Green 700 */
+    border-radius: 3px; /* Match indicator radius */
+    margin: 1px;
+}
+
+/* Form Layout Specifics (Auth) */
+QFormLayout {
+    spacing: 25px;
+    vertical-spacing: 18px;
+}
+
+QFormLayout QLabel {
+    color: #424242; /* Grey 800 text */
+    padding-top: 12px;
+}
+
+/* Specific Margins (Auth) */
+/* Keep these handled in layout code if possible */
+

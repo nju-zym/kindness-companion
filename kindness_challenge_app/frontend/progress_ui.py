@@ -3,8 +3,8 @@ from PySide6.QtWidgets import (
     QScrollArea, QFrame, QCalendarWidget, QComboBox, QGridLayout,
     QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy
 )
-from PySide6.QtCore import Qt, Signal, Slot, QDate
-from PySide6.QtGui import QFont, QColor
+from PySide6.QtCore import Qt, Signal, Slot, QDate, QSize
+from PySide6.QtGui import QFont, QColor, QIcon
 
 import datetime
 
@@ -278,7 +278,9 @@ class ProgressWidget(QWidget):
 
             # Action button
             undo_button = QPushButton("撤销")
-            undo_button.setObjectName("undo_button")  # Set object name for styling
+            undo_button.setObjectName("undo_button")
+            undo_button.setIcon(QIcon("kindness_challenge_app/resources/icons/rotate-ccw.svg"))
+            undo_button.setIconSize(QSize(16, 16))
             undo_button.clicked.connect(lambda checked, ci=check_in: self.undo_check_in(ci))
             self.progress_table.setCellWidget(i, 3, undo_button)
 

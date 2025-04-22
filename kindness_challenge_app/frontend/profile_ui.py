@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QFormLayout, QLineEdit, QMessageBox, QGroupBox, QFrame,
     QGridLayout, QProgressBar
 )
-from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtCore import Qt, Signal, Slot, QSize
 from PySide6.QtGui import QFont, QIcon, QPixmap
 
 
@@ -113,6 +113,8 @@ class ProfileWidget(QWidget):
         # Save button
         self.save_button = QPushButton("保存修改")
         self.save_button.setObjectName("save_button")  # Set object name for styling
+        self.save_button.setIcon(QIcon("kindness_challenge_app/resources/icons/save.svg"))
+        self.save_button.setIconSize(QSize(16, 16))
         self.save_button.clicked.connect(self.save_profile)
         profile_layout.addWidget(self.save_button)
 

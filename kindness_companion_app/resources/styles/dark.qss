@@ -1,130 +1,152 @@
-/* Global Stylesheet for Kindness Challenge App - Dark Theme */
+/* Global Stylesheet for Kindness Challenge App - Catppuccin Mocha Theme */
 
-/* Define Color Palette (Dark Theme) */
-/* Primary: Light Blue */
-/* Accent/Highlight: Cyan */
-/* Background: Very Dark Grey */
-/* Surface/Base: Dark Grey */
-/* Text: Light Grey/White */
-/* Error: Red */
-/* Positive: Green */
+/* Catppuccin Mocha Palette */
+/* https://github.com/catppuccin/catppuccin */
+/* Using Mocha variant */
+/* Rosewater: #f5e0dc */
+/* Flamingo: #f2cdcd */
+/* Pink: #f5c2e7 */
+/* Mauve: #cba6f7 */
+/* Red: #f38ba8 */
+/* Maroon: #eba0ac */
+/* Peach: #fab387 */
+/* Yellow: #f9e2af */
+/* Green: #a6e3a1 */
+/* Teal: #94e2d5 */
+/* Sky: #89dceb */
+/* Sapphire: #74c7ec */
+/* Blue: #89b4fa */
+/* Lavender: #b4befe */
+/* Text: #cdd6f4 */
+/* Subtext1: #bac2de */
+/* Subtext0: #a6adc8 */
+/* Overlay2: #9399b2 */
+/* Overlay1: #7f849c */
+/* Overlay0: #6c7086 */
+/* Surface2: #585b70 */
+/* Surface1: #45475a */
+/* Surface0: #313244 */
+/* Base: #1e1e2e */
+/* Mantle: #181825 */
+/* Crust: #11111b */
 
 /* General Widget Styling */
 QWidget {
-    background-color: #121212; /* Very Dark Grey background */
-    color: #E0E0E0; /* Light Grey text */
-    /* font-family relies on QApplication.setFont, base size set there */
-    /* Specific widgets will override font-size below */
+    background-color: #1e1e2e; /* Base */
+    color: #cdd6f4; /* Text */
+    font-family: "Hiragino Sans GB", "STHeiti Light", "Helvetica Neue", Arial, sans-serif; /* Updated font family */
+    font-size: 12pt; /* Base font size - Adjusted */
+    border: none; /* Remove default borders */
 }
 
 /* --- Navigation Sidebar Styles (#nav_widget) --- */
 QWidget#nav_widget {
-    background-color: #212121; /* Dark Grey surface */
-    border-right: 1px solid #424242; /* Grey 800 border */
-    min-width: 180px;
-    max-width: 220px;
+    background-color: #181825; /* Mantle */
+    border-right: 1px solid #313244; /* Surface0 */
+    min-width: 200px; /* Adjusted */
+    max-width: 240px; /* Adjusted */
 }
 
 QWidget#nav_widget QLabel#title_label {
-    font-size: 24pt; /* Increased from 22pt */
+    font-size: 20pt; /* Adjusted size */
     font-weight: bold;
-    color: #42A5F5; /* Material Blue 400 */
-    padding: 20px 10px 15px 10px;
-    margin-bottom: 15px;
-    border-bottom: 1px solid #424242; /* Grey 800 border */
+    color: #cba6f7; /* Mauve */
+    padding: 25px 10px 20px 10px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #313244; /* Surface0 */
     text-align: center;
+    font-family: "Heiti SC", "Hiragino Sans GB", "Helvetica Neue", Arial, sans-serif; /* Updated font family */
 }
 
 QWidget#nav_widget QPushButton {
-    padding: 12px 15px 12px 25px;
-    font-size: 16pt; /* Increased from 14pt */
+    padding: 13px 15px 13px 30px; /* Adjusted padding */
+    font-size: 12pt; /* Adjusted size */
     text-align: left;
-    color: #BDBDBD; /* Grey 400 text */
+    color: #bac2de; /* Subtext1 */
     background-color: transparent;
     border: none;
-    border-radius: 4px;
-    margin: 4px 10px;
-    font-weight: 500;
+    border-radius: 6px; /* Slightly less rounded */
+    margin: 5px 10px; /* Adjusted margin */
+    font-weight: 500; /* Medium weight */
 }
 
 QWidget#nav_widget QPushButton:hover {
-    background-color: #333333; /* Darker Grey hover */
-    color: #81D4FA; /* Material Light Blue 300 */
+    background-color: #313244; /* Surface0 */
+    color: #cba6f7; /* Mauve */
 }
 
 QWidget#nav_widget QPushButton:checked {
-    background-color: #42A5F5; /* Material Blue 400 */
-    color: #121212; /* Very Dark Grey text */
-    font-weight: bold;
+    background-color: #45475a; /* Surface1 */
+    color: #f5e0dc; /* Rosewater */
+    font-weight: bold; /* Make active button bold */
 }
 
 QWidget#nav_widget QPushButton:disabled {
-    color: #616161; /* Grey 700 disabled text */
+    color: #6c7086; /* Overlay0 */
     background-color: transparent;
 }
 
 QWidget#nav_widget QPushButton#logout_button {
-    margin: 25px 10px 15px 10px;
-    background-color: #424242; /* Grey 800 background */
-    color: #E0E0E0; /* Light Grey text */
+    margin: 30px 10px 20px 10px;
+    background-color: #45475a; /* Surface1 */
+    color: #cdd6f4; /* Text */
     text-align: center;
     font-weight: 500;
-    border-radius: 4px;
-    font-size: 16pt; /* Increased from 14pt */
-}
-
-QWidget#nav_widget QPushButton#logout_button:hover {
-    background-color: #616161; /* Grey 700 hover */
-    color: #FFFFFF; /* White text */
+    border-radius: 6px;
+    font-size: 12pt; /* Adjusted size */
 }
 
 /* --- Content Area Styles (QStackedWidget) --- */
 QStackedWidget {
-    background-color: #121212; /* Very Dark Grey background */
-    padding: 25px;
+    background-color: #1e1e2e; /* Base */
+    padding: 25px; /* Adjusted padding */
+    border: none;
 }
 
 /* Default font and color for widgets within the content area */
 QStackedWidget > QWidget {
     background-color: transparent;
+    /* font-size inherits from QWidget */
 }
 
 /* Labels */
 QLabel {
     background-color: transparent;
     padding: 2px;
-    margin-bottom: 6px;
-    color: #E0E0E0; /* Default light text */
-    font-size: 16pt; /* Increased default label size from 14pt */
+    margin-bottom: 6px; /* Adjusted margin */
+    color: #cdd6f4; /* Text */
+    font-size: 12pt; /* Base label size */
 }
-/* Keep Auth labels small */
+/* Auth labels */
 QDialog#auth_dialog QLabel {
-    font-size: 9pt; /* Reduced from 10pt */
-    color: #BDBDBD; /* Grey 400 text */
-    padding-top: 12px; /* Align with input field */
+    font-size: 11pt; /* Adjusted size */
+    color: #bac2de; /* Subtext1 */
+    padding-top: 8px;
 }
 QLabel#error_label {
-    color: #EF5350; /* Material Red 400 */
-    font-size: 12pt; /* Slightly increased error label from 11pt */
+    color: #f38ba8; /* Red */
+    font-size: 11pt; /* Adjusted size */
+    font-weight: 500;
 }
 /* General Title Label Style */
 QLabel.title_label, QLabel#title_label {
-    font-size: 24pt; /* Increased from 22pt */
+    font-size: 22pt; /* Adjusted size */
     font-weight: bold;
-    color: #42A5F5; /* Material Blue 400 */
+    color: #cba6f7; /* Mauve */
     margin-bottom: 20px;
-    border-bottom: 1px solid #424242; /* Grey 800 border */
+    border-bottom: 1px solid #45475a; /* Surface1 */
     padding-bottom: 8px;
+    font-family: "Heiti SC", "Hiragino Sans GB", "Helvetica Neue", Arial, sans-serif; /* Updated font family */
 }
 QLabel#streak_label {
-    color: #66BB6A; /* Material Green 400 */
+    color: #a6e3a1; /* Green */
     font-weight: bold;
-    font-size: 18pt; /* Increased from 16pt */
+    font-size: 14pt; /* Adjusted size */
 }
 /* Subtitle Label Style */
 QLabel.subtitle_label, QLabel#subtitle_label {
-    font-size: 15pt; /* Increased from 13pt */
-    color: #BDBDBD; /* Grey 400 secondary text */
+    font-size: 13pt; /* Adjusted size */
+    color: #a6adc8; /* Subtext0 */
     margin-bottom: 30px;
     text-align: center;
 }
@@ -132,275 +154,274 @@ QLabel.subtitle_label, QLabel#subtitle_label {
 
 /* Group Boxes */
 QGroupBox {
-    background-color: #212121; /* Dark Grey surface */
-    border: 1px solid #424242; /* Grey 800 border */
-    border-radius: 4px;
-    margin-top: 15px;
-    padding: 25px 20px 20px 20px;
-    color: #E0E0E0; /* Light Grey text */
-    font-size: 16pt; /* Increased group box font from 14pt */
+    background-color: #181825; /* Mantle */
+    border: 1px solid #45475a; /* Surface1 */
+    border-radius: 6px;
+    margin-top: 18px; /* Adjusted */
+    padding: 25px 20px 20px 20px; /* Adjusted */
+    color: #cdd6f4; /* Text */
+    font-size: 12pt; /* Match base label */
 }
 QGroupBox::title {
     subcontrol-origin: margin;
     subcontrol-position: top left;
-    padding: 6px 15px;
+    padding: 7px 16px; /* Adjusted */
     margin-left: 20px;
-    color: #E0E0E0; /* Light Grey text */
+    color: #bac2de; /* Subtext1 */
     font-weight: bold;
-    font-size: 17pt; /* Increased group box title from 15pt */
-    background-color: #333333; /* Darker Grey background */
-    border: 1px solid #424242; /* Grey 800 border */
+    font-size: 11pt; /* Slightly smaller title */
+    background-color: #1e1e2e; /* Base */
+    border: 1px solid #45475a; /* Surface1 */
     border-bottom: none;
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
 }
 
 /* Frames (e.g., ChallengeCard) */
 QFrame#challenge_card {
-    background-color: #212121; /* Dark Grey background */
-    border: 1px solid #424242; /* Grey 800 border */
-    border-radius: 4px;
+    background-color: #313244; /* Surface0 */
+    border: 1px solid #45475a; /* Surface1 */
+    border-radius: 8px; /* Slightly more rounded card */
     padding: 20px;
     margin-bottom: 15px;
 }
 QFrame#challenge_card:hover {
-     border-color: #42A5F5; /* Material Blue 400 */
+     border-color: #89b4fa; /* Blue */
 }
 /* Style for title inside challenge card */
 QFrame#challenge_card QLabel#title_label {
-     font-size: 18pt; /* Increased from 16pt */
+     font-size: 16pt; /* Adjusted size */
      font-weight: bold;
-     color: #E0E0E0; /* Light Grey text */
+     color: #cdd6f4; /* Text */
      margin-bottom: 10px;
      border-bottom: none;
      padding-bottom: 0;
+     font-family: "Heiti SC", "Hiragino Sans GB", "Helvetica Neue", Arial, sans-serif; /* Updated font family */
 }
 /* Style for description inside challenge card */
 QFrame#challenge_card QLabel#description_label {
-     font-size: 15pt; /* Increased from 13pt */
-     color: #BDBDBD; /* Grey 400 text */
+     font-size: 12pt; /* Match base label */
+     color: #bac2de; /* Subtext1 */
      margin-bottom: 15px;
 }
 
 
 /* Input Fields */
 QLineEdit, QTextEdit, QComboBox, QTimeEdit, QDateEdit, QSpinBox, QDoubleSpinBox {
-    background-color: #333333; /* Darker Grey background */
-    border: 1px solid #616161; /* Grey 700 border */
-    border-radius: 4px;
-    padding: 2px 22px; /* Further reduced top/bottom, increased left/right padding */
-    color: #E0E0E0; /* Light Grey text */
-    min-height: auto; /* Let padding determine height */
-    font-size: 16pt; /* Increased input font size from 14pt */
+    background-color: #181825; /* Mantle */
+    border: 1px solid #585b70; /* Surface2 */
+    border-radius: 6px;
+    padding: 8px 12px; /* Adjusted padding */
+    color: #cdd6f4; /* Text */
+    min-height: 2.3em; /* Consistent height */
+    font-size: 12pt; /* Match base size */
 }
-/* Specific style for password fields in profile */
-QGroupBox#password_change_group QLineEdit {
-    font-size: 12pt; /* Smaller font for password fields */
-    padding: 4px 10px; /* Reduced padding */
-    min-height: auto;
-}
-/* Keep Auth input fields small */
+/* Auth input fields */
 QDialog#auth_dialog QLineEdit {
-    font-size: 9pt; /* Reduced from 10pt */
-    padding: 3px 8px; /* Adjust padding for smaller font */
-}
-/* Keep Auth placeholders small */
-QDialog#auth_dialog QLineEdit::placeholder {
-    color: #757575; /* Grey 600 placeholder */
-    font-size: 9pt; /* Reduced from 10pt */
-    /* font-style: italic; */ /* Optional: make placeholders italic */
+    font-size: 11pt; /* Adjusted size */
+    padding: 7px 10px; /* Adjusted */
+    min-height: 2.1em; /* Adjusted */
 }
 QLineEdit::placeholder, QTextEdit::placeholder {
-    color: #757575; /* Grey 600 placeholder */
-     /* Default placeholder size will match input field size unless overridden */
+    color: #6c7086; /* Overlay0 */
+    font-size: 12pt; /* Match input size */
+}
+QDialog#auth_dialog QLineEdit::placeholder {
+    color: #6c7086; /* Overlay0 */
+    font-size: 11pt; /* Match auth input size */
 }
 QLineEdit:focus, QTextEdit:focus, QComboBox:focus, QTimeEdit:focus, QDateEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus {
-    border-color: #42A5F5; /* Material Blue 400 */
+    border-color: #cba6f7; /* Mauve */
     outline: 0;
 }
 QComboBox {
-    selection-background-color: #42A5F5; /* Material Blue 400 */
-    selection-color: #121212; /* Very Dark Grey text */
+    /* selection colors handled in general input style */
 }
 QComboBox QAbstractItemView { /* Style dropdown list */
-    background-color: #333333; /* Darker Grey background */
-    border: 1px solid #616161; /* Grey 700 border */
-    color: #E0E0E0; /* Light Grey text */
-    selection-background-color: #42A5F5; /* Material Blue 400 */
-    selection-color: #121212; /* Very Dark Grey text */
-    font-size: 16pt; /* Increased dropdown item size from 14pt */
+    background-color: #181825; /* Mantle */
+    border: 1px solid #585b70; /* Surface2 */
+    color: #cdd6f4; /* Text */
+    selection-background-color: #45475a; /* Surface1 */
+    selection-color: #cdd6f4; /* Text */
+    font-size: 11pt; /* Slightly smaller dropdown items */
+    outline: 0;
+    padding: 4px; /* Add padding to dropdown items */
 }
 QComboBox::drop-down {
-    border-left: 1px solid #616161; /* Grey 700 border */
+    border-left: 1px solid #45475a; /* Surface1 */
     padding-right: 10px;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
 }
 QComboBox::down-arrow {
-     /* Consider using a theme-aware icon or SVG */
-     /* image: url(path/to/your/down-arrow-light.svg); */
+     /* Use a themed icon if available, otherwise rely on default */
+     /* image: url(./resources/icons/catppuccin-chevron-down.svg); */
      width: 14px;
      height: 14px;
 }
 
 /* Tables */
 QTableWidget {
-    background-color: #212121; /* Dark Grey background */
-    color: #E0E0E0; /* Light Grey text */
-    gridline-color: #424242; /* Grey 800 grid lines */
-    alternate-background-color: #333333; /* Darker Grey alternate */
-    border: 1px solid #616161; /* Grey 700 border */
-    border-radius: 4px;
-    selection-background-color: #42A5F5; /* Material Blue 400 selection */
-    selection-color: #121212; /* Very Dark Grey text on selection */
-    font-size: 15pt; /* Increased table content font size from 13pt */
+    background-color: #181825; /* Mantle */
+    color: #cdd6f4; /* Text */
+    gridline-color: #45475a; /* Surface1 */
+    alternate-background-color: #1e1e2e; /* Base */
+    border: 1px solid #45475a; /* Surface1 */
+    border-radius: 6px;
+    selection-background-color: #89b4fa; /* Blue */
+    selection-color: #11111b; /* Crust */
+    font-size: 11pt; /* Slightly smaller table font */
 }
 QHeaderView::section {
-    background-color: #333333; /* Darker Grey header */
-    color: #E0E0E0; /* Light Grey text */
-    padding: 14px 8px; /* Adjusted padding */
+    background-color: #313244; /* Surface0 */
+    color: #cdd6f4; /* Text */
+    padding: 12px 8px; /* Adjusted padding */
     border: none;
-    border-bottom: 1px solid #616161; /* Grey 700 border */
+    border-bottom: 1px solid #585b70; /* Surface2 */
     font-weight: bold;
-    font-size: 16pt; /* Increased header font size from 14pt */
+    font-size: 11pt; /* Match table font */
 }
 QHeaderView::section:horizontal {
-    border-right: 1px solid #424242; /* Grey 800 vertical lines */
+    border-right: 1px solid #45475a; /* Surface1 */
 }
 QHeaderView::section:vertical {
-     border-bottom: 1px solid #424242; /* Grey 800 horizontal lines */
+     border-bottom: 1px solid #585b70; /* Surface2 */
 }
 QTableCornerButton::section {
-     background-color: #333333; /* Darker Grey corner */
+     background-color: #313244; /* Surface0 */
      border: none;
-     border-bottom: 1px solid #616161; /* Grey 700 border */
-     border-right: 1px solid #616161; /* Grey 700 border */
+     border-bottom: 1px solid #585b70; /* Surface2 */
+     border-right: 1px solid #585b70; /* Surface2 */
 }
 
 /* Calendar Widget */
 QCalendarWidget QWidget {
-    alternate-background-color: #333333; /* Darker Grey alternate */
-    font-size: 15pt; /* Increased calendar base font from 13pt */
+    alternate-background-color: #1e1e2e; /* Base */
+    font-size: 11pt; /* Adjusted calendar font */
 }
 QCalendarWidget QToolButton {
-    color: #BDBDBD; /* Grey 400 text */
+    color: #bac2de; /* Subtext1 */
     background-color: transparent;
     border: none;
-    padding: 8px;
-    margin: 3px;
+    padding: 8px; /* Adjusted */
+    margin: 2px;
     border-radius: 4px;
-    font-size: 16pt; /* Increased calendar button font from 14pt */
+    font-size: 11pt; /* Match calendar font */
 }
  QCalendarWidget QToolButton:hover {
-     background-color: #424242; /* Grey 800 hover */
-     color: #81D4FA; /* Material Light Blue 300 */
+     background-color: #313244; /* Surface0 */
+     color: #cba6f7; /* Mauve */
  }
 #qt_calendar_navigationbar {
-     background-color: #333333; /* Darker Grey header */
-     border-bottom: 1px solid #616161; /* Grey 700 border */
+     background-color: #313244; /* Surface0 */
+     border-bottom: 1px solid #585b70; /* Surface2 */
 }
 #qt_calendar_prevmonth, #qt_calendar_nextmonth {
-     qproperty-iconSize: 18px 18px;
+     qproperty-iconSize: 18px 18px; /* Adjusted */
      padding: 6px;
-     /* Consider using light icons */
+     /* Use themed icons if available */
 }
 #qt_calendar_monthbutton, #qt_calendar_yearbutton {
      font-weight: bold;
-     padding: 8px 14px;
-     color: #E0E0E0; /* Light Grey text */
-     font-size: 17pt; /* Increased month/year button font from 15pt */
+     padding: 8px 14px; /* Adjusted */
+     color: #cdd6f4; /* Text */
+     font-size: 12pt; /* Match base size */
 }
 #qt_calendar_calendarview {
-     background-color: #212121; /* Dark Grey background */
-     alternate-background-color: #333333; /* Darker Grey alternate */
-     selection-background-color: #42A5F5; /* Material Blue 400 selection */
-     selection-color: #121212; /* Very Dark Grey text on selection */
+     background-color: #181825; /* Mantle */
+     alternate-background-color: #1e1e2e; /* Base */
+     selection-background-color: #89b4fa; /* Blue */
+     selection-color: #11111b; /* Crust */
+     border-radius: 6px; /* Adjusted */
 }
 /* Highlight today's date */
 #qt_calendar_calendarview::item:selected:!disabled {
-     background-color: #42A5F5; /* Material Blue 400 */
-     color: #121212; /* Very Dark Grey text */
-     border-radius: 4px;
+     background-color: #89b4fa; /* Blue */
+     color: #11111b; /* Crust */
+     border-radius: 4px; /* Adjusted */
 }
 /* Highlight dates with check-ins (using background role) */
 #qt_calendar_calendarview::item[dateTextFormat="true"] { /* Needs to be set via QCalendarWidget TextFormat */
-     background-color: #4CAF50; /* Material Green 500 */
-     color: #121212; /* Very Dark Grey text */
-     border-radius: 4px;
+     background-color: #a6e3a1; /* Green */
+     color: #11111b; /* Crust */
+     font-weight: bold;
+     font-size: 11pt; /* Match calendar font size */
+     border-radius: 4px; /* Adjusted */
 }
 
 
 /* General Button Style */
 QPushButton {
-    padding: 12px 22px 12px 27px; /* Adjusted padding */
-    font-size: 16pt; /* Increased from 14pt */
-    color: #121212; /* Very Dark Grey text */
-    background-color: #42A5F5; /* Material Blue 400 */
+    padding: 10px 20px; /* Adjusted padding */
+    font-size: 12pt; /* Match base size */
+    color: #11111b; /* Crust */
+    background-color: #89b4fa; /* Blue */
     border: none;
-    border-radius: 4px;
-    min-height: 42px; /* Adjusted height */
-    font-weight: 500;
-    text-align: left;
+    border-radius: 6px; /* Adjusted */
+    min-height: 38px; /* Adjusted height */
+    font-weight: 500; /* Medium weight */
+    text-align: center; /* Center align general buttons */
 }
 QPushButton:hover {
-    background-color: #64B5F6; /* Material Blue 300 */
+    background-color: #74c7ec; /* Sapphire */
 }
 QPushButton:pressed {
-    background-color: #90CAF9; /* Material Blue 200 */
+    background-color: #61afef; /* Slightly darker Sapphire/Blue */
 }
 QPushButton:disabled {
-    background-color: #424242; /* Grey 800 background */
-    color: #757575; /* Grey 600 text */
+    background-color: #45475a; /* Surface1 */
+    color: #6c7086; /* Overlay0 */
 }
 
 /* Specific Button Types */
 QPushButton#delete_button, QPushButton#undo_button {
-     background-color: #EF5350; /* Material Red 400 */
-     color: #121212; /* Very Dark Grey text */
+     background-color: #f38ba8; /* Red */
+     color: #11111b; /* Crust */
 }
 QPushButton#delete_button:hover, QPushButton#undo_button:hover {
-     background-color: #E57373; /* Material Red 300 */
+     background-color: #eba0ac; /* Maroon */
 }
 QPushButton#delete_button:pressed, QPushButton#undo_button:pressed {
-     background-color: #FFCDD2; /* Material Red 100 */
+     background-color: #f2cdcd; /* Flamingo */
 }
 
 QPushButton#check_in_button, QPushButton#save_button, QPushButton#add_button, QPushButton#create_button,
 QPushButton.primary_button {
-    background-color: #66BB6A; /* Material Green 400 */
-    color: #121212; /* Very Dark Grey text */
+    background-color: #a6e3a1; /* Green */
+    color: #11111b; /* Crust */
 }
 QPushButton#check_in_button:hover, QPushButton#save_button:hover, QPushButton#add_button:hover, QPushButton#create_button:hover,
 QPushButton.primary_button:hover {
-    background-color: #81C784; /* Material Green 300 */
+    background-color: #94e2d5; /* Teal */
 }
  QPushButton#check_in_button:pressed, QPushButton#save_button:pressed, QPushButton#add_button:pressed, QPushButton#create_button:pressed,
  QPushButton.primary_button:pressed {
-    background-color: #A5D6A7; /* Material Green 200 */
+    background-color: #94e2d5; /* Teal */
 }
 
 QPushButton#subscribe_button {
-    background-color: #29B6F6; /* Material Light Blue 400 */
-    color: #121212; /* Very Dark Grey text */
+    background-color: #cba6f7; /* Mauve */
+    color: #11111b; /* Crust */
 }
 QPushButton#subscribe_button:hover {
-    background-color: #4FC3F7; /* Material Light Blue 300 */
+    background-color: #f5c2e7; /* Pink */
 }
  QPushButton#subscribe_button:pressed {
-    background-color: #81D4FA; /* Material Light Blue 200 */
+    background-color: #f5e0dc; /* Rosewater */
 }
 
 QPushButton#unsubscribe_button, QPushButton#cancel_button,
 QPushButton.secondary_button {
-    background-color: #616161; /* Grey 700 background */
-    color: #E0E0E0; /* Light Grey text */
+    background-color: #45475a; /* Surface1 */
+    color: #cdd6f4; /* Text */
 }
 QPushButton#unsubscribe_button:hover, QPushButton#cancel_button:hover,
 QPushButton.secondary_button:hover {
-    background-color: #757575; /* Grey 600 hover */
-    color: #FFFFFF; /* White text */
+    background-color: #585b70; /* Surface2 */
 }
  QPushButton#unsubscribe_button:pressed, QPushButton#cancel_button:pressed,
  QPushButton.secondary_button:pressed {
-    background-color: #9E9E9E; /* Grey 500 pressed */
+    background-color: #6c7086; /* Overlay0 */
 }
 
 /* Link-style buttons (used in Auth) */
@@ -408,76 +429,102 @@ QPushButton#register_button,
 QPushButton#login_button,
 QPushButton#terms_button {
     background-color: transparent;
-    color: #81D4FA; /* Material Light Blue 300 */
+    color: #89b4fa; /* Blue */
     font-weight: normal;
-    font-size: 12pt; /* Reduced font size from 11pt */
+    font-size: 11pt; /* Slightly smaller */
     text-decoration: underline;
     border: none;
-    padding: 2px 20px; /* Reduced padding */
+    padding: 4px 8px; /* Adjusted */
     min-height: auto;
     text-align: center;
 }
+QPushButton#register_button:hover,
+QPushButton#login_button:hover,
+QPushButton#terms_button:hover {
+    color: #b4befe; /* Lavender */
+    text-decoration: none; /* Remove underline on hover */
+}
+
 
 /* Adjust main login/register buttons if they are NOT link-style */
-/* Example: If the main login button in LoginWidget is a standard button */
 QPushButton#main_login_button, /* Use object name */
 QPushButton#main_register_button { /* Use object name */
-    padding: 6px 40px; /* Reduced top/bottom, adjusted left/right padding */
-    font-size: 15pt; /* Slightly reduced font size from 13pt */
-    min-height: auto; /* Ensure padding controls height */
-    text-align: center; /* Center text for main buttons */
+    padding: 10px 30px; /* Adjusted */
+    font-size: 12pt; /* Match base size */
+    min-height: 40px; /* Adjusted */
+    text-align: center;
+    background-color: #a6e3a1; /* Green for main register? */
+    color: #11111b; /* Crust */
 }
+QPushButton#main_login_button {
+    background-color: #89b4fa; /* Blue for main login */
+    color: #11111b; /* Crust */
+}
+QPushButton#main_login_button:hover {
+    background-color: #74c7ec; /* Sapphire */
+}
+QPushButton#main_register_button:hover {
+     background-color: #94e2d5; /* Teal */
+}
+
 
 /* CheckBox */
 QCheckBox {
-    spacing: 8px; /* Add spacing between indicator and text */
-    color: #E0E0E0; /* Set text color explicitly for dark theme */
-    font-size: 16pt; /* Increased checkbox text size from 14pt */
+    spacing: 10px; /* Adjusted spacing */
+    color: #cdd6f4; /* Text */
+    font-size: 12pt; /* Match base size */
 }
 QCheckBox::indicator {
-    width: 18px; /* Slightly larger indicator */
+    width: 18px; /* Adjusted */
     height: 18px;
-    border: 1px solid #BDBDBD; /* Grey 400 border */
-    border-radius: 3px;
-    background-color: #333333; /* Darker Grey background */
+    border: 1px solid #6c7086; /* Overlay0 */
+    border-radius: 4px; /* Less rounded */
+    background-color: #313244; /* Surface0 */
 }
 QCheckBox::indicator:checked {
-    background-color: #42A5F5; /* Material Blue 400 */
-    border-color: #42A5F5; /* Material Blue 400 */
-     /* Consider adding a checkmark icon suitable for dark bg */
-     /* image: url(path/to/your/checkmark-dark.svg); */
+    background-color: #cba6f7; /* Mauve */
+    border-color: #cba6f7; /* Mauve */
 }
 QCheckBox::indicator:hover {
-    border-color: #BDBDBD; /* Grey 400 hover */
+    border-color: #9399b2; /* Overlay2 */
 }
+QCheckBox::indicator:disabled {
+    background-color: #45475a; /* Surface1 */
+    border-color: #585b70; /* Surface2 */
+}
+
 
 /* Progress Bar */
 QProgressBar {
-    border: 1px solid #616161; /* Grey 700 border */
-    border-radius: 4px;
+    border: none;
+    border-radius: 8px; /* Less rounded */
     text-align: center;
-    color: #E0E0E0; /* Light Grey text */
-    background-color: #424242; /* Grey 800 background */
-    min-height: 28px; /* Adjusted height */
-    font-size: 14pt; /* Increased progress bar text size from 12pt */
+    color: #11111b; /* Crust */
+    background-color: #45475a; /* Surface1 */
+    min-height: 20px; /* Adjusted height */
+    font-size: 10pt; /* Slightly smaller */
+    font-weight: bold;
 }
 QProgressBar::chunk {
-    background-color: #66BB6A; /* Material Green 400 */
-    border-radius: 3px;
-    margin: 1px;
+    background-color: #a6e3a1; /* Green */
+    border-radius: 8px;
+    margin: 0px;
 }
 
 /* Form Layout Specifics (Auth) */
 QFormLayout {
-    spacing: 25px;
-    vertical-spacing: 35px; /* Significantly increased vertical spacing */
+    spacing: 15px; /* Adjusted spacing */
+    vertical-spacing: 12px; /* Adjusted */
 }
 
 QFormLayout QLabel {
-    color: #BDBDBD; /* Grey 400 text */
-    padding-top: 12px;
-    font-size: 9pt; /* Keep auth labels small, reduced from 10pt */
+    color: #bac2de; /* Subtext1 */
+    padding-top: 8px;
+    font-size: 11pt; /* Match auth input label size */
 }
 
 /* Specific Margins (Auth) */
 /* Keep these handled in layout code if possible */
+
+/* Ensure high contrast for accessibility where needed */
+/* e.g., selected items, focused elements */

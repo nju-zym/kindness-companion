@@ -1,9 +1,9 @@
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QStackedWidget, QPushButton, QLabel, QMessageBox, QButtonGroup
+    QStackedWidget, QPushButton, QLabel, QMessageBox, QButtonGroup, QSizePolicy
 )
 from PySide6.QtCore import Qt, Signal, Slot, QSize
-from PySide6.QtGui import QIcon, QFont
+from PySide6.QtGui import QIcon, QFont, QFontMetrics
 
 from .user_auth import LoginWidget, RegisterWidget
 from .challenge_ui import ChallengeListWidget
@@ -69,15 +69,37 @@ class MainWindow(QMainWindow):
         """Set up the navigation sidebar."""
         self.nav_widget = QWidget()
         self.nav_widget.setObjectName("nav_widget")  # Set object name for styling
+        self.nav_widget.setMinimumWidth(200)  # 确保侧边栏有足够宽度
 
         self.nav_layout = QVBoxLayout(self.nav_widget)
         self.nav_layout.setAlignment(Qt.AlignTop)
+        self.nav_layout.setContentsMargins(5, 15, 5, 10)  # 调整侧边栏内边距
+
+        # 创建一个容器控件来包含标题标签
+        self.title_container = QWidget()
+        self.title_container.setMinimumHeight(70)  # 确保容器有足够的高度
+        self.title_layout = QVBoxLayout(self.title_container)
+        self.title_layout.setContentsMargins(0, 0, 0, 0)  # 移除内边距
+        self.title_layout.setAlignment(Qt.AlignCenter)
 
         # App title
         self.title_label = QLabel("善行挑战")
         self.title_label.setObjectName("title_label")  # Set object name
         self.title_label.setAlignment(Qt.AlignCenter)
-        self.nav_layout.addWidget(self.title_label)
+
+        # 设置字体并显式指定大小
+        title_font = QFont("Hiragino Sans GB", 20, QFont.Bold)
+        self.title_label.setFont(title_font)
+        self.title_label.setMinimumHeight(40)  # 固定高度
+        self.title_label.setStyleSheet("padding: 0px; margin: 0px;")  # 覆盖样式表中的内边距
+
+        # 添加标题到容器并显式设置大小策略
+        self.title_layout.addWidget(self.title_label)
+        self.title_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
+        # 添加标题容器到导航布局
+        self.nav_layout.addWidget(self.title_container)
+        self.nav_layout.addSpacing(10)  # 在标题下方添加额外空间
 
         # Navigation buttons
         self.nav_buttons = {}
@@ -86,12 +108,12 @@ class MainWindow(QMainWindow):
 
         # Define navigation items with icons
         nav_items = [
-            ("challenges", "挑战列表", self.show_challenges, "kindness_challenge_app/resources/icons/list.svg"),
-            ("checkin", "每日打卡", self.show_checkin, "kindness_challenge_app/resources/icons/check-square.svg"),
-            ("progress", "我的进度", self.show_progress, "kindness_challenge_app/resources/icons/calendar-check.svg"),
-            ("reminders", "提醒设置", self.show_reminders, "kindness_challenge_app/resources/icons/bell.svg"),
-            ("community", "善意墙", self.show_community, "kindness_challenge_app/resources/icons/users.svg"),
-            ("profile", "个人信息", self.show_profile, "kindness_challenge_app/resources/icons/user.svg"),
+            ("challenges", "挑战列表", self.show_challenges, ":/icons/list.svg"),
+            ("checkin", "每日打卡", self.show_checkin, ":/icons/check-square.svg"),
+            ("progress", "我的进度", self.show_progress, ":/icons/calendar-check.svg"),
+            ("reminders", "提醒设置", self.show_reminders, ":/icons/bell.svg"),
+            ("community", "善意墙", self.show_community, ":/icons/users.svg"),
+            ("profile", "个人信息", self.show_profile, ":/icons/user.svg"),
         ]
 
         icon_size = QSize(18, 18)  # Define a standard icon size
@@ -122,7 +144,7 @@ class MainWindow(QMainWindow):
         # Logout button (initially hidden)
         self.logout_button = QPushButton("退出登录")
         self.logout_button.setObjectName("logout_button")  # Set object name
-        self.logout_button.setIcon(QIcon("kindness_challenge_app/resources/icons/log-out.svg"))  # Add icon
+        self.logout_button.setIcon(QIcon(":/icons/log-out.svg"))  # Add icon
         self.logout_button.setIconSize(icon_size)  # Use standard size
         self.logout_button.clicked.connect(self.logout)
         self.logout_button.setVisible(False)

@@ -68,7 +68,7 @@ class LoginWidget(QWidget):
         # Login button
         self.login_button = QPushButton("登录")
         self.login_button.setObjectName("main_login_button")  # Add object name
-        self.login_button.setIcon(QIcon("kindness_challenge_app/resources/icons/log-in.svg"))  # Add icon
+        self.login_button.setIcon(QIcon(":/icons/log-in.svg"))  # Add icon
         self.login_button.setIconSize(icon_size)
         self.login_button.clicked.connect(self.login)
         self.main_layout.addWidget(self.login_button, 0, Qt.AlignCenter)  # Center button
@@ -213,7 +213,7 @@ class RegisterWidget(QWidget):
         # Register button
         self.register_button = QPushButton("注册")
         self.register_button.setObjectName("main_register_button")  # Add object name
-        self.register_button.setIcon(QIcon("kindness_challenge_app/resources/icons/user-plus.svg"))  # Add icon
+        self.register_button.setIcon(QIcon(":/icons/user-plus.svg"))  # Add icon
         self.register_button.setIconSize(icon_size)
         self.register_button.clicked.connect(self.register)
         self.main_layout.addWidget(self.register_button, 0, Qt.AlignCenter)  # Center button

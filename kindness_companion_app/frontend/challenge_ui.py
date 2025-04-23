@@ -86,7 +86,7 @@ class ChallengeCard(QFrame):
         if self.is_subscribed:
             self.subscribe_button = QPushButton("取消订阅")
             self.subscribe_button.setObjectName("unsubscribe_button")  # Set object name
-            self.subscribe_button.setIcon(QIcon("kindness_challenge_app/resources/icons/x-circle.svg"))  # Add icon
+            self.subscribe_button.setIcon(QIcon(":/icons/x-circle.svg"))  # Add icon
             self.subscribe_button.setIconSize(icon_size)
             self.subscribe_button.clicked.connect(
                 lambda: self.unsubscribe_clicked.emit(self.challenge["id"])
@@ -95,7 +95,7 @@ class ChallengeCard(QFrame):
             # Check-in button
             self.check_in_button = QPushButton("今日打卡")
             self.check_in_button.setObjectName("check_in_button")  # Set object name
-            self.check_in_button.setIcon(QIcon("kindness_challenge_app/resources/icons/check-square.svg"))  # Add icon
+            self.check_in_button.setIcon(QIcon(":/icons/check-square.svg"))  # Add icon
             self.check_in_button.setIconSize(icon_size)
             self.check_in_button.clicked.connect(
                 lambda: self.check_in_clicked.emit(self.challenge["id"])
@@ -104,7 +104,7 @@ class ChallengeCard(QFrame):
         else:
             self.subscribe_button = QPushButton("订阅挑战")
             self.subscribe_button.setObjectName("subscribe_button")  # Set object name
-            self.subscribe_button.setIcon(QIcon("kindness_challenge_app/resources/icons/plus-circle.svg"))  # Add icon
+            self.subscribe_button.setIcon(QIcon(":/icons/plus-circle.svg"))  # Add icon
             self.subscribe_button.setIconSize(icon_size)
             self.subscribe_button.clicked.connect(
                 lambda: self.subscribe_clicked.emit(self.challenge["id"])

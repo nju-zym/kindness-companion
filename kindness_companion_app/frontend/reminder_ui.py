@@ -100,7 +100,7 @@ class ReminderWidget(QWidget):
         # Create button
         self.create_button = QPushButton("创建提醒")
         self.create_button.setObjectName("add_button")  # Use 'add_button' style
-        self.create_button.setIcon(QIcon("kindness_challenge_app/resources/icons/plus.svg"))
+        self.create_button.setIcon(QIcon(":/icons/plus.svg"))
         self.create_button.setIconSize(QSize(16, 16))
         self.create_button.clicked.connect(self.create_reminder)
         form_layout.addRow("", self.create_button)
@@ -196,7 +196,7 @@ class ReminderWidget(QWidget):
             # Action button
             delete_button = QPushButton("删除")
             delete_button.setObjectName("delete_button")  # Set object name for styling
-            delete_button.setIcon(QIcon("kindness_challenge_app/resources/icons/trash-2.svg"))
+            delete_button.setIcon(QIcon(":/icons/trash-2.svg"))
             delete_button.setIconSize(QSize(16, 16))
             delete_button.clicked.connect(
                 lambda checked, r=reminder: self.delete_reminder(r["id"])

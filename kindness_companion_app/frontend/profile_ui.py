@@ -1,10 +1,12 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QFormLayout, QLineEdit, QMessageBox, QGroupBox, QFrame,
-    QGridLayout, QProgressBar
+    QGridLayout, QProgressBar, QSizePolicy
 )
 from PySide6.QtCore import Qt, Signal, Slot, QSize
 from PySide6.QtGui import QFont, QIcon, QPixmap
+
+from .password_dialog import PasswordDialog
 
 
 class ProfileWidget(QWidget):
@@ -66,12 +68,14 @@ class ProfileWidget(QWidget):
         self.profile_group.setMaximumWidth(400)
 
         profile_layout = QVBoxLayout(self.profile_group)
+        profile_layout.setContentsMargins(10, 15, 10, 15)  # 调整内边距
 
         # User info layout
         info_layout = QFormLayout()
         info_layout.setLabelAlignment(Qt.AlignRight)
         info_layout.setFormAlignment(Qt.AlignLeft)
         info_layout.setSpacing(15)
+        info_layout.setContentsMargins(5, 5, 5, 5)  # 减小内边距
 
         # Username
         self.username_label = QLabel()
@@ -79,45 +83,26 @@ class ProfileWidget(QWidget):
 
         profile_layout.addLayout(info_layout)
 
-        profile_layout.addSpacing(20)
+        profile_layout.addSpacing(25)  # 增加间距
 
-        # Password change group
-        password_group = QGroupBox("修改密码")
-        password_group.setObjectName("password_change_group")  # Add object name
-        password_layout = QFormLayout(password_group)
-        password_layout.setLabelAlignment(Qt.AlignRight)
-        password_layout.setFormAlignment(Qt.AlignLeft)
-        password_layout.setSpacing(15)
+        # 用简单的按钮替换原有的密码修改表单
+        self.change_password_button = QPushButton("修改密码")
+        self.change_password_button.setIcon(QIcon(":/icons/lock.svg"))
+        self.change_password_button.setIconSize(QSize(16, 16))
+        self.change_password_button.setMinimumHeight(40)
+        self.change_password_button.clicked.connect(self.show_password_dialog)
+        profile_layout.addWidget(self.change_password_button)
 
-        # Current password
-        self.current_password_edit = QLineEdit()
-        self.current_password_edit.setEchoMode(QLineEdit.Password)
-        self.current_password_edit.setPlaceholderText("请输入当前密码")
-        password_layout.addRow("当前密码:", self.current_password_edit)
+        profile_layout.addStretch(1)  # 添加弹性空间
 
-        # New password
-        self.new_password_edit = QLineEdit()
-        self.new_password_edit.setEchoMode(QLineEdit.Password)
-        self.new_password_edit.setPlaceholderText("请输入新密码")
-        password_layout.addRow("新密码:", self.new_password_edit)
-
-        # Confirm new password
-        self.confirm_password_edit = QLineEdit()
-        self.confirm_password_edit.setEchoMode(QLineEdit.Password)
-        self.confirm_password_edit.setPlaceholderText("请再次输入新密码")
-        password_layout.addRow("确认新密码:", self.confirm_password_edit)
-
-        profile_layout.addWidget(password_group)
-
-        profile_layout.addSpacing(20)
-
-        # Save button
-        self.save_button = QPushButton("保存修改")
-        self.save_button.setObjectName("save_button")  # Set object name for styling
-        self.save_button.setIcon(QIcon("kindness_challenge_app/resources/icons/save.svg"))
-        self.save_button.setIconSize(QSize(16, 16))
-        self.save_button.clicked.connect(self.save_profile)
-        profile_layout.addWidget(self.save_button)
+        # Logout button
+        self.logout_button = QPushButton("退出登录")
+        self.logout_button.setObjectName("logout_button")  # Set object name for styling
+        self.logout_button.setIcon(QIcon(":/icons/log-out.svg"))
+        self.logout_button.setIconSize(QSize(16, 16))
+        self.logout_button.setMinimumHeight(40)
+        self.logout_button.clicked.connect(self.logout)
+        profile_layout.addWidget(self.logout_button)
 
     def setup_stats(self):
         """Set up the stats and achievements section."""
@@ -231,21 +216,11 @@ class ProfileWidget(QWidget):
             # Update profile info
             self.username_label.setText(user["username"])
 
-            # Clear password fields
-            self.current_password_edit.clear()
-            self.new_password_edit.clear()
-            self.confirm_password_edit.clear()
-
             # Load stats
             self.load_stats()
         else:
             # Clear profile info
             self.username_label.setText("")
-
-            # Clear password fields
-            self.current_password_edit.clear()
-            self.new_password_edit.clear()
-            self.confirm_password_edit.clear()
 
             # Reset stats
             self.reset_stats()
@@ -298,88 +273,24 @@ class ProfileWidget(QWidget):
         self.explorer_progress.setValue(0)
         self.master_progress.setValue(0)
 
-    def save_profile(self):
-        """Save profile changes."""
+    def show_password_dialog(self):
+        """Show the password change dialog."""
         if not self.current_user:
             return
 
-        # Get input values
-        current_password = self.current_password_edit.text()
-        new_password = self.new_password_edit.text()
-        confirm_password = self.confirm_password_edit.text()
+        dialog = PasswordDialog(self.user_manager, self.current_user, self)
+        dialog.password_changed.connect(self.update_user_info)
+        dialog.exec()
 
-        # Check if password change is requested
-        if current_password or new_password or confirm_password:
-            # Validate password change
-            if not current_password:
-                QMessageBox.warning(
-                    self,
-                    "保存失败",
-                    "请输入当前密码"
-                )
-                return
+    def update_user_info(self, user_info):
+        """
+        Update user information in the application.
 
-            if not new_password:
-                QMessageBox.warning(
-                    self,
-                    "保存失败",
-                    "请输入新密码"
-                )
-                return
-
-            if new_password != confirm_password:
-                QMessageBox.warning(
-                    self,
-                    "保存失败",
-                    "两次输入的新密码不一致"
-                )
-                return
-
-            # Verify current password
-            user = self.user_manager.login(
-                self.current_user["username"],
-                current_password
-            )
-
-            if not user:
-                QMessageBox.warning(
-                    self,
-                    "保存失败",
-                    "当前密码不正确"
-                )
-                return
-
-            # Update profile with new password
-            success = self.user_manager.update_profile(
-                self.current_user["id"],
-                new_password
-            )
-        else:
-            QMessageBox.information(
-                self,
-                "无更改",
-                "未检测到信息更改。"
-            )
-            return  # No changes to save if only email was potentially changed
-
-        if success:
-            # Clear password fields
-            self.current_password_edit.clear()
-            self.new_password_edit.clear()
-            self.confirm_password_edit.clear()
-
-            QMessageBox.information(self, "成功", "个人信息已更新！")
-            # Emit the signal with updated user info
-            updated_user = self.user_manager.get_user_by_id(self.current_user["id"])
-            if updated_user:
-                self.current_user = updated_user  # Update internal user state
-                self.user_updated.emit(self.current_user)  # Emit signal
-        else:
-            QMessageBox.warning(
-                self,
-                "保存失败",
-                "保存个人信息失败，请稍后重试"
-            )
+        Args:
+            user_info (dict): Updated user information
+        """
+        self.current_user = user_info
+        self.user_updated.emit(user_info)
 
     def logout(self):
         """Log out the current user."""
@@ -392,6 +303,5 @@ class ProfileWidget(QWidget):
         )
         if reply == QMessageBox.Yes:
             self.current_user = None
-            self.clear_profile()
             self.reset_stats()
             self.user_logged_out.emit()  # Emit signal

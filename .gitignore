@@ -38,3 +38,20 @@ Thumbs.db
 # Application specific
 *.db
 *.log
+# 忽略 Python 缓存文件
+__pycache__/
+*.pyc
+
+# 忽略那个可能生成的大型 Python 文件
+# 如果 resources_rc.py 是生成文件，请添加以下行：
+kindness_companion_app/resources_rc.py
+
+# 将所有的 .ttc 字体文件交给 Git LFS 管理
+*.ttc filter=lfs diff=lfs merge=lfs -text
+
+# 可能包含大量小文件或外部库
+kindness_companion_app/resources/feather-4.29.0/
+# 如果 icons 文件夹下有很多不常修改且数量巨大的图标，可以考虑忽略整个文件夹
+# kindness_companion_app/resources/icons/
+# 或者只忽略 svg 文件（如果只有少量其他文件）
+# *.svg

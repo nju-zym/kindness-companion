@@ -1,2 +1,10 @@
+# 将所有的 .ttc 字体文件交给 Git LFS 管理
+*.ttc filter=lfs diff=lfs merge=lfs -text
+
+# 如果 kindness_companion_app/resources_rc.py 不是生成文件且需要 LFS 管理
+# （这种情况非常罕见，请再次确认它是否为生成文件，如果是，应添加到 .gitignore）
+# kindness_companion_app/resources_rc.py filter=lfs diff=lfs merge=lfs -text
+# 如果还有其他确定需要用 LFS 管理的大文件类型，也在这里添加规则
+# *.大型文件扩展名 filter=lfs diff=lfs merge=lfs -text
 *.bin filter=lfs diff=lfs merge=lfs -text
 kindness_companion_app/resources/resources_rc.py filter=lfs diff=lfs merge=lfs -text

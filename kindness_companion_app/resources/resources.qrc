@@ -1,0 +1,28 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource prefix="/">
+    <file>styles/main.qss</file>
+    <file>styles/dark.qss</file>
+    <!-- Correctly list font files under the 'fonts' alias -->
+    <file alias="fonts/Hiragino Sans GB.ttc">fonts/Hiragino Sans GB.ttc</file>
+    <file alias="fonts/Songti.ttc">fonts/Songti.ttc</file>
+    <file alias="fonts/STHeiti Light.ttc">fonts/STHeiti Light.ttc</file>
+    <file alias="fonts/STHeiti Medium.ttc">fonts/STHeiti Medium.ttc</file>
+    <file>icons/app_icon.png</file>
+    <file>icons/bell.svg</file>
+    <file>icons/calendar-check.svg</file>
+    <file>icons/check-square.svg</file>
+    <!-- 检查此图标是否存在，如果不存在需要创建或修改引用 -->
+    <!-- <file>icons/check-white.svg</file> -->
+    <file>icons/chevron-down.svg</file>
+    <file>icons/list.svg</file>
+    <file>icons/log-in.svg</file>
+    <file>icons/log-out.svg</file>
+    <file>icons/plus-circle.svg</file>
+    <file>icons/plus.svg</file>
+    <file>icons/save.svg</file>
+    <file>icons/user-plus.svg</file>
+    <file>icons/user.svg</file>
+    <file>icons/users.svg</file>
+    <file>icons/x-circle.svg</file>
+</qresource>
+</RCC>

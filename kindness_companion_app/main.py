@@ -162,12 +162,13 @@ class ThemeManager:
         return False
 
     def apply_theme(self):
-        """应用当前主题"""
-        style_file_name = "main.qss" if self.current_theme == "light" else "dark.qss"
-        # Use absolute path based on the script's location
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        style_file_path = os.path.join(script_dir, 'resources', 'styles', style_file_name)
-        self.logger.info(f"Attempting to load stylesheet from: {style_file_path}") # Log the absolute path
+        """应用当前主题，使用莫兰迪色系"""
+        # Determine the correct Morandi theme file based on the detected theme
+        style_file_name = "morandi_light.qss" if self.current_theme == "light" else "morandi_dark.qss"
+
+        # Use the resource path prefix for loading QSS files
+        style_file_path = f":/styles/{style_file_name}"
+        self.logger.info(f"Attempting to load stylesheet from resource path: {style_file_path}")
 
         try:
             style_file = QFile(style_file_path)
@@ -175,9 +176,24 @@ class ThemeManager:
                 stream = QTextStream(style_file)
                 self.app.setStyleSheet(stream.readAll())
                 style_file.close()
-                self.logger.info(f"已应用{self.current_theme}主题，样式表来源: {style_file_path}")
+                self.logger.info(f"已应用莫兰迪 {self.current_theme} 主题，样式表来源: {style_file_path}")
             else:
-                self.logger.warning(f"无法打开样式表文件: {style_file_path}. Error: {style_file.errorString()}") # Log error string
+                # Log error if loading from resources fails
+                self.logger.warning(f"无法从资源打开样式表文件: {style_file_path}. Error: {style_file.errorString()}")
+
+                # Fallback to direct file path (useful during development if resources aren't updated)
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                fallback_style_path = os.path.join(script_dir, 'resources', 'styles', style_file_name)
+                self.logger.info(f"Attempting fallback load from direct path: {fallback_style_path}")
+                style_file_fallback = QFile(fallback_style_path)
+                if style_file_fallback.open(QFile.ReadOnly | QFile.Text):
+                     stream_fallback = QTextStream(style_file_fallback)
+                     self.app.setStyleSheet(stream_fallback.readAll())
+                     style_file_fallback.close()
+                     self.logger.info(f"已通过后备路径应用莫兰迪 {self.current_theme} 主题: {fallback_style_path}")
+                else:
+                     self.logger.error(f"无法通过后备路径打开样式表文件: {fallback_style_path}. Error: {style_file_fallback.errorString()}")
+
         except Exception as e:
             self.logger.warning(f"加载样式表时出错: {e}")
 
@@ -185,7 +201,7 @@ class ThemeManager:
         """当系统调色板变化时调用此方法"""
         self.logger.info("检测到系统主题变化，正在更新应用主题...")
         self.detect_system_theme()
-        self.apply_theme()
+        self.apply_theme() # Re-apply the theme (will pick the correct Morandi style)
 
 
 def main():

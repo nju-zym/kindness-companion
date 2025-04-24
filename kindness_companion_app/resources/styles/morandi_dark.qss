@@ -1,0 +1,229 @@
+/* Kindness Companion - Morandi Dark Theme (Blue Tone - Enriched) */
+
+QWidget {
+    background-color: #343A40; /* Dark Slate Gray/Blue */
+    color: #CED4DA; /* Light Grayish Blue */
+    font-family: "Hiragino Sans GB", "STHeiti Light", "Microsoft YaHei", sans-serif;
+    font-size: 16pt;
+    border: none;
+}
+
+QMainWindow, QStackedWidget {
+    background-color: #343A40;
+}
+
+/* General Buttons */
+QPushButton {
+    background-color: #6A8D92; /* Muted Teal Blue */
+    color: #FFFFFF; /* White text */
+    border: 1px solid #5A7D82; /* Slightly darker teal blue */
+    padding: 8px 16px;
+    border-radius: 5px;
+    min-height: 28px;
+}
+
+QPushButton:hover {
+    background-color: #7A9DA2; /* Lighter teal blue */
+    border: 1px solid #6A8D92;
+}
+
+QPushButton:pressed {
+    background-color: #5A7D82; /* Darker teal blue */
+}
+
+QPushButton:disabled {
+    background-color: #556068; /* Darker Grayish Blue */
+    color: #8A9197; /* Medium Grey text */
+    border-color: #4A555D;
+}
+
+/* Primary Buttons */
+QPushButton#primaryButton {
+    background-color: #5F7A7D; /* Slightly different Muted Blue */
+}
+QPushButton#primaryButton:hover {
+    background-color: #6F8A8D;
+}
+QPushButton#primaryButton:pressed {
+    background-color: #4F6A6D;
+}
+
+/* Secondary Buttons (New Accent) */
+QPushButton#secondaryButton {
+    background-color: #B59469; /* Muted Ochre/Gold */
+    color: #FFFFFF;
+    border: 1px solid #A58459;
+}
+QPushButton#secondaryButton:hover {
+    background-color: #C5A479;
+    border: 1px solid #B59469;
+}
+QPushButton#secondaryButton:pressed {
+    background-color: #A58459;
+}
+
+/* Input Fields */
+QLineEdit, QTextEdit, QPlainTextEdit {
+    background-color: #495057; /* Grayish Blue */
+    color: #CED4DA;
+    border: 1px solid #556068; /* Darker Grayish Blue border */
+    padding: 6px;
+    border-radius: 3px;
+}
+
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
+    border: 1px solid #B59469; /* Muted Ochre/Gold border on focus */
+}
+
+/* Labels */
+QLabel {
+    color: #CED4DA;
+    background-color: transparent;
+}
+
+QLabel#titleLabel {
+    font-size: 20pt;
+    font-weight: bold;
+    color: #E0E7EC; /* Lighter Grayish Blue for titles */
+}
+
+QLabel#errorLabel {
+    color: #D48C97; /* Keep Muted Pink/Red for errors */
+}
+
+QLabel#infoLabel { /* Example for informational text */
+    color: #C5A479; /* Lighter Ochre/Gold for info text */
+}
+
+/* List Views / Tree Views */
+QListView, QTreeView, QTableView {
+    background-color: #495057; /* Grayish Blue */
+    color: #CED4DA;
+    border: 1px solid #556068;
+    alternate-background-color: #40464C; /* Slightly darker Grayish Blue */
+}
+
+QListView::item:selected, QTreeView::item:selected, QTableView::item:selected {
+    background-color: #6C757D; /* Muted Grey-Blue for selection */
+    color: #FFFFFF; /* White text on selection */
+}
+
+QHeaderView::section {
+    background-color: #556068; /* Darker Grayish Blue */
+    color: #CED4DA;
+    padding: 4px;
+    border: 1px solid #4A555D;
+}
+
+/* Scroll Bars */
+QScrollBar:vertical {
+    border: 1px solid #4A555D;
+    background: #40464C; /* Slightly darker Grayish Blue */
+    width: 12px;
+    margin: 0px 0px 0px 0px;
+}
+QScrollBar::handle:vertical {
+    background: #7A9DA2; /* Lighter Teal Blue handle */
+    min-height: 20px;
+    border-radius: 6px;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+    background: none;
+}
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+QScrollBar:horizontal {
+    border: 1px solid #4A555D;
+    background: #40464C;
+    height: 12px;
+    margin: 0px 0px 0px 0px;
+}
+QScrollBar::handle:horizontal {
+    background: #7A9DA2; /* Lighter Teal Blue handle */
+    min-width: 20px;
+    border-radius: 6px;
+}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0px;
+    background: none;
+}
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+    background: none;
+}
+
+
+/* Checkboxes and Radio Buttons */
+QCheckBox::indicator, QRadioButton::indicator {
+    border: 1px solid #8A9197; /* Medium Grey border */
+    background-color: #495057; /* Grayish Blue */
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+}
+QCheckBox::indicator:checked, QRadioButton::indicator:checked {
+    background-color: #6A8D92; /* Muted Teal Blue when checked (Primary color) */
+    border-color: #5A7D82;
+    /* image: url(:/icons/checkmark_dark.svg); */
+}
+QRadioButton::indicator {
+    border-radius: 9px;
+}
+QRadioButton::indicator:checked {
+     /* image: url(:/icons/radio_checked_dark.svg); */
+}
+
+/* Progress Bar */
+QProgressBar {
+    border: 1px solid #556068;
+    border-radius: 5px;
+    text-align: center;
+    background-color: #495057; /* Grayish Blue */
+    color: #CED4DA;
+}
+
+QProgressBar::chunk {
+    background-color: #6A8D92; /* Muted Teal Blue progress (Primary color) */
+    border-radius: 5px;
+}
+
+/* Tab Widget */
+QTabWidget::pane {
+    border-top: 1px solid #7A6449; /* Subtle Dark Ochre border */
+    background: #343A40;
+}
+
+QTabBar::tab {
+    background: #495057; /* Grayish Blue */
+    border: 1px solid #556068;
+    border-bottom: none;
+    padding: 8px 16px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    color: #AAB1B8; /* Muted grayish blue */
+}
+
+QTabBar::tab:selected {
+    background: #343A40;
+    border-bottom: 1px solid #343A40;
+    color: #CED4DA;
+    margin-bottom: -1px;
+}
+
+QTabBar::tab:hover:!selected {
+    background: #5A636B; /* Slightly lighter Grayish Blue on hover */
+}
+
+/* Tooltips */
+QToolTip {
+    background-color: #CED4DA; /* Light Grayish Blue */
+    color: #343A40; /* Dark text */
+    border: 1px solid #AAB1B8;
+    padding: 4px;
+    border-radius: 3px;
+    opacity: 230;
+}
+
+/* ... existing custom styles ... */

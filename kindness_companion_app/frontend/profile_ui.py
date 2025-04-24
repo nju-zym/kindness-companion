@@ -6,6 +6,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer
 from PySide6.QtGui import QFont, QIcon, QPixmap
 
+# Import the custom message box
+from .widgets.animated_message_box import AnimatedMessageBox
 from .password_dialog import PasswordDialog
 
 
@@ -294,7 +296,8 @@ class ProfileWidget(QWidget):
 
     def logout(self):
         """Log out the current user."""
-        reply = QMessageBox.question(
+        # Ask for confirmation using AnimatedMessageBox
+        reply = AnimatedMessageBox.showQuestion( # Use AnimatedMessageBox.showQuestion
             self,
             "退出登录",
             "确定要退出登录吗？",

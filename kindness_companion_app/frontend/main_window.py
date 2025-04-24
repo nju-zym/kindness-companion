@@ -1,11 +1,13 @@
-import logging # Add logging import
+import logging
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QStackedWidget, QPushButton, QLabel, QMessageBox, QButtonGroup, QSizePolicy
 )
-# QTimer might not be needed here anymore, but keep it for now
 from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer
 from PySide6.QtGui import QIcon, QFont, QFontMetrics
+
+# Import the custom message box
+from .widgets.animated_message_box import AnimatedMessageBox
 
 from .user_auth import LoginWidget, RegisterWidget
 from .challenge_ui import ChallengeListWidget
@@ -222,20 +224,14 @@ class MainWindow(QMainWindow):
              self.nav_buttons["challenges"].setChecked(True)
              self.update_button_style(self.nav_buttons["challenges"])
 
-        # Show a non-modal welcome message
-        # Create an instance of QMessageBox
-        welcome_msg = QMessageBox(self) # Set parent to main window
+        # Show a non-modal animated welcome message
+        welcome_msg = AnimatedMessageBox(self) # Use AnimatedMessageBox
         welcome_msg.setWindowTitle("登录成功")
         welcome_msg.setText(f"欢迎回来，{user['username']}！\n准备好今天的善行挑战了吗？")
         welcome_msg.setIcon(QMessageBox.Information)
-        # Make it non-modal
-        welcome_msg.setWindowModality(Qt.NonModal)
-        # Ensure it's deleted when closed
-        welcome_msg.setAttribute(Qt.WA_DeleteOnClose)
-        # Show the message box (does not block)
-        welcome_msg.show()
-        logging.info("Non-modal welcome message shown.")
-
+        # Use the custom method for non-modal display
+        welcome_msg.showNonModal()
+        logging.info("Non-modal animated welcome message shown.")
 
     @Slot(dict)
     def on_register_successful(self, user):
@@ -245,15 +241,14 @@ class MainWindow(QMainWindow):
         Args:
             user (dict): User information
         """
-        # Show login page
         self.show_login()
 
-        # Show success message
-        QMessageBox.information(
-            self,
-            "注册成功",
-            f"欢迎加入善行挑战，{user['username']}！\n请使用您的新账号登录。"
-        )
+        # Show success message non-modally using AnimatedMessageBox
+        reg_success_msg = AnimatedMessageBox(self) # Use AnimatedMessageBox
+        reg_success_msg.setWindowTitle("注册成功")
+        reg_success_msg.setText(f"欢迎加入善行挑战，{user['username']}！\n请使用您的新账号登录。")
+        reg_success_msg.setIcon(QMessageBox.Information)
+        reg_success_msg.showNonModal() # Use custom non-modal method
 
     def logout(self):
         """Log out the current user."""
@@ -315,16 +310,16 @@ class MainWindow(QMainWindow):
 
     def show_reminder(self, reminder):
         """
-        Show a reminder notification.
+        Show a reminder notification non-modally using AnimatedMessageBox.
 
         Args:
             reminder (dict): Reminder information
         """
-        QMessageBox.information(
-            self,
-            "善行提醒",
-            f"别忘了今天的善行挑战：\n{reminder['challenge_title']}"
-        )
+        reminder_msg = AnimatedMessageBox(self) # Use AnimatedMessageBox
+        reminder_msg.setWindowTitle("善行提醒")
+        reminder_msg.setText(f"别忘了今天的善行挑战：\n{reminder['challenge_title']}")
+        reminder_msg.setIcon(QMessageBox.Information)
+        reminder_msg.showNonModal() # Use custom non-modal method
 
     def update_button_style(self, clicked_button=None):
         """Updates the style of navigation buttons based on the checked state."""

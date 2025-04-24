@@ -1,11 +1,14 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QFrame, QCalendarWidget, QComboBox, QGridLayout,  # Added QGridLayout
-    QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QMessageBox,
-    QGroupBox  # Added QGroupBox for structure
+    QScrollArea, QFrame, QCalendarWidget, QComboBox, QGridLayout,
+    QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QMessageBox, # Keep QMessageBox for Icon enum
+    QGroupBox
 )
 from PySide6.QtCore import Qt, Signal, Slot, QDate, QSize
 from PySide6.QtGui import QFont, QColor, QIcon, QTextCharFormat, QBrush
+
+# Import the custom message box
+from .widgets.animated_message_box import AnimatedMessageBox
 
 import datetime
 
@@ -367,11 +370,11 @@ class ProgressWidget(QWidget):
         if not self.current_user:
             return
 
-        # Ask for confirmation
+        # Ask for confirmation using AnimatedMessageBox
         challenge = self.challenge_manager.get_challenge_by_id(check_in["challenge_id"])
         challenge_title = challenge["title"] if challenge else "未知挑战"
 
-        reply = QMessageBox.question(
+        reply = AnimatedMessageBox.showQuestion( # Use AnimatedMessageBox.showQuestion
             self,
             "撤销打卡",
             f"确定要撤销 {check_in['check_in_date']} 的 {challenge_title} 打卡记录吗？\n"

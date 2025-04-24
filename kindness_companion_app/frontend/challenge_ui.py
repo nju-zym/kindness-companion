@@ -3,8 +3,12 @@ from PySide6.QtWidgets import (
     QScrollArea, QFrame, QComboBox, QMessageBox, QGridLayout,
     QSizePolicy
 )
-from PySide6.QtCore import Qt, Signal, Slot, QSize
+from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer
 from PySide6.QtGui import QFont, QIcon
+import datetime
+
+# Import the custom message box
+from .widgets.animated_message_box import AnimatedMessageBox
 
 
 class ChallengeCard(QFrame):
@@ -353,14 +357,13 @@ class ChallengeListWidget(QWidget):
             # Update the challenge card
             self.load_challenges()  # Reload all challenges for simplicity
 
-            # Show success message
+            # Show success message non-modally using AnimatedMessageBox
             challenge = self.challenge_manager.get_challenge_by_id(challenge_id)
-            QMessageBox.information(
-                self,
-                "订阅成功",
-                f"您已成功订阅{challenge['title']}挑战！\n"
-                f"记得每天完成挑战并打卡哦。"
-            )
+            subscribe_success_msg = AnimatedMessageBox(self) # Use AnimatedMessageBox
+            subscribe_success_msg.setWindowTitle("订阅成功")
+            subscribe_success_msg.setText(f"您已成功订阅{challenge['title']}挑战！\n记得每天完成挑战并打卡哦。")
+            subscribe_success_msg.setIcon(QMessageBox.Information)
+            subscribe_success_msg.showNonModal() # Use custom non-modal method
 
     def unsubscribe_from_challenge(self, challenge_id):
         """
@@ -372,9 +375,9 @@ class ChallengeListWidget(QWidget):
         if not self.current_user:
             return
 
-        # Ask for confirmation
+        # Ask for confirmation using AnimatedMessageBox
         challenge = self.challenge_manager.get_challenge_by_id(challenge_id)
-        reply = QMessageBox.question(
+        reply = AnimatedMessageBox.showQuestion( # Use AnimatedMessageBox.showQuestion
             self,
             "取消订阅",
             f"确定要取消订阅{challenge['title']}挑战吗？\n"
@@ -403,24 +406,23 @@ class ChallengeListWidget(QWidget):
             return
 
         # Check if already checked in today
-        import datetime
         today = datetime.date.today().isoformat()
         check_ins = self.progress_tracker.get_check_ins(
             self.current_user["id"], challenge_id, today, today
         )
 
         if check_ins:
-            QMessageBox.information(
-                self,
-                "已打卡",
-                "您今天已经完成了这个挑战的打卡！\n"
-                "明天再来继续保持吧。"
-            )
+            # Show already checked-in message non-modally using AnimatedMessageBox
+            already_checked_msg = AnimatedMessageBox(self) # Use AnimatedMessageBox
+            already_checked_msg.setWindowTitle("已打卡")
+            already_checked_msg.setText("您今天已经完成了这个挑战的打卡！\n明天再来继续保持吧。")
+            already_checked_msg.setIcon(QMessageBox.Information)
+            already_checked_msg.showNonModal() # Use custom non-modal method
             return
 
-        # Ask for confirmation
+        # Ask for confirmation using AnimatedMessageBox
         challenge = self.challenge_manager.get_challenge_by_id(challenge_id)
-        reply = QMessageBox.question(
+        reply = AnimatedMessageBox.showQuestion( # Use AnimatedMessageBox.showQuestion
             self,
             "打卡确认",
             f"确认您今天已完成{challenge['title']}挑战吗？",
@@ -429,6 +431,7 @@ class ChallengeListWidget(QWidget):
         )
 
         if reply == QMessageBox.Yes:
+            # Perform check-in and show success message (potentially delayed)
             success = self.progress_tracker.check_in(
                 self.current_user["id"], challenge_id
             )
@@ -439,13 +442,12 @@ class ChallengeListWidget(QWidget):
                     self.current_user["id"], challenge_id
                 )
 
-                # Show success message
-                QMessageBox.information(
-                    self,
-                    "打卡成功",
-                    f"恭喜您完成今日{challenge['title']}挑战！\n"
-                    f"您已连续打卡 {streak} 天。"
-                )
+                # Show success message non-modally using AnimatedMessageBox
+                checkin_success_msg = AnimatedMessageBox(self) # Use AnimatedMessageBox
+                checkin_success_msg.setWindowTitle("打卡成功")
+                checkin_success_msg.setText(f"恭喜您完成今日{challenge['title']}挑战！\n您已连续打卡 {streak} 天。")
+                checkin_success_msg.setIcon(QMessageBox.Information)
+                checkin_success_msg.showNonModal() # Use custom non-modal method
 
                 # Update the challenge card
                 self.load_challenges()  # Reload all challenges for simplicity

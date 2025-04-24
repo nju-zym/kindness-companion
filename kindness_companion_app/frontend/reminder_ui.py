@@ -4,10 +4,12 @@ from PySide6.QtWidgets import (
     QTableWidget, QTableWidgetItem, QHeaderView, QCheckBox,
     QMessageBox, QGroupBox, QFormLayout
 )
-from PySide6.QtCore import Qt, Signal, Slot, QTime, QSize
+from PySide6.QtCore import Qt, Signal, Slot, QTime, QSize, QTimer
 from PySide6.QtGui import QFont, QIcon
-
 import datetime
+
+# Import the custom message box
+from .widgets.animated_message_box import AnimatedMessageBox
 
 
 class ReminderWidget(QWidget):
@@ -218,7 +220,7 @@ class ReminderWidget(QWidget):
 
         # Get selected challenge
         if self.challenge_combo.count() == 0:
-            QMessageBox.warning(
+            AnimatedMessageBox.showWarning( # Use AnimatedMessageBox.showWarning
                 self,
                 "创建失败",
                 "您还没有订阅任何挑战，请先订阅挑战。"
@@ -238,7 +240,7 @@ class ReminderWidget(QWidget):
                 days.append(i)
 
         if not days:
-            QMessageBox.warning(
+            AnimatedMessageBox.showWarning( # Use AnimatedMessageBox.showWarning
                 self,
                 "创建失败",
                 "请至少选择一天进行提醒。"
@@ -254,22 +256,21 @@ class ReminderWidget(QWidget):
         )
 
         if reminder_id:
-            # Show success message
+            # Show success message non-modally using AnimatedMessageBox
             challenge_title = self.challenge_combo.currentText()
             day_names = self.get_day_names(days)
 
-            QMessageBox.information(
-                self,
-                "创建成功",
-                f"已成功创建{challenge_title}的提醒。\n"
-                f"提醒时间: {time_str}\n"
-                f"提醒日期: {', '.join(day_names)}"
-            )
+            create_success_msg = AnimatedMessageBox(self) # Use AnimatedMessageBox
+            create_success_msg.setWindowTitle("创建成功")
+            create_success_msg.setText(f"已成功创建{challenge_title}的提醒。\n提醒时间: {time_str}\n提醒日期: {', '.join(day_names)}")
+            create_success_msg.setIcon(QMessageBox.Information)
+            create_success_msg.showNonModal() # Use custom non-modal method
 
             # Reload reminders
             self.load_reminders()
         else:
-            QMessageBox.warning(
+            # Failure warning using AnimatedMessageBox
+            AnimatedMessageBox.showWarning( # Use AnimatedMessageBox.showWarning
                 self,
                 "创建失败",
                 "创建提醒失败，请稍后重试。"
@@ -294,7 +295,7 @@ class ReminderWidget(QWidget):
         )
 
         if not success:
-            QMessageBox.warning(
+            AnimatedMessageBox.showWarning( # Use AnimatedMessageBox.showWarning
                 self,
                 "更新失败",
                 "更新提醒状态失败，请稍后重试。"
@@ -313,8 +314,8 @@ class ReminderWidget(QWidget):
         if not self.current_user:
             return
 
-        # Ask for confirmation
-        reply = QMessageBox.question(
+        # Ask for confirmation using AnimatedMessageBox
+        reply = AnimatedMessageBox.showQuestion( # Use AnimatedMessageBox.showQuestion
             self,
             "删除提醒",
             "确定要删除这个提醒吗？",
@@ -329,7 +330,7 @@ class ReminderWidget(QWidget):
                 # Reload reminders
                 self.load_reminders()
             else:
-                QMessageBox.warning(
+                AnimatedMessageBox.showWarning( # Use AnimatedMessageBox.showWarning
                     self,
                     "删除失败",
                     "删除提醒失败，请稍后重试。"

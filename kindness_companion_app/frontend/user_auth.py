@@ -4,6 +4,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal, Slot, QSize
 from PySide6.QtGui import QFont, QIcon
+# Import the custom message box
+from .widgets.animated_message_box import AnimatedMessageBox
 
 
 class LoginWidget(QWidget):
@@ -133,12 +135,12 @@ class LoginWidget(QWidget):
         password = self.password_edit.text()
 
         if not username:
-            QMessageBox.warning(self, "登录失败", "请输入用户名")
+            AnimatedMessageBox.showWarning(self, "登录失败", "请输入用户名") # Use AnimatedMessageBox
             self.username_edit.setFocus()
             return
 
         if not password:
-            QMessageBox.warning(self, "登录失败", "请输入密码")
+            AnimatedMessageBox.showWarning(self, "登录失败", "请输入密码") # Use AnimatedMessageBox
             self.password_edit.setFocus()
             return
 
@@ -148,7 +150,7 @@ class LoginWidget(QWidget):
             self.login_successful.emit(user)
             self.clear_fields()
         else:
-            QMessageBox.warning(self, "登录失败", "用户名或密码不正确")
+            AnimatedMessageBox.showWarning(self, "登录失败", "用户名或密码不正确") # Use AnimatedMessageBox
             self.password_edit.clear()
             self.password_edit.setFocus()
 
@@ -304,23 +306,23 @@ class RegisterWidget(QWidget):
 
         # Validate input
         if not username:
-            QMessageBox.warning(self, "注册失败", "请输入用户名")
+            AnimatedMessageBox.showWarning(self, "注册失败", "请输入用户名") # Use AnimatedMessageBox
             self.username_edit.setFocus()
             return
 
         if not password:
-            QMessageBox.warning(self, "注册失败", "请输入密码")
+            AnimatedMessageBox.showWarning(self, "注册失败", "请输入密码") # Use AnimatedMessageBox
             self.password_edit.setFocus()
             return
 
         if password != confirm_password:
-            QMessageBox.warning(self, "注册失败", "两次输入的密码不一致")
+            AnimatedMessageBox.showWarning(self, "注册失败", "两次输入的密码不一致") # Use AnimatedMessageBox
             self.confirm_password_edit.clear()
             self.confirm_password_edit.setFocus()
             return
 
         if not self.terms_checkbox.isChecked():
-            QMessageBox.warning(self, "注册失败", "请阅读并同意用户协议")
+            AnimatedMessageBox.showWarning(self, "注册失败", "请阅读并同意用户协议") # Use AnimatedMessageBox
             self.terms_checkbox.setFocus()
             return
 
@@ -331,12 +333,15 @@ class RegisterWidget(QWidget):
             self.register_successful.emit(user)
             self.clear_fields()
         else:
-            QMessageBox.warning(self, "注册失败", "用户名已存在，请选择其他用户名")
+            # Check if the error was specifically due to username existing
+            # (Assuming register_user returns None on failure, maybe add specific error codes later)
+            AnimatedMessageBox.showWarning(self, "注册失败", "用户名已存在，请选择其他用户名") # Use AnimatedMessageBox
             self.username_edit.setFocus()
 
     def show_terms(self):
         """Show terms and conditions."""
-        QMessageBox.information(
+        # Use AnimatedMessageBox for terms display
+        AnimatedMessageBox.showInformation( # Use AnimatedMessageBox
             self,
             "用户协议",
             "善行挑战应用用户协议\n\n"

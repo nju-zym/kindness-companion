@@ -245,3 +245,10 @@ QGroupBox::title {
     color: #CED4DA; /* Ensure title color is set */
     background-color: #495057; /* Match groupbox background to 'punch out' the border */
 }
+
+/* Profile Avatar */
+#avatar_label {
+    border-radius: 40px; /* Half of the fixed size (80px) */
+    border: 1px solid #555555; /* Optional: add a border suitable for dark theme */
+    background-color: #444444; /* Optional: background for dark theme */
+}

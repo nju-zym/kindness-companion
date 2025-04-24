@@ -54,6 +54,8 @@ class DatabaseManager:
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             email TEXT UNIQUE,
+            avatar_path TEXT,  -- Add avatar path column
+            bio TEXT,          -- Add bio column
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP
         )

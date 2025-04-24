@@ -14,7 +14,9 @@
     <!-- 检查此图标是否存在，如果不存在需要创建或修改引用 -->
     <!-- <file>icons/check-white.svg</file> -->
     <file>icons/chevron-down.svg</file>
+    <file>icons/edit-2.svg</file> <!-- Add edit icon -->
     <file>icons/list.svg</file>
+    <file>icons/lock.svg</file> <!-- Add lock icon -->
     <file>icons/log-in.svg</file>
     <file>icons/log-out.svg</file>
     <file>icons/plus-circle.svg</file>
@@ -24,5 +26,7 @@
     <file>icons/user.svg</file>
     <file>icons/users.svg</file>
     <file>icons/x-circle.svg</file>
+    <!-- Add image file -->
+    <file>images/profilePicture.png</file>
 </qresource>
 </RCC>

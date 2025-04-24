@@ -67,17 +67,28 @@ class UserManager:
         # Format: "hash:salt"
         stored_hash = f"{password_hash}:{salt}"
 
+        # Insert user with default empty bio and default avatar path
         user_id = self.db_manager.execute_insert(
-            "INSERT INTO users (username, password_hash, email) VALUES (?, ?, ?)",
-            (username, stored_hash, email)
+            "INSERT INTO users (username, password_hash, email, bio, avatar_path) VALUES (?, ?, ?, ?, ?)",
+            (username, stored_hash, email, "", ":/images/profilePicture.png") # Default bio="", avatar_path=":/images/profilePicture.png"
         )
 
         if user_id:
-            return {
-                "id": user_id,
-                "username": username,
-                "email": email
-            }
+            # Fetch the newly created user including the creation timestamp
+            new_user = self.db_manager.execute_query(
+                "SELECT id, username, email, bio, avatar_path, created_at FROM users WHERE id = ?",
+                (user_id,)
+            )
+            if new_user:
+                user_data = new_user[0]
+                return {
+                    "id": user_data["id"],
+                    "username": user_data["username"],
+                    "email": user_data["email"],
+                    "bio": user_data["bio"],
+                    "avatar_path": user_data["avatar_path"],
+                    "registration_date": user_data["created_at"] # Use created_at as registration_date
+                }
 
         return None
 
@@ -115,11 +126,14 @@ class UserManager:
                 (user["id"],)
             )
 
-            # Set current user
+            # Set current user with all relevant fields, using .get() for robustness
             self.current_user = {
                 "id": user["id"],
                 "username": user["username"],
-                "email": user["email"]
+                "email": user.get("email"), # Use get for optional fields
+                "bio": user.get("bio", ""), # Default to empty string if bio doesn't exist
+                "avatar_path": user.get("avatar_path", ":/images/profilePicture.png"), # Default avatar if not exist
+                "registration_date": user.get("created_at") # Use get, might be None if not exist
             }
 
             return self.current_user
@@ -139,13 +153,15 @@ class UserManager:
         """
         return self.current_user
 
-    def update_profile(self, user_id, new_password=None):
+    def update_profile(self, user_id, new_password=None, bio=None, avatar_path=None):
         """
-        Update user profile (currently only password).
+        Update user profile information.
 
         Args:
             user_id (int): User ID.
             new_password (str, optional): New password. Defaults to None.
+            bio (str, optional): New bio. Defaults to None.
+            avatar_path (str, optional): New avatar path. Defaults to None.
 
         Returns:
             bool: True if update was successful, False otherwise.
@@ -153,23 +169,48 @@ class UserManager:
         updates = {}
         params = []
 
-        # Only update password if provided
+        # Update password if provided
         if new_password:
-            hashed_password = self._hash_password(new_password)
-            updates["password"] = "?"
-            params.append(hashed_password)
+            password_hash, salt = self._hash_password(new_password)
+            updates["password_hash"] = "?" # Use placeholder
+            params.append(f"{password_hash}:{salt}")
+
+        # Update bio if provided (allow empty string)
+        if bio is not None:
+            updates["bio"] = "?" # Use placeholder
+            params.append(bio)
+
+        # Update avatar path if provided
+        if avatar_path is not None:
+            updates["avatar_path"] = "?" # Use placeholder
+            params.append(avatar_path)
 
         if not updates:
+            print("No profile updates provided.") # Add some logging/print
             return True # Nothing to update
 
-        set_clause = ", ".join([f"{key} = {value}" for key, value in updates.items()])
+        set_clause = ", ".join([f"{key} = ?" for key in updates.keys()]) # Placeholders in SET clause
         query = f"UPDATE users SET {set_clause} WHERE id = ?"
         params.append(user_id)
 
         try:
-            self.db_manager.execute_query(query, tuple(params))
-            self.logger.info(f"User profile updated for user_id: {user_id}")
-            return True
+            # Use execute_update for UPDATE operations
+            affected_rows = self.db_manager.execute_update(query, tuple(params))
+            if affected_rows > 0:
+                print(f"User profile updated successfully for user_id: {user_id}") # Add logging/print
+                # Optionally update self.current_user if the updated user is the current one
+                if self.current_user and self.current_user["id"] == user_id:
+                    if new_password: # Password changed, force re-login for security? Or just update locally?
+                        pass # Decide on security implications
+                    if bio is not None:
+                        self.current_user["bio"] = bio
+                    if avatar_path is not None:
+                        self.current_user["avatar_path"] = avatar_path
+                return True
+            else:
+                print(f"No user found with id {user_id} or no changes made.") # Add logging/print
+                return False # Or True if no change is not an error?
         except sqlite3.Error as e:
-            self.logger.error(f"Error updating user profile for user_id {user_id}: {e}")
+            print(f"Error updating user profile for user_id {user_id}: {e}") # Add logging/print
+            # self.logger.error(...) # Use proper logging if available
             return False

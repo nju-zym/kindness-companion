@@ -252,3 +252,10 @@ QGroupBox::title {
     color: #6D6875; /* Muted Purple/Gray */
     background-color: #F7F5F2; /* Match groupbox background */
 }
+
+/* Profile Avatar */
+#avatar_label {
+    border-radius: 40px; /* Half of the fixed size (80px) */
+    border: 1px solid #cccccc; /* Optional: add a light border */
+    background-color: #eeeeee; /* Optional: background for when image is loading/missing */
+}

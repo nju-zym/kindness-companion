@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QFormLayout, QLineEdit, QMessageBox, QGroupBox, QFrame,
     QGridLayout, QProgressBar, QSizePolicy
 )
-from PySide6.QtCore import Qt, Signal, Slot, QSize
+from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer
 from PySide6.QtGui import QFont, QIcon, QPixmap
 
 from .password_dialog import PasswordDialog
@@ -304,4 +304,5 @@ class ProfileWidget(QWidget):
         if reply == QMessageBox.Yes:
             self.current_user = None
             self.reset_stats()
-            self.user_logged_out.emit()  # Emit signal
+            # Emit signal slightly delayed after confirmation
+            QTimer.singleShot(10, self.user_logged_out.emit)

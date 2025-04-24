@@ -1,8 +1,10 @@
+import logging # Add logging import
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QStackedWidget, QPushButton, QLabel, QMessageBox, QButtonGroup, QSizePolicy
 )
-from PySide6.QtCore import Qt, Signal, Slot, QSize
+# QTimer might not be needed here anymore, but keep it for now
+from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer
 from PySide6.QtGui import QIcon, QFont, QFontMetrics
 
 from .user_auth import LoginWidget, RegisterWidget
@@ -201,6 +203,7 @@ class MainWindow(QMainWindow):
         Args:
             user (dict): User information
         """
+        logging.info("Login successful, preparing UI updates...")
         # Enable navigation buttons
         for button in self.nav_buttons.values():
             button.setEnabled(True)
@@ -211,17 +214,28 @@ class MainWindow(QMainWindow):
         self.user_changed.emit(user)
 
         # Show challenges page and set its button as checked
+        logging.info("Calling show_challenges...")
         self.show_challenges()
-        if "challenges" in self.nav_buttons:
-            self.nav_buttons["challenges"].setChecked(True)
-            self.update_button_style(self.nav_buttons["challenges"])
+        logging.info("Returned from show_challenges.")
 
-        # Show welcome message
-        QMessageBox.information(
-            self,
-            "登录成功",
-            f"欢迎回来，{user['username']}！\n准备好今天的善行挑战了吗？"
-        )
+        if "challenges" in self.nav_buttons:
+             self.nav_buttons["challenges"].setChecked(True)
+             self.update_button_style(self.nav_buttons["challenges"])
+
+        # Show a non-modal welcome message
+        # Create an instance of QMessageBox
+        welcome_msg = QMessageBox(self) # Set parent to main window
+        welcome_msg.setWindowTitle("登录成功")
+        welcome_msg.setText(f"欢迎回来，{user['username']}！\n准备好今天的善行挑战了吗？")
+        welcome_msg.setIcon(QMessageBox.Information)
+        # Make it non-modal
+        welcome_msg.setWindowModality(Qt.NonModal)
+        # Ensure it's deleted when closed
+        welcome_msg.setAttribute(Qt.WA_DeleteOnClose)
+        # Show the message box (does not block)
+        welcome_msg.show()
+        logging.info("Non-modal welcome message shown.")
+
 
     @Slot(dict)
     def on_register_successful(self, user):
@@ -275,7 +289,9 @@ class MainWindow(QMainWindow):
 
     def show_challenges(self):
         """Show the challenges page."""
+        logging.info(f"Attempting to switch to challenge_widget. Current widget: {self.content_widget.currentWidget()}")
         self.content_widget.setCurrentWidget(self.challenge_widget)
+        logging.info(f"Switched content widget. Current widget is now: {self.content_widget.currentWidget()}")
 
     def show_checkin(self):
         """Show the check-in page."""

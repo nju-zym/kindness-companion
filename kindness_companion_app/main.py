@@ -253,6 +253,8 @@ def main():
     user_manager = UserManager(db_manager)
     challenge_manager = ChallengeManager(db_manager)
     progress_tracker = ProgressTracker(db_manager)
+    # Create the reminder scheduler instance
+    reminder_scheduler = ReminderScheduler(db_manager) # Store the instance
 
     # Add default user if it doesn't exist
     default_user = user_manager.login("zym", "1")
@@ -265,8 +267,17 @@ def main():
         user_manager,
         challenge_manager,
         progress_tracker,
-        ReminderScheduler(db_manager)
+        reminder_scheduler # Pass the instance
     )
+
+    # Connect the scheduler shutdown to the application's aboutToQuit signal
+    app.aboutToQuit.connect(reminder_scheduler.shutdown)
+    logger.info("Connected reminder_scheduler.shutdown to app.aboutToQuit")
+
+    # Connect the database disconnect to the application's aboutToQuit signal
+    app.aboutToQuit.connect(db_manager.disconnect)
+    logger.info("Connected db_manager.disconnect to app.aboutToQuit")
+
     main_window.show()
 
     # Start the event loop

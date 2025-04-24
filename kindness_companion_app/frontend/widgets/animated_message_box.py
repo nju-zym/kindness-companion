@@ -148,20 +148,35 @@ class AnimatedMessageBox(QMessageBox):
         msgBox.setIcon(QMessageBox.Question)
         msgBox.setStandardButtons(buttons)
         msgBox.setDefaultButton(defaultButton)
-        # Map the result of exec() back to QMessageBox standard buttons if needed by caller
-        # For now, just return the integer result (e.g., QDialog.Accepted for Yes, QDialog.Rejected for No)
-        result_int = msgBox.exec()
-        # The caller compares with QMessageBox.Yes/No etc. QMessageBox maps these internally.
-        # Let's return the standard button enum value corresponding to the int result
-        button_clicked = msgBox.button(result_int) # Get the button corresponding to the result code
-        if button_clicked:
-            role = msgBox.buttonRole(button_clicked)
-            standard_button = msgBox.standardButton(button_clicked)
-            if standard_button != QMessageBox.NoButton:
-                 return standard_button # Return QMessageBox.Yes, QMessageBox.No etc.
-            # Handle custom buttons if necessary based on role, otherwise fallback
-        # Fallback or if no button matched (e.g., closed via 'X')
-        return QMessageBox.No # Or another appropriate default
+
+        msgBox.exec() # Execute the dialog
+
+        # After exec() returns, get the button that was clicked
+        clicked_button_widget = msgBox.clickedButton()
+
+        if clicked_button_widget:
+            # If a button was clicked, find its corresponding standard enum value
+            standard_button_enum = msgBox.standardButton(clicked_button_widget)
+            if standard_button_enum != QMessageBox.NoButton:
+                # Return the standard enum (e.g., QMessageBox.Yes, QMessageBox.No)
+                return standard_button_enum
+            else:
+                # It was a custom button, not a standard one.
+                # For showQuestion, typically we expect standard buttons.
+                # Return the default button as a fallback.
+                return defaultButton
+        else:
+            # No button was clicked (e.g., closed via 'X' button)
+            # Typically corresponds to rejection. Return No if available, else Cancel, else default.
+            # Check if No button exists in the provided buttons flags
+            if buttons & QMessageBox.No:
+                return QMessageBox.No
+            # Check if Cancel button exists
+            elif buttons & QMessageBox.Cancel:
+                return QMessageBox.Cancel
+            # Otherwise, return the default button if it's not NoButton, else No as a final fallback
+            else:
+                return defaultButton if defaultButton != QMessageBox.NoButton else QMessageBox.No
 
 # Example Usage (if run directly)
 if __name__ == '__main__':

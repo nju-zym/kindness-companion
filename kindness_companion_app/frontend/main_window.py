@@ -141,15 +141,6 @@ class MainWindow(QMainWindow):
         # Add stretch to push logout button to bottom
         self.nav_layout.addStretch()
 
-        # Logout button (initially hidden)
-        self.logout_button = QPushButton("退出登录")
-        self.logout_button.setObjectName("logout_button")  # Set object name
-        self.logout_button.setIcon(QIcon(":/icons/log-out.svg"))  # Add icon
-        self.logout_button.setIconSize(icon_size)  # Use standard size
-        self.logout_button.clicked.connect(self.logout)
-        self.logout_button.setVisible(False)
-        self.nav_layout.addWidget(self.logout_button)
-
         # Add navigation to main layout
         self.main_layout.addWidget(self.nav_widget, 1)
 
@@ -216,9 +207,6 @@ class MainWindow(QMainWindow):
             button.style().unpolish(button)
             button.style().polish(button)
 
-        # Show logout button
-        self.logout_button.setVisible(True)
-
         # Emit user_changed signal
         self.user_changed.emit(user)
 
@@ -262,9 +250,6 @@ class MainWindow(QMainWindow):
             button.setEnabled(False)
             button.style().unpolish(button)
             button.style().polish(button)
-
-        # Hide logout button
-        self.logout_button.setVisible(False)
 
         # Uncheck all nav buttons
         checked_button = self.nav_button_group.checkedButton()

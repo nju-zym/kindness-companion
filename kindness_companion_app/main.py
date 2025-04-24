@@ -218,7 +218,7 @@ def main():
             default_font_family = None  # Rely on system default if no custom fonts work
 
     if default_font_family:
-        default_font_size = 14  # Adjust this value as needed
+        default_font_size = 16  # Increased from 14 to 16
         app_font = QFont(default_font_family, default_font_size)
         app.setFont(app_font)
         logger.info(f"Set application default font to: {default_font_family}, Size: {default_font_size}pt")

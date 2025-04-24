@@ -164,7 +164,11 @@ class ThemeManager:
     def apply_theme(self):
         """应用当前主题"""
         style_file_name = "main.qss" if self.current_theme == "light" else "dark.qss"
-        style_file_path = f":/styles/{style_file_name}"
+        # Use absolute path based on the script's location
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        style_file_path = os.path.join(script_dir, 'resources', 'styles', style_file_name)
+        self.logger.info(f"Attempting to load stylesheet from: {style_file_path}") # Log the absolute path
+
         try:
             style_file = QFile(style_file_path)
             if style_file.open(QFile.ReadOnly | QFile.Text):
@@ -173,7 +177,7 @@ class ThemeManager:
                 style_file.close()
                 self.logger.info(f"已应用{self.current_theme}主题，样式表来源: {style_file_path}")
             else:
-                self.logger.warning(f"无法打开样式表文件: {style_file_path}")
+                self.logger.warning(f"无法打开样式表文件: {style_file_path}. Error: {style_file.errorString()}") # Log error string
         except Exception as e:
             self.logger.warning(f"加载样式表时出错: {e}")
 

@@ -39,6 +39,7 @@ class ProgressWidget(QWidget):
         # Main layout
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(20, 20, 20, 20)
+        self.main_layout.setSpacing(15) # Add spacing between main sections
 
         # Header layout
         self.header_layout = QHBoxLayout()
@@ -74,18 +75,19 @@ class ProgressWidget(QWidget):
         self.header_layout.addLayout(self.filter_layout)
 
         self.main_layout.addLayout(self.header_layout)
+        self.main_layout.addSpacing(10) # Add spacing after header
 
         # Content layout (Calendar and Table)
         self.content_layout = QHBoxLayout()
+        self.content_layout.setSpacing(15) # Add spacing between calendar and table
 
         # Calendar widget
         self.calendar_widget = QCalendarWidget()
-        self.calendar_widget.setMinimumWidth(300)
-        self.calendar_widget.setMaximumWidth(400)
+        self.calendar_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding) # Allow expansion
         self.calendar_widget.setVerticalHeaderFormat(QCalendarWidget.NoVerticalHeader)
         self.calendar_widget.setSelectionMode(QCalendarWidget.SingleSelection)
         self.calendar_widget.clicked.connect(self.calendar_date_clicked)
-        self.content_layout.addWidget(self.calendar_widget)
+        self.content_layout.addWidget(self.calendar_widget, 1) # Give calendar stretch factor 1
 
         # Progress table
         self.progress_table = QTableWidget()
@@ -95,15 +97,18 @@ class ProgressWidget(QWidget):
         self.progress_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.progress_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.progress_table.setAlternatingRowColors(True)
-        self.content_layout.addWidget(self.progress_table, 1)  # Give table more stretch factor
+        self.content_layout.addWidget(self.progress_table, 2)  # Give table stretch factor 2 (more space)
 
         self.main_layout.addLayout(self.content_layout)
+        self.main_layout.addSpacing(15) # Add spacing before bottom section
 
-        # Bottom layout for Stats and Achievements
-        self.bottom_layout = QHBoxLayout()
+        # Bottom layout for Stats and Achievements (Changed to QVBoxLayout)
+        self.bottom_layout = QVBoxLayout() # Changed from QHBoxLayout to QVBoxLayout
+        self.bottom_layout.setSpacing(15) # Add spacing between stats and achievements
 
         # Stats GroupBox
         self.stats_group = QGroupBox("统计数据")
+        self.stats_group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed) # Expand horizontally, fixed height
         self.stats_layout = QVBoxLayout(self.stats_group)  # Use QVBoxLayout for vertical stats
         self.stats_layout.setAlignment(Qt.AlignTop)
 
@@ -120,18 +125,19 @@ class ProgressWidget(QWidget):
         self.stats_layout.addWidget(self.rate_label)
         self.stats_layout.addStretch()  # Push stats to the top
 
-        self.bottom_layout.addWidget(self.stats_group, 1)  # Give stats some space
+        self.bottom_layout.addWidget(self.stats_group) # Add stats group directly
 
         # Achievements GroupBox
         self.achievements_group = QGroupBox("我的成就")
+        self.achievements_group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.MinimumExpanding) # Allow vertical expansion
         self.achievements_layout = QVBoxLayout(self.achievements_group)  # Main layout for achievements
 
         # Placeholder for achievements/badges display
-        self.achievements_placeholder = QLabel("成就徽章将在此处展示。")
+        self.achievements_placeholder = QLabel("暂无成就，继续努力吧！") # Updated default text
         self.achievements_placeholder.setAlignment(Qt.AlignCenter)
         self.achievements_layout.addWidget(self.achievements_placeholder)  # Using placeholder for now
 
-        self.bottom_layout.addWidget(self.achievements_group, 2)  # Give achievements more space
+        self.bottom_layout.addWidget(self.achievements_group) # Add achievements group directly
 
         self.main_layout.addLayout(self.bottom_layout)  # Add the combined bottom layout
 

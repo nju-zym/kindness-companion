@@ -39,7 +39,7 @@ QPushButton:disabled {
 
 /* Primary Buttons */
 QPushButton#primaryButton {
-    background-color: #5F7A7D; /* Slightly different Muted Blue */
+    background-color: #5F7D82; /* Corrected from #5F */
 }
 QPushButton#primaryButton:hover {
     background-color: #6F8A8D;
@@ -226,4 +226,22 @@ QToolTip {
     opacity: 230;
 }
 
-/* ... existing custom styles ... */
+/* Group Box */
+QGroupBox {
+    border: 1px solid #556068; /* Darker Grayish Blue border */
+    border-radius: 5px;
+    margin-top: 12px; /* Provide space ABOVE the groupbox for the title */
+    padding-top: 8px; /* Add some padding inside, below the title */
+    background-color: #495057; /* Ensure background is set */
+}
+
+/* Explicitly position the title */
+QGroupBox::title {
+    subcontrol-origin: margin; /* Position relative to the margin box */
+    subcontrol-position: top left; /* Place it at the top-left corner */
+    left: 10px; /* Indent from the left edge */
+    top: -1px; /* Adjust vertical position relative to the top border (negative moves it up slightly relative to default) */
+    padding: 0 5px; /* Horizontal padding around the text */
+    color: #CED4DA; /* Ensure title color is set */
+    background-color: #495057; /* Match groupbox background to 'punch out' the border */
+}

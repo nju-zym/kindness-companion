@@ -2,7 +2,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QFrame, QTimeEdit, QComboBox, QGridLayout,
     QTableWidget, QTableWidgetItem, QHeaderView, QCheckBox,
-    QMessageBox, QGroupBox, QFormLayout
+    QMessageBox, QGroupBox, QFormLayout, QSizePolicy # Keep QFormLayout import for now, might remove later if unused
 )
 from PySide6.QtCore import Qt, Signal, Slot, QTime, QSize, QTimer
 from PySide6.QtGui import QFont, QIcon
@@ -47,57 +47,66 @@ class ReminderWidget(QWidget):
         self.subtitle_label = QLabel("设置善行挑战的提醒，帮助您坚持完成挑战")
         self.main_layout.addWidget(self.subtitle_label)
 
-        self.main_layout.addSpacing(20)
+        self.main_layout.addSpacing(15) # Reduced spacing slightly
 
-        # Content layout
-        self.content_layout = QHBoxLayout()
+        # Content layout (Changed to QVBoxLayout)
+        self.content_layout = QVBoxLayout() # Changed from QHBoxLayout to QVBoxLayout
+        self.content_layout.setSpacing(20) # Add spacing between form and list
 
-        # Create reminder form
+        # Create reminder form (Challenge, Time, Create Button)
         self.setup_reminder_form()
-        self.content_layout.addWidget(self.reminder_form_group)
+        self.content_layout.addWidget(self.reminder_form_group) # Add form group directly
+
+        # Add Days Group Box directly to the content layout AFTER the form group
+        # self.days_group is created in setup_reminder_form
+        self.content_layout.addWidget(self.days_group)
 
         # Reminder list
         self.setup_reminder_list()
-        self.content_layout.addWidget(self.reminder_list_group)
+        self.content_layout.addWidget(self.reminder_list_group) # Add list group directly
 
         self.main_layout.addLayout(self.content_layout)
+        self.main_layout.addStretch() # Add stretch to push content upwards if space allows
 
     def setup_reminder_form(self):
-        """Set up the reminder creation form."""
+        """Set up the reminder creation form using QFormLayout.""" # Docstring updated
         self.reminder_form_group = QGroupBox("创建新提醒")
-        self.reminder_form_group.setMinimumWidth(300)
-        self.reminder_form_group.setMaximumWidth(400)
-
-        form_layout = QFormLayout(self.reminder_form_group)
-        form_layout.setLabelAlignment(Qt.AlignRight)
-        form_layout.setFormAlignment(Qt.AlignLeft)
+        # Use QFormLayout instead of QVBoxLayout
+        form_layout = QFormLayout(self.reminder_form_group) # Changed QVBoxLayout to QFormLayout and renamed variable
         form_layout.setSpacing(15)
+        form_layout.setContentsMargins(10, 25, 10, 15) # Keep existing margins
+        # Set label alignment for QFormLayout
+        form_layout.setLabelAlignment(Qt.AlignRight)
 
         # Challenge selection
         self.challenge_combo = QComboBox()
         self.challenge_combo.setMinimumWidth(200)
-        form_layout.addRow("挑战:", self.challenge_combo)
+        # Add challenge combo to the form layout
+        form_layout.addRow("挑战:", self.challenge_combo) # Use form_layout.addRow
 
         # Time selection
         self.time_edit = QTimeEdit()
         self.time_edit.setDisplayFormat("HH:mm")
         self.time_edit.setTime(QTime(8, 0))  # Default to 8:00 AM
-        form_layout.addRow("时间:", self.time_edit)
+        form_layout.addRow("时间:", self.time_edit) # Use form_layout.addRow
 
         # Days selection
         self.days_group = QGroupBox("提醒日期")
-        days_layout = QHBoxLayout(self.days_group)  # Change QVBoxLayout to QHBoxLayout for horizontal arrangement
+        # Use QHBoxLayout for horizontal arrangement inside the group box
+        days_h_layout = QHBoxLayout(self.days_group)
+        days_h_layout.setSpacing(10) # Add spacing between checkboxes
 
         self.day_checkboxes = []
         days = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
-        for i, day in enumerate(days):
+        for day in days:
             checkbox = QCheckBox(day)
             checkbox.setChecked(True)  # Default to all days selected
             self.day_checkboxes.append(checkbox)
-            days_layout.addWidget(checkbox)  # Add widgets horizontally
+            days_h_layout.addWidget(checkbox) # Add checkbox to the horizontal layout
 
-        form_layout.addRow("", self.days_group)
+        # Add the days group box spanning both columns in the form layout
+        form_layout.addRow("", self.days_group) # Add days group with an empty label
 
         # Create button
         self.create_button = QPushButton("创建提醒")
@@ -105,13 +114,16 @@ class ReminderWidget(QWidget):
         self.create_button.setIcon(QIcon(":/icons/plus.svg"))
         self.create_button.setIconSize(QSize(16, 16))
         self.create_button.clicked.connect(self.create_reminder)
-        form_layout.addRow("", self.create_button)
+        # Add the button spanning both columns in the form layout
+        form_layout.addRow(self.create_button) # Add button directly to form_layout
 
     def setup_reminder_list(self):
         """Set up the reminder list."""
         self.reminder_list_group = QGroupBox("当前提醒")
+        self.reminder_list_group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         list_layout = QVBoxLayout(self.reminder_list_group)
+        list_layout.setContentsMargins(10, 25, 10, 10) # Added top margin (25)
 
         # Reminder table
         self.reminder_table = QTableWidget()

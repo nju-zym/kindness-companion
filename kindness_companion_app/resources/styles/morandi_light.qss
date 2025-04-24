@@ -232,3 +232,23 @@ QToolTip {
     border: 2px dashed #b0a499;
 }
 */
+
+/* Group Box */
+QGroupBox {
+    border: 1px solid #D3D3D3; /* Light Gray */
+    border-radius: 5px;
+    margin-top: 12px; /* Provide space ABOVE the groupbox for the title */
+    padding-top: 8px; /* Add some padding inside, below the title */
+    background-color: #F7F5F2; /* Match base background */
+}
+
+/* Explicitly position the title */
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 10px;
+    top: -1px; /* Adjust vertical position */
+    padding: 0 5px;
+    color: #6D6875; /* Muted Purple/Gray */
+    background-color: #F7F5F2; /* Match groupbox background */
+}

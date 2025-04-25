@@ -287,31 +287,46 @@ def main():
     )
 
     # --- Center the main window before showing --- Start
+    # try:
+    #     screen = QApplication.primaryScreen()
+    #     if screen:
+    #         screen_geometry = screen.availableGeometry()
+    #         # Use frameGeometry() to get size including window frame for better centering
+    #         window_geometry = main_window.frameGeometry()
+    #         center_point = screen_geometry.center()
+    #         top_left = center_point - QPoint(window_geometry.width() // 2, window_geometry.height() // 2)
+    #         main_window.move(top_left)
+    #         logger.info(f"Centered main window on screen at {top_left.x()},{top_left.y()}")
+    #     else:
+    #         logger.warning("Could not get primary screen to center main window.")
+    # except Exception as e:
+    #     logger.error(f"Error centering main window: {e}")
+    # --- Center the main window before showing --- End
+
+    # Connect signals before showing the window
+    app.aboutToQuit.connect(reminder_scheduler.shutdown)
+    logger.info("Connected reminder_scheduler.shutdown to app.aboutToQuit")
+    app.aboutToQuit.connect(db_manager.disconnect)
+    logger.info("Connected db_manager.disconnect to app.aboutToQuit")
+
+    main_window.show() # Show the window first
+
+    # --- Center the main window AFTER showing --- Start
     try:
         screen = QApplication.primaryScreen()
         if screen:
             screen_geometry = screen.availableGeometry()
-            # Use frameGeometry() to get size including window frame for better centering
+            # Get geometry AFTER show()
             window_geometry = main_window.frameGeometry()
             center_point = screen_geometry.center()
             top_left = center_point - QPoint(window_geometry.width() // 2, window_geometry.height() // 2)
             main_window.move(top_left)
-            logger.info(f"Centered main window on screen at {top_left.x()},{top_left.y()}")
+            logger.info(f"Centered main window on screen at {top_left.x()},{top_left.y()} (post-show)")
         else:
-            logger.warning("Could not get primary screen to center main window.")
+            logger.warning("Could not get primary screen to center main window (post-show).")
     except Exception as e:
-        logger.error(f"Error centering main window: {e}")
-    # --- Center the main window before showing --- End
-
-    # Connect the scheduler shutdown to the application's aboutToQuit signal
-    app.aboutToQuit.connect(reminder_scheduler.shutdown)
-    logger.info("Connected reminder_scheduler.shutdown to app.aboutToQuit")
-
-    # Connect the database disconnect to the application's aboutToQuit signal
-    app.aboutToQuit.connect(db_manager.disconnect)
-    logger.info("Connected db_manager.disconnect to app.aboutToQuit")
-
-    main_window.show()
+        logger.error(f"Error centering main window (post-show): {e}")
+    # --- Center the main window AFTER showing --- End
 
     # Start the event loop
     sys.exit(app.exec())

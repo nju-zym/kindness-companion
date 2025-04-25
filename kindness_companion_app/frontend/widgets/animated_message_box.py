@@ -43,13 +43,21 @@ class AnimatedMessageBox(QMessageBox):
 
     # --- Copied from BaseDialog (_center_window logic) --- Start
     def _center_window(self):
-        """Centers the dialog on the parent or screen."""
+        """Centers the dialog on the parent's window or screen."""
         try:
-            if self.parent():
-                parent_rect = self.parent().geometry()
+            parent_widget = self.parent()
+            if parent_widget:
+                # --- Use parent's top-level window for centering --- Start
+                top_level_window = parent_widget.window() # Get the main window
+                parent_rect = top_level_window.geometry()
+                # --- Use parent's top-level window for centering --- End
                 geo = self.frameGeometry() # Use frameGeometry for size including decorations
                 center_point = parent_rect.center()
                 top_left = center_point - QPoint(geo.width() // 2, geo.height() // 2)
+                # Ensure the dialog doesn't go off-screen (optional but good practice)
+                screen_geometry = QApplication.primaryScreen().availableGeometry()
+                top_left.setX(max(screen_geometry.left(), min(top_left.x(), screen_geometry.right() - geo.width())))
+                top_left.setY(max(screen_geometry.top(), min(top_left.y(), screen_geometry.bottom() - geo.height())))
                 self.move(top_left)
             else:
                 # Center on the screen if no parent

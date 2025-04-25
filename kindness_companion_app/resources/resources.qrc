@@ -2,6 +2,7 @@
 <qresource prefix="/">
     <file>styles/main.qss</file>
     <file>styles/dark.qss</file>
+    <file>styles/morandi_dark.qss</file> <!-- Added morandi_dark.qss -->
     <!-- Correctly list font files under the 'fonts' alias -->
     <file alias="fonts/Hiragino Sans GB.ttc">fonts/Hiragino Sans GB.ttc</file>
     <file alias="fonts/Songti.ttc">fonts/Songti.ttc</file>
@@ -21,6 +22,7 @@
     <file>icons/log-out.svg</file>
     <file>icons/plus-circle.svg</file>
     <file>icons/plus.svg</file>
+    <file>icons/rotate-ccw.svg</file> <!-- Added rotate-ccw.svg -->
     <file>icons/save.svg</file>
     <file>icons/user-plus.svg</file>
     <file>icons/user.svg</file>

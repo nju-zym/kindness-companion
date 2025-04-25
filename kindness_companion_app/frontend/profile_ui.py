@@ -1,11 +1,12 @@
 import os
 import logging # Add this import at the top
 from pathlib import Path
+from datetime import datetime # Import datetime
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QFormLayout, QLineEdit, QMessageBox, QGroupBox, QFrame,
     QGridLayout, QProgressBar, QSizePolicy, QTextEdit,
-    QFileDialog, QScrollArea, QSpacerItem # Added QScrollArea, QSpacerItem
+    QFileDialog, QScrollArea, QSpacerItem, QInputDialog # Added QInputDialog
 )
 # Import QByteArray and potentially QBuffer, QIODevice for resizing
 from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer, QByteArray, QBuffer, QIODevice
@@ -102,8 +103,9 @@ class ProfileWidget(QWidget):
         profile_layout.setSpacing(15)
 
         # --- Avatar ---
-        avatar_layout = QVBoxLayout() # Use QVBoxLayout for label and button
-        avatar_layout.setAlignment(Qt.AlignCenter)
+        # Remove the intermediate QVBoxLayout for avatar
+        # avatar_layout = QVBoxLayout()
+        # avatar_layout.setAlignment(Qt.AlignCenter)
 
         self.avatar_label = QLabel()
         self.avatar_label.setObjectName("avatar_label")
@@ -116,11 +118,12 @@ class ProfileWidget(QWidget):
         self.change_avatar_button.clicked.connect(self.change_avatar)
         self.change_avatar_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed) # Prevent stretching
 
-        avatar_layout.addWidget(self.avatar_label)
-        avatar_layout.addSpacing(5) # Space between avatar and button
-        avatar_layout.addWidget(self.change_avatar_button)
+        # Add avatar label and button directly to profile_layout with center alignment
+        profile_layout.addWidget(self.avatar_label, 0, Qt.AlignCenter)
+        profile_layout.addSpacing(5) # Space between avatar and button
+        profile_layout.addWidget(self.change_avatar_button, 0, Qt.AlignCenter)
 
-        profile_layout.addLayout(avatar_layout)
+        # profile_layout.addLayout(avatar_layout) # Don't add the intermediate layout
 
         # --- User Info ---
         info_layout = QFormLayout()
@@ -187,12 +190,12 @@ class ProfileWidget(QWidget):
 
         # --- Action Buttons ---
         action_button_layout = QVBoxLayout()
-        action_button_layout.setSpacing(10) # 按钮间距
+        action_button_layout.setSpacing(15) # Ensure equal spacing between all buttons
 
         self.change_password_button = QPushButton("修改密码")
         self.change_password_button.setIcon(QIcon(":/icons/lock.svg"))
         self.change_password_button.setIconSize(QSize(16, 16))
-        self.change_password_button.setMinimumHeight(35) # 调整高度
+        self.change_password_button.setMinimumHeight(38)
         self.change_password_button.clicked.connect(self.show_password_dialog)
         action_button_layout.addWidget(self.change_password_button)
 
@@ -200,9 +203,22 @@ class ProfileWidget(QWidget):
         self.logout_button.setObjectName("logout_button")
         self.logout_button.setIcon(QIcon(":/icons/log-out.svg"))
         self.logout_button.setIconSize(QSize(16, 16))
-        self.logout_button.setMinimumHeight(35) # 调整高度
+        self.logout_button.setMinimumHeight(38)
         self.logout_button.clicked.connect(self.logout)
         action_button_layout.addWidget(self.logout_button)
+
+        # Removed the extra spacing before the delete button to make spacing equal
+        # action_button_layout.addSpacing(20)
+
+        # --- Delete Account Button ---
+        self.delete_account_button = QPushButton("注销账号")
+        self.delete_account_button.setObjectName("delete_account_button") # For specific styling (e.g., red)
+        self.delete_account_button.setIcon(QIcon(":/icons/trash-2.svg")) # Use the added icon
+        self.delete_account_button.setIconSize(QSize(16, 16))
+        self.delete_account_button.setMinimumHeight(38)
+        self.delete_account_button.clicked.connect(self.request_delete_account)
+        action_button_layout.addWidget(self.delete_account_button)
+        # --- End Delete Account Button ---
 
         profile_layout.addLayout(action_button_layout)
 
@@ -336,15 +352,38 @@ class ProfileWidget(QWidget):
     @Slot(dict)
     def set_user(self, user):
         """Set the current user and update UI elements using avatar data."""
+        logger = logging.getLogger(__name__)
+        logger.info(f"ProfileWidget.set_user called. User is None: {user is None}")
         self.current_user = user
 
         if user:
-            # Update profile info
+            logger.debug(f"User data: {user}") # Log user data for debugging
             self.username_label.setText(user.get("username", "N/A"))
 
-            # --- Load Registration Date ---
-            reg_date_str = user.get("registration_date", "未知")
-            self.reg_date_label.setText(reg_date_str if reg_date_str else "未知")
+            # --- Load and Format Registration Date ---
+            reg_date_str_raw = user.get("registration_date")
+            logger.info(f"Raw registration_date from user dict: '{reg_date_str_raw}' (Type: {type(reg_date_str_raw)})" ) # Log raw value
+
+            final_display_text = "未知" # Default to '未知' if date is missing or invalid within a valid user session
+
+            if reg_date_str_raw:
+                try:
+                    # Attempt parsing (handle potential extra parts like microseconds or timezone)
+                    timestamp_part = str(reg_date_str_raw).split('.')[0].split('+')[0] # More robust splitting
+                    dt_object = datetime.strptime(timestamp_part, '%Y-%m-%d %H:%M:%S')
+                    final_display_text = dt_object.strftime('%Y-%m-%d')
+                    logger.info(f"Successfully parsed and formatted date: {final_display_text}")
+                except (ValueError, IndexError, TypeError) as e:
+                    logger.warning(f"Could not parse registration date '{reg_date_str_raw}': {e}. Falling back to '未知'.")
+                    # Keep final_display_text as "未知"
+            else:
+                # If reg_date_str_raw is None or empty string
+                logger.warning("registration_date key missing or value is None/empty in user dict. Setting text to '未知'.")
+                # Keep final_display_text as "未知"
+
+            logger.info(f"Final text to set on reg_date_label: '{final_display_text}'")
+            self.reg_date_label.setText(final_display_text)
+            # --- End Registration Date ---
 
             # --- Load Bio ---
             bio = user.get("bio", "")
@@ -362,10 +401,11 @@ class ProfileWidget(QWidget):
 
             # Load stats (which now includes loading achievements)
             self.load_stats()
-        else:
+        else: # User is None (logout or initial state)
+            logger.info("User is None. Resetting profile fields to N/A.")
             # Clear profile info
             self.username_label.setText("N/A")
-            # Reset reg date
+            # Reset reg date to N/A explicitly for logged-out state
             self.reg_date_label.setText("N/A")
             # Reset bio
             self.bio_display_label.setText("请先登录")
@@ -376,7 +416,7 @@ class ProfileWidget(QWidget):
             self._set_circular_avatar(None) # Pass None to use default
 
             # Reset stats and clear achievements
-            self.reset_stats()
+            self.reset_stats() # This method also sets reg_date_label to N/A
 
 
     def load_stats(self):
@@ -788,3 +828,53 @@ class ProfileWidget(QWidget):
                 except Exception as e:
                     logging.error(f"Error changing avatar: {e}") # Use logging
                     AnimatedMessageBox.showCritical(self, "错误", f"更换头像时发生错误: {e}")
+
+    @Slot()
+    def request_delete_account(self):
+        """Handle the request to delete the user account."""
+        if not self.current_user:
+            return
+
+        username = self.current_user.get("username", "")
+
+        # Step 1: Ask for password confirmation
+        password, ok = QInputDialog.getText(
+            self,
+            "确认注销账号",
+            f"请输入您的密码以确认注销账号 \"{username}\"：",
+            QLineEdit.Password
+        )
+
+        if not ok or not password:
+            # User cancelled or entered empty password
+            return
+
+        # Step 2: Show a critical confirmation dialog
+        confirm_text = (
+            f"您确定要永久注销账号 \"{username}\" 吗？\n\n"
+            f"**此操作将删除您的所有个人信息、挑战订阅、打卡记录和提醒设置！**\n\n"
+            f"**此操作不可恢复！**"
+        )
+        reply = AnimatedMessageBox.showCritical(
+            self,
+            "警告：永久删除账号",
+            confirm_text,
+            QMessageBox.Yes | QMessageBox.Cancel,
+            QMessageBox.Cancel
+        )
+
+        if reply == QMessageBox.Yes:
+            # Step 3: Call backend to delete account
+            try:
+                success = self.user_manager.delete_user_account(self.current_user["id"], password)
+
+                if success:
+                    AnimatedMessageBox.showInformation(self, "账号已注销", f"账号 \"{username}\" 已被永久删除。")
+                    # Trigger logout process to reset UI and go to login screen
+                    QTimer.singleShot(10, self.user_logged_out.emit)
+                else:
+                    # Password might be incorrect, or other backend error
+                    AnimatedMessageBox.showWarning(self, "注销失败", "密码不正确或发生内部错误，无法注销账号。")
+            except Exception as e:
+                logging.error(f"Error during account deletion for user {self.current_user['id']}: {e}")
+                AnimatedMessageBox.showCritical(self, "注销出错", f"注销过程中发生意外错误：{e}")

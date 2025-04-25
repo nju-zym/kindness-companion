@@ -11,6 +11,7 @@
     <file>icons/app_icon.png</file>
     <file>icons/bell.svg</file>
     <file>icons/calendar-check.svg</file>
+    <file>icons/check-circle.svg</file> <!-- Added check-circle icon -->
     <file>icons/check-square.svg</file>
     <!-- 检查此图标是否存在，如果不存在需要创建或修改引用 -->
     <!-- <file>icons/check-white.svg</file> -->
@@ -36,6 +37,7 @@
     <file>icons/star.svg</file>
     <file>icons/target.svg</file>
     <file>icons/image.svg</file> <!-- Added missing image icon -->
+    <file>icons/trash-2.svg</file> <!-- Added trash icon -->
     <!-- Add image file -->
     <file>images/profilePicture.png</file>
 </qresource>

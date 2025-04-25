@@ -229,3 +229,76 @@ class UserManager:
             user_data = dict(user_result[0])
             return user_data
         return None
+
+    def delete_user_account(self, user_id, password):
+        """
+        Permanently delete a user account and all associated data after verifying the password.
+
+        Args:
+            user_id (int): The ID of the user to delete.
+            password (str): The user's current password for verification.
+
+        Returns:
+            bool: True if the account was successfully deleted, False otherwise.
+        """
+        # Step 1: Verify the password
+        user_result = self.db_manager.execute_query(
+            "SELECT password_hash FROM users WHERE id = ?",
+            (user_id,)
+        )
+
+        if not user_result:
+            print(f"Delete failed: User with ID {user_id} not found.")
+            return False # User not found
+
+        user_data = user_result[0]
+        stored_hash_full = user_data["password_hash"]
+
+        try:
+            stored_hash, salt = stored_hash_full.split(":")
+            provided_hash, _ = self._hash_password(password, salt)
+        except (ValueError, AttributeError):
+            # Handle cases where password_hash might be malformed or None
+            print(f"Delete failed: Could not parse password hash for user {user_id}.")
+            return False
+
+        if provided_hash != stored_hash:
+            print(f"Delete failed: Incorrect password for user {user_id}.")
+            return False # Incorrect password
+
+        # Step 2: Delete associated data (use transaction for atomicity)
+        try:
+            self.db_manager.connect() # Start transaction
+
+            # Delete reminders
+            self.db_manager.cursor.execute("DELETE FROM reminders WHERE user_id = ?", (user_id,))
+            print(f"Deleted reminders for user {user_id}.")
+
+            # Delete progress
+            self.db_manager.cursor.execute("DELETE FROM progress WHERE user_id = ?", (user_id,))
+            print(f"Deleted progress records for user {user_id}.")
+
+            # Delete challenge subscriptions
+            self.db_manager.cursor.execute("DELETE FROM user_challenges WHERE user_id = ?", (user_id,))
+            print(f"Deleted challenge subscriptions for user {user_id}.")
+
+            # Step 3: Delete the user record
+            self.db_manager.cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+            print(f"Deleted user record for user {user_id}.")
+
+            self.db_manager.connection.commit() # Commit all changes
+            print(f"Account deletion successful for user {user_id}.")
+
+            # If the deleted user is the currently logged-in user, log them out
+            if self.current_user and self.current_user["id"] == user_id:
+                self.logout()
+
+            return True
+
+        except sqlite3.Error as e:
+            print(f"Error during account deletion transaction for user {user_id}: {e}")
+            if self.db_manager.connection:
+                self.db_manager.connection.rollback() # Rollback on error
+            return False
+        finally:
+            self.db_manager.disconnect() # Ensure connection is closed

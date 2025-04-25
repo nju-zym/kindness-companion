@@ -70,6 +70,12 @@ class DatabaseManager:
                 self.cursor.execute("ALTER TABLE users ADD COLUMN avatar BLOB")
                 self.connection.commit()
                 print("Added 'avatar' BLOB column to 'users' table.")
+            # --- Add check for avatar_path column --- Start
+            if 'avatar_path' not in columns:
+                self.cursor.execute("ALTER TABLE users ADD COLUMN avatar_path TEXT")
+                self.connection.commit()
+                print("Added 'avatar_path' TEXT column to 'users' table.")
+            # --- Add check for avatar_path column --- End
             # --- Add check for bio column --- Start
             if 'bio' not in columns:
                 self.cursor.execute("ALTER TABLE users ADD COLUMN bio TEXT")

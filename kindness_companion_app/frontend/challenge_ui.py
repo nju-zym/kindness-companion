@@ -72,11 +72,11 @@ class ChallengeCard(QFrame):
         self.difficulty_label = QLabel(f"难度: {difficulty_text}")
         self.meta_layout.addWidget(self.difficulty_label)
 
-        # Streak (if subscribed)
-        if self.is_subscribed and self.streak > 0:
-            self.streak_label = QLabel(f"连续打卡: {self.streak}天")
-            self.streak_label.setObjectName("streak_label")  # Add object name if needed
-            self.meta_layout.addWidget(self.streak_label)
+        # --- Add streak label placeholder (always present, visibility toggled) ---
+        self.streak_label = QLabel("") # Create label, initially empty
+        self.streak_label.setObjectName("streak_label")
+        self.streak_label.setVisible(False) # Initially hidden
+        self.meta_layout.addWidget(self.streak_label)
 
         self.main_layout.addLayout(self.meta_layout)
 
@@ -84,54 +84,68 @@ class ChallengeCard(QFrame):
         self.button_layout = QHBoxLayout()
         self.button_layout.setAlignment(Qt.AlignRight)
 
-        icon_size = QSize(16, 16)  # Icon size for card buttons
+        # --- Create buttons but don't add them yet ---
+        self.icon_size = QSize(16, 16)  # Store icon size
 
-        # Subscribe/Unsubscribe button
-        if self.is_subscribed:
-            self.subscribe_button = QPushButton("取消订阅")
-            self.subscribe_button.setObjectName("unsubscribe_button")  # Set object name
-            self.subscribe_button.setIcon(QIcon(":/icons/x-circle.svg"))  # Add icon
-            self.subscribe_button.setIconSize(icon_size)
-            self.subscribe_button.clicked.connect(
-                lambda: self.unsubscribe_clicked.emit(self.challenge["id"])
-            )
+        self.subscribe_button = QPushButton("订阅挑战")
+        self.subscribe_button.setObjectName("subscribe_button")
+        self.subscribe_button.setIcon(QIcon(":/icons/plus-circle.svg"))
+        self.subscribe_button.setIconSize(self.icon_size)
+        self.subscribe_button.clicked.connect(
+            lambda: self.subscribe_clicked.emit(self.challenge["id"])
+        )
 
-            # Check-in button
-            self.check_in_button = QPushButton("今日打卡")
-            self.check_in_button.setObjectName("check_in_button")  # Set object name
-            self.check_in_button.setIcon(QIcon(":/icons/check-square.svg"))  # Add icon
-            self.check_in_button.setIconSize(icon_size)
-            self.check_in_button.clicked.connect(
-                lambda: self.check_in_clicked.emit(self.challenge["id"])
-            )
-            self.button_layout.addWidget(self.check_in_button)
-        else:
-            self.subscribe_button = QPushButton("订阅挑战")
-            self.subscribe_button.setObjectName("subscribe_button")  # Set object name
-            self.subscribe_button.setIcon(QIcon(":/icons/plus-circle.svg"))  # Add icon
-            self.subscribe_button.setIconSize(icon_size)
-            self.subscribe_button.clicked.connect(
-                lambda: self.subscribe_clicked.emit(self.challenge["id"])
-            )
+        self.unsubscribe_button = QPushButton("取消订阅")
+        self.unsubscribe_button.setObjectName("unsubscribe_button")
+        self.unsubscribe_button.setIcon(QIcon(":/icons/x-circle.svg"))
+        self.unsubscribe_button.setIconSize(self.icon_size)
+        self.unsubscribe_button.clicked.connect(
+            lambda: self.unsubscribe_clicked.emit(self.challenge["id"])
+        )
 
-        self.button_layout.addWidget(self.subscribe_button)
+        self.check_in_button = QPushButton("今日打卡")
+        self.check_in_button.setObjectName("check_in_button")
+        self.check_in_button.setIcon(QIcon(":/icons/check-square.svg"))
+        self.check_in_button.setIconSize(self.icon_size)
+        self.check_in_button.clicked.connect(
+            lambda: self.check_in_clicked.emit(self.challenge["id"])
+        )
 
+        # --- Add button layout to main layout ---
         self.main_layout.addLayout(self.button_layout)
 
-    def update_subscription(self, is_subscribed, streak=0):
-        """
-        Update the subscription status.
+        # --- Initial UI update based on initial state ---
+        self._update_card_elements()
 
-        Args:
-            is_subscribed (bool): Whether the user is subscribed
-            streak (int): Current streak
-        """
-        # Store new values
+    def update_ui(self, is_subscribed, streak):
+        """Updates the card's UI elements based on subscription and streak."""
         self.is_subscribed = is_subscribed
         self.streak = streak
+        self._update_card_elements()
 
-        # Clear layout
-        self.deleteLater()
+    def _update_card_elements(self):
+        """Helper method to update streak label and buttons."""
+        # --- Update Streak Label ---
+        if self.is_subscribed and self.streak > 0:
+            self.streak_label.setText(f"连续打卡: {self.streak}天")
+            self.streak_label.setVisible(True)
+        else:
+            self.streak_label.setText("") # Clear text
+            self.streak_label.setVisible(False)
+
+        # --- Update Buttons ---
+        # Clear existing buttons from layout first
+        while self.button_layout.count():
+            item = self.button_layout.takeAt(0)
+            if item.widget():
+                item.widget().setParent(None) # Remove widget from layout
+
+        # Add buttons based on subscription status
+        if self.is_subscribed:
+            self.button_layout.addWidget(self.check_in_button)
+            self.button_layout.addWidget(self.unsubscribe_button)
+        else:
+            self.button_layout.addWidget(self.subscribe_button)
 
 
 class ChallengeListWidget(QWidget):
@@ -285,18 +299,34 @@ class ChallengeListWidget(QWidget):
             is_subscribed = challenge["id"] in subscribed_ids
             streak = streaks.get(challenge["id"], 0) if is_subscribed else 0
 
-            card = ChallengeCard(challenge, is_subscribed, streak)
-            card.subscribe_clicked.connect(self.subscribe_to_challenge)
-            card.unsubscribe_clicked.connect(self.unsubscribe_from_challenge)
-            card.check_in_clicked.connect(self.check_in_challenge)
+            # Check if card already exists (e.g., after filter change)
+            if challenge["id"] in self.challenge_cards:
+                card = self.challenge_cards[challenge["id"]]
+                # Update existing card's data and UI (important for filters)
+                card.update_ui(is_subscribed, streak)
+            else:
+                # Create new card
+                card = ChallengeCard(challenge, is_subscribed, streak)
+                card.subscribe_clicked.connect(self.subscribe_to_challenge)
+                card.unsubscribe_clicked.connect(self.unsubscribe_from_challenge)
+                card.check_in_clicked.connect(self.check_in_challenge)
+                self.challenge_cards[challenge["id"]] = card
 
-            self.challenges_layout.addWidget(card, row, col)
-            self.challenge_cards[challenge["id"]] = card
+            # Add card to layout (might be re-adding if it existed)
+            # Ensure it's added correctly to the grid
+            # Check if widget is already in the layout to avoid issues
+            if self.challenges_layout.indexOf(card) == -1:
+                 self.challenges_layout.addWidget(card, row, col)
+            else: # If already in layout, ensure its position is correct (might not be needed if grid handles it)
+                 pass # Assume grid layout handles existing widgets correctly
 
             col += 1
             if col >= max_cols:
                 col = 0
                 row += 1
+
+        # Apply filters after loading/updating all cards
+        self.filter_challenges()
 
     def filter_challenges(self):
         """Filter challenges based on selected criteria."""
@@ -354,8 +384,10 @@ class ChallengeListWidget(QWidget):
         )
 
         if success:
-            # Update the challenge card
-            self.load_challenges()  # Reload all challenges for simplicity
+            # --- Update the specific challenge card ---
+            if challenge_id in self.challenge_cards:
+                card = self.challenge_cards[challenge_id]
+                card.update_ui(is_subscribed=True, streak=0) # Update UI directly
 
             # Show success message non-modally using AnimatedMessageBox
             challenge = self.challenge_manager.get_challenge_by_id(challenge_id)
@@ -392,8 +424,10 @@ class ChallengeListWidget(QWidget):
             )
 
             if success:
-                # Update the challenge card
-                self.load_challenges()  # Reload all challenges for simplicity
+                # --- Update the specific challenge card ---
+                if challenge_id in self.challenge_cards:
+                    card = self.challenge_cards[challenge_id]
+                    card.update_ui(is_subscribed=False, streak=0) # Update UI directly
 
     def check_in_challenge(self, challenge_id):
         """
@@ -442,12 +476,15 @@ class ChallengeListWidget(QWidget):
                     self.current_user["id"], challenge_id
                 )
 
+                # --- Update the specific challenge card ---
+                if challenge_id in self.challenge_cards:
+                    card = self.challenge_cards[challenge_id]
+                    # Pass the newly calculated streak
+                    card.update_ui(is_subscribed=True, streak=streak)
+
                 # Show success message non-modally using AnimatedMessageBox
                 checkin_success_msg = AnimatedMessageBox(self) # Use AnimatedMessageBox
                 checkin_success_msg.setWindowTitle("打卡成功")
                 checkin_success_msg.setText(f"恭喜您完成今日{challenge['title']}挑战！\n您已连续打卡 {streak} 天。")
                 checkin_success_msg.setIcon(QMessageBox.Information)
                 checkin_success_msg.showNonModal() # Use custom non-modal method
-
-                # Update the challenge card
-                self.load_challenges()  # Reload all challenges for simplicity

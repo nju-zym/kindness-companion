@@ -54,12 +54,31 @@ class DatabaseManager:
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             email TEXT UNIQUE,
-            avatar_path TEXT,  -- Add avatar path column
-            bio TEXT,          -- Add bio column
+            avatar_path TEXT,  -- Keep for potential fallback or future use
+            bio TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            last_login TIMESTAMP
+            last_login TIMESTAMP,
+            avatar BLOB        -- Add avatar blob column
         )
         ''')
+
+        # --- Check and add the avatar column if it doesn't exist ---
+        try:
+            self.cursor.execute("PRAGMA table_info(users)")
+            columns = [column[1] for column in self.cursor.fetchall()]
+            if 'avatar' not in columns:
+                self.cursor.execute("ALTER TABLE users ADD COLUMN avatar BLOB")
+                self.connection.commit()
+                print("Added 'avatar' BLOB column to 'users' table.")
+            # --- Add check for bio column --- Start
+            if 'bio' not in columns:
+                self.cursor.execute("ALTER TABLE users ADD COLUMN bio TEXT")
+                self.connection.commit()
+                print("Added 'bio' TEXT column to 'users' table.")
+            # --- Add check for bio column --- End
+        except sqlite3.Error as e:
+            print(f"Error checking/adding columns: {e}")
+        # --- End check ---
 
         # Create challenges table
         self.cursor.execute('''
@@ -142,10 +161,20 @@ class DatabaseManager:
             (22, '支持本地商家', '光顾一家本地小商店或餐馆', '社区互动', 2),
             (23, '无抱怨日', '尝试一整天不抱怨任何事情', '自我提升', 3),
             (24, '留下鼓励便条', '在公共场所（如图书馆的书里）留下一张鼓励的小便条', '精神成长', 2),
-            (25, '旧物改造', '将一件旧物品改造成有用的新东西', '环保', 3)
+            (25, '旧物改造', '将一件旧物品改造成有用的新东西', '环保', 3),
+            (26, '保持耐心', '在排队或遇到延误时保持耐心和礼貌', '日常行为', 2),
+            (27, '提供帮助', '主动询问身边的人是否需要帮助', '人际关系', 2),
+            (28, '减少塑料使用', '购物时自带购物袋，拒绝一次性塑料制品', '环保', 2),
+            (29, '参与社区清洁', '参加或组织一次社区清洁活动', '社区服务', 3),
+            (30, '冥想或正念练习', '进行10分钟的冥想或正念呼吸练习', '自我提升', 1),
+            (31, '鼓励他人', '给正在经历困难的朋友或家人发送鼓励信息', '人际关系', 2),
+            (32, '节约用电', '离开房间时随手关灯，拔掉不用的电器插头', '环保', 1),
+            (33, '阅读有益书籍', '阅读至少15分钟关于个人成长或积极心理学的书籍', '自我提升', 2),
+            (34, '帮助邻居', '帮助邻居做一些小事，如取快递、照看宠物', '社区互动', 2),
+            (35, '反思与记录', '花5分钟反思今天的善行和感受', '精神成长', 1)
         ''')
 
-        self.connection.commit()
+        self.connection.commit() # Commit changes if ALTER TABLE was executed
         self.disconnect()
 
     def execute_query(self, query, params=None):

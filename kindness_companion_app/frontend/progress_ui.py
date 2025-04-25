@@ -1,8 +1,8 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QFrame, QCalendarWidget, QComboBox, QGridLayout,
-    QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QMessageBox, # Keep QMessageBox for Icon enum
-    QGroupBox
+    QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QMessageBox,
+    QGroupBox, QSpacerItem, QProgressBar, QScrollArea # Add QScrollArea again for clarity
 )
 from PySide6.QtCore import Qt, Signal, Slot, QDate, QSize
 from PySide6.QtGui import QFont, QColor, QIcon, QTextCharFormat, QBrush
@@ -11,6 +11,7 @@ from PySide6.QtGui import QFont, QColor, QIcon, QTextCharFormat, QBrush
 from .widgets.animated_message_box import AnimatedMessageBox
 
 import datetime
+import logging
 
 
 class ProgressWidget(QWidget):
@@ -31,6 +32,32 @@ class ProgressWidget(QWidget):
         self.progress_tracker = progress_tracker
         self.challenge_manager = challenge_manager
         self.current_user = None
+
+        # Initialize UI attributes to None for clarity
+        self.main_layout = None
+        self.header_layout = None
+        self.title_label = None
+        self.filter_layout = None
+        self.challenge_label = None
+        self.challenge_combo = None
+        self.range_label = None
+        self.range_combo = None
+        self.main_content_layout = None
+        self.left_panel_widget = None # Initialize here
+        self.left_panel_layout = None
+        self.calendar_widget = None
+        self.stats_group = None
+        self.stats_layout = None
+        self.total_label = None
+        self.streak_label = None
+        self.rate_label = None
+        self.achievements_group = None
+        self.achievements_scroll_area = None
+        self.achievements_container = None
+        self.achievements_layout = None
+        self.achievements_placeholder = None
+        self.achievements_spacer = None
+        self.progress_table = None
 
         self.setup_ui()
 
@@ -71,13 +98,14 @@ class ProgressWidget(QWidget):
         self.main_content_layout = QHBoxLayout()
         self.main_content_layout.setSpacing(15)
 
-        # --- Left Panel ---
+        # --- Left Panel ---\n        self.left_panel_widget = QWidget()
         self.left_panel_widget = QWidget()
-        self.left_panel_widget.setObjectName("left_panel") # For potential styling
+        logging.debug(f"Value of self.left_panel_widget before setObjectName: {self.left_panel_widget}") # Add logging here
+        self.left_panel_widget.setObjectName("left_panel")
         self.left_panel_layout = QVBoxLayout(self.left_panel_widget)
-        self.left_panel_layout.setContentsMargins(0, 0, 0, 0) # No margins for the panel itself
+        self.left_panel_layout.setContentsMargins(0, 0, 0, 0)
         self.left_panel_layout.setSpacing(15)
-        self.left_panel_widget.setMaximumWidth(350) # Limit width of left panel
+        self.left_panel_widget.setMaximumWidth(350)
 
         # Calendar widget
         self.calendar_widget = QCalendarWidget()
@@ -101,17 +129,45 @@ class ProgressWidget(QWidget):
         self.stats_layout.addStretch()
         self.left_panel_layout.addWidget(self.stats_group)
 
-        # Achievements GroupBox
+        # Achievements GroupBox - Now contains the ScrollArea
         self.achievements_group = QGroupBox("我的成就")
-        self.achievements_group.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
-        self.achievements_layout = QVBoxLayout(self.achievements_group)
+        self.achievements_group.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding) # Allow groupbox to expand
+        achievements_group_layout = QVBoxLayout(self.achievements_group) # Layout for the groupbox itself
+        achievements_group_layout.setContentsMargins(5, 5, 5, 5) # Add some padding inside the groupbox
+
+        # Create Scroll Area for achievements
+        self.achievements_scroll_area = QScrollArea()
+        self.achievements_scroll_area.setWidgetResizable(True) # Important! Allows inner widget to resize
+        self.achievements_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff) # No horizontal scroll
+        self.achievements_scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded) # Show vertical scroll when needed
+        self.achievements_scroll_area.setFrameShape(QFrame.NoFrame) # Remove scroll area border if desired
+
+        # Create a container widget for the achievements layout
+        self.achievements_container = QWidget()
+        self.achievements_layout = QVBoxLayout(self.achievements_container) # The actual layout for achievements
+        self.achievements_layout.setAlignment(Qt.AlignTop) # Align items to the top
+        self.achievements_layout.setSpacing(8) # Spacing between achievements
+
+        # Add placeholder to the achievements layout
         self.achievements_placeholder = QLabel("暂无成就，继续努力吧！")
         self.achievements_placeholder.setAlignment(Qt.AlignCenter)
         self.achievements_layout.addWidget(self.achievements_placeholder)
+
+        # Add a spacer item at the end of the achievements layout to push content up
+        self.achievements_spacer = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.achievements_layout.addSpacerItem(self.achievements_spacer)
+
+        # Set the container widget for the scroll area
+        self.achievements_scroll_area.setWidget(self.achievements_container)
+
+        # Add the scroll area to the groupbox layout
+        achievements_group_layout.addWidget(self.achievements_scroll_area)
+
+        # Add Achievements GroupBox to Left Panel Layout
         self.left_panel_layout.addWidget(self.achievements_group)
 
         # Add Left Panel to Main Content Layout
-        self.main_content_layout.addWidget(self.left_panel_widget, 1) # Stretch factor 1
+        self.main_content_layout.addWidget(self.left_panel_widget, 1)
 
         # --- Right Panel (Table) ---
         # No need for an extra container widget, add table directly to the layout
@@ -396,37 +452,184 @@ class ProgressWidget(QWidget):
                  AnimatedMessageBox.showWarning(self, "操作失败", "无法撤销打卡记录，请稍后再试。")
 
     def load_achievements(self):
-        """Load and display user achievements/badges."""
+        """Load and display user achievements/badges within a scroll area."""
         if not self.current_user:
             return
 
-        # TODO: Implement achievement fetching and display logic
-        # achievements = self.progress_tracker.get_achievements(self.current_user["id"])
-        achievements = []  # Placeholder
+        user_id = self.current_user["id"]
 
-        # Clear previous achievements (if any)
-        while self.achievements_layout.count() > 1: # Keep placeholder if no achievements
-             item = self.achievements_layout.takeAt(0)
-             if item.widget():
-                 item.widget().deleteLater()
+        # --- Fetch achievement data (remains the same) ---
+        total_check_ins = self.progress_tracker.get_total_check_ins(user_id)
+        longest_streak = self.progress_tracker.get_longest_streak_all_challenges(user_id)
+        subscribed_challenges = self.challenge_manager.get_user_challenges(user_id)
+        subscribed_challenges_count = len(subscribed_challenges)
+        eco_check_ins = self.progress_tracker.get_check_ins_count_by_category(user_id, "环保")
+        community_check_ins = self.progress_tracker.get_check_ins_count_by_category(user_id, "社区服务")
 
-        if achievements:
+        # --- Define achievements_data (remains the same) ---
+        achievements_data = [
+            # --- Check-in Milestones ---
+            {"name": "善行初学者", "target": 10, "current": total_check_ins, "unit": "次打卡", "icon": ":/icons/award.svg"},
+            {"name": "善行践行者", "target": 50, "current": total_check_ins, "unit": "次打卡", "icon": ":/icons/award.svg"},
+            {"name": "善意大师", "target": 100, "current": total_check_ins, "unit": "次打卡", "icon": ":/icons/award.svg"},
+
+            # --- Streak Milestones ---
+            {"name": "坚持不懈", "target": 7, "current": longest_streak, "unit": "天连胜", "icon": ":/icons/zap.svg"},
+            {"name": "毅力之星", "target": 14, "current": longest_streak, "unit": "天连胜", "icon": ":/icons/zap.svg"},
+            {"name": "恒心典范", "target": 30, "current": longest_streak, "unit": "天连胜", "icon": ":/icons/zap.svg"},
+
+            # --- Subscription Milestones ---
+            {"name": "探索之心", "target": 5, "current": subscribed_challenges_count, "unit": "个挑战", "icon": ":/icons/book-open.svg"},
+            {"name": "挑战收藏家", "target": 10, "current": subscribed_challenges_count, "unit": "个挑战", "icon": ":/icons/book-open.svg"},
+            {"name": "领域专家", "target": 20, "current": subscribed_challenges_count, "unit": "个挑战", "icon": ":/icons/book-open.svg"},
+
+            # --- Category Milestones ---
+            {"name": "环保卫士", "target": 10, "current": eco_check_ins, "unit": "次环保行动", "icon": ":/icons/leaf.svg"},
+            {"name": "社区之星", "target": 10, "current": community_check_ins, "unit": "次社区服务", "icon": ":/icons/users.svg"}, # Assuming users.svg exists
+
+            # --- Generic Target Milestone ---
+            {"name": "目标达成者", "target": 25, "current": total_check_ins, "unit": "次打卡", "icon": ":/icons/target.svg"}, # Example using target.svg
+            {"name": "闪耀新星", "target": 15, "current": longest_streak, "unit": "天连胜", "icon": ":/icons/star.svg"}, # Example using star.svg
+        ]
+
+        # --- Clear previous achievements ---
+        self.clear_achievements() # Call the improved clear method first
+
+        achievements_added = False
+        # --- Populate achievements layout ---
+        for ach in achievements_data:
+            if ach["target"] > 0:
+                achievements_added = True
+                ach_layout = QHBoxLayout()
+                ach_layout.setSpacing(10)
+
+                # Icon Label (Optional)
+                icon_label = QLabel()
+                icon_path = ach.get("icon", None) # Get icon path, default to None
+                if icon_path:
+                    icon = QIcon(icon_path)
+                    if not icon.isNull():
+                         # Scale icon for display
+                         pixmap = icon.pixmap(QSize(20, 20)) # Adjust size as needed
+                         icon_label.setPixmap(pixmap)
+                    else:
+                         logging.warning(f"Failed to load achievement icon: {icon_path}")
+                         icon_label.setText("?") # Placeholder if icon fails
+                         icon_label.setFixedSize(20, 20)
+                         icon_label.setAlignment(Qt.AlignCenter)
+                else:
+                    icon_label.setFixedSize(20, 20) # Keep space consistent even without icon
+
+                icon_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+                ach_layout.addWidget(icon_label)
+
+
+                title_label = QLabel(ach["name"])
+                title_label.setMinimumWidth(70) # Adjust width if needed with icon
+                title_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+
+                progress_bar = QProgressBar()
+                progress_bar.setRange(0, ach['target'])
+                display_value = min(ach['current'], ach['target'])
+                progress_bar.setValue(display_value)
+                progress_bar.setFormat(f"{display_value}/{ach['target']} {ach['unit']}") # Simplified format
+                progress_bar.setAlignment(Qt.AlignCenter)
+                progress_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+
+                # --- Styling (remains the same) ---
+                if ach["current"] >= ach["target"]:
+                    progress_bar.setStyleSheet("""
+                        QProgressBar::chunk { background-color: #4CAF50; border-radius: 4px; }
+                        QProgressBar { border: 1px solid grey; border-radius: 5px; text-align: center; }
+                    """)
+                else:
+                     progress_bar.setStyleSheet("""
+                        QProgressBar { border: 1px solid grey; border-radius: 5px; text-align: center; }
+                        QProgressBar::chunk { background-color: #2196F3; border-radius: 4px; width: 10px; margin: 0.5px; }
+                     """)
+
+                ach_layout.addWidget(title_label)
+                ach_layout.addWidget(progress_bar)
+
+                # Insert the new achievement layout *before* the spacer in achievements_layout
+                insert_index = self.achievements_layout.count() - 1 # Index before the spacer
+                self.achievements_layout.insertLayout(insert_index, ach_layout)
+
+        # --- Manage placeholder visibility ---
+        if achievements_added:
             self.achievements_placeholder.hide()
-            # TODO: Add widgets for each achievement
-            # for achievement in achievements:
-            #     achievement_label = QLabel(f"徽章: {achievement['name']}")
-            #     self.achievements_layout.addWidget(achievement_label)
-            pass # Placeholder for actual implementation
+            self.achievements_spacer.changeSize(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding) # Ensure spacer pushes content up
         else:
             self.achievements_placeholder.setText("暂无成就，继续努力吧！")
             self.achievements_placeholder.show()
+            self.achievements_spacer.changeSize(0, 0, QSizePolicy.Minimum, QSizePolicy.Fixed) # Collapse spacer if no achievements
+
 
     def clear_achievements(self):
-        """Clear the achievements display area."""
-         # Clear previous achievements (if any)
-        while self.achievements_layout.count() > 1:
-             item = self.achievements_layout.takeAt(0)
-             if item.widget():
-                 item.widget().deleteLater()
-        self.achievements_placeholder.setText("成就徽章将在此处展示。")
-        self.achievements_placeholder.show()
+        """Clear the achievements display area within the scroll area, keeping the placeholder and spacer."""
+        # Iterate backwards to remove achievement layouts, stopping before placeholder and spacer
+        # The last two items are placeholder (QLabel) and spacer (QSpacerItem)
+        while self.achievements_layout.count() > 2: # Keep placeholder and spacer
+            item = self.achievements_layout.takeAt(0) # Remove from the top
+            if item is None:
+                continue
+
+            layout = item.layout()
+            if layout is not None:
+                # Delete widgets within the layout
+                while layout.count():
+                    child_item = layout.takeAt(0)
+                    if child_item:
+                        widget = child_item.widget()
+                        if widget:
+                            widget.deleteLater()
+                # Delete the layout itself (though takeAt should handle removal)
+                # del layout # Optional explicit deletion
+            else:
+                # Should not happen if we only add layouts, but handle just in case
+                widget = item.widget()
+                if widget:
+                    widget.deleteLater()
+
+        # Ensure the placeholder is visible and has the correct text after clearing
+        if self.achievements_layout.count() == 2: # Should be placeholder + spacer
+            placeholder_item = self.achievements_layout.itemAt(0)
+            spacer_item = self.achievements_layout.itemAt(1)
+
+            if placeholder_item and isinstance(placeholder_item.widget(), QLabel) and spacer_item and spacer_item.spacerItem():
+                placeholder_item.widget().setText("成就徽章将在此处展示。")
+                placeholder_item.widget().show()
+                # Collapse spacer when placeholder is shown
+                spacer_item.spacerItem().changeSize(0, 0, QSizePolicy.Minimum, QSizePolicy.Fixed)
+            else:
+                 logging.warning("clear_achievements: Layout structure incorrect after clearing.")
+                 # Attempt to reset placeholder anyway
+                 self.achievements_placeholder.setText("成就徽章将在此处展示。")
+                 self.achievements_placeholder.show()
+                 # Try to find and collapse spacer
+                 for i in range(self.achievements_layout.count()):
+                     item = self.achievements_layout.itemAt(i)
+                     if item and item.spacerItem():
+                         item.spacerItem().changeSize(0, 0, QSizePolicy.Minimum, QSizePolicy.Fixed)
+                         break
+
+        elif self.achievements_layout.count() == 0: # Should not happen with placeholder/spacer logic
+             logging.warning("clear_achievements: Layout became empty, re-adding placeholder and spacer.")
+             self.achievements_layout.addWidget(self.achievements_placeholder)
+             self.achievements_layout.addSpacerItem(self.achievements_spacer)
+             self.achievements_placeholder.setText("成就徽章将在此处展示。")
+             self.achievements_placeholder.show()
+             self.achievements_spacer.changeSize(0, 0, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        else:
+             logging.warning(f"clear_achievements: {self.achievements_layout.count()} items remain, expected 2.")
+             # Ensure placeholder is visible
+             self.achievements_placeholder.setText("成就徽章将在此处展示。")
+             self.achievements_placeholder.show()
+             # Try to find and collapse spacer
+             for i in range(self.achievements_layout.count()):
+                 item = self.achievements_layout.itemAt(i)
+                 if item and item.spacerItem():
+                     item.spacerItem().changeSize(0, 0, QSizePolicy.Minimum, QSizePolicy.Fixed)
+                     break
+
+# ... (rest of the class) ...

@@ -207,7 +207,7 @@ class ThemeManager:
 def main():
     """Main application entry point."""
     # Set up logging
-    logger = setup_logging()
+    logger = setup_logging(log_level=logging.DEBUG) # Set log level to DEBUG
     logger.info("Starting Kindness Challenge application")
 
     # Create application

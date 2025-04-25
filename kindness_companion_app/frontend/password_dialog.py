@@ -7,6 +7,8 @@ from PySide6.QtGui import QIcon, QScreen
 
 # Import the new BaseDialog
 from .widgets.base_dialog import BaseDialog
+# Import AnimatedMessageBox
+from .widgets.animated_message_box import AnimatedMessageBox
 
 # Change inheritance from QDialog to BaseDialog
 class PasswordDialog(BaseDialog):
@@ -140,22 +142,26 @@ class PasswordDialog(BaseDialog):
 
         # 验证密码输入
         if not current_password:
-            QMessageBox.warning(self, "保存失败", "请输入当前密码")
+            # Use AnimatedMessageBox
+            AnimatedMessageBox.showWarning(self, "保存失败", "请输入当前密码")
             self.current_password_edit.setFocus() # Set focus back
             return
 
         if not new_password:
-            QMessageBox.warning(self, "保存失败", "请输入新密码")
+            # Use AnimatedMessageBox
+            AnimatedMessageBox.showWarning(self, "保存失败", "请输入新密码")
             self.new_password_edit.setFocus() # Set focus back
             return
 
         if len(new_password) < 6: # Example: Add minimum length check
-             QMessageBox.warning(self, "保存失败", "新密码长度至少需要6位")
+             # Use AnimatedMessageBox
+             AnimatedMessageBox.showWarning(self, "保存失败", "新密码长度至少需要6位")
              self.new_password_edit.setFocus()
              return
 
         if new_password != confirm_password:
-            QMessageBox.warning(self, "保存失败", "两次输入的新密码不一致")
+            # Use AnimatedMessageBox
+            AnimatedMessageBox.showWarning(self, "保存失败", "两次输入的新密码不一致")
             self.confirm_password_edit.clear()
             self.confirm_password_edit.setFocus() # Set focus back
             return
@@ -167,7 +173,8 @@ class PasswordDialog(BaseDialog):
         )
 
         if not user:
-            QMessageBox.warning(self, "保存失败", "当前密码不正确")
+            # Use AnimatedMessageBox
+            AnimatedMessageBox.showWarning(self, "保存失败", "当前密码不正确")
             self.current_password_edit.clear() # Clear incorrect password
             self.current_password_edit.setFocus() # Set focus back
             return
@@ -185,9 +192,9 @@ class PasswordDialog(BaseDialog):
             self.new_password_edit.clear()
             self.confirm_password_edit.clear()
 
-            # Show success message using standard QMessageBox (relative to parent)
-            parent_widget = self.parent() if self.parent() else self
-            QMessageBox.information(parent_widget, "成功", "密码已成功修改！")
+            # Show success message using AnimatedMessageBox
+            # Pass self as parent for the message box
+            AnimatedMessageBox.showInformation(self, "成功", "密码已成功修改！")
 
             # Emit signal
             updated_user = self.user_manager.get_user_by_id(self.current_user["id"])
@@ -197,6 +204,6 @@ class PasswordDialog(BaseDialog):
             # Accept the dialog (triggers animated close via BaseDialog)
             self.accept()
         else:
-            # Show error message using standard QMessageBox
-            QMessageBox.warning(self, "保存失败", "密码修改失败，请稍后重试")
+            # Show error message using AnimatedMessageBox
+            AnimatedMessageBox.showWarning(self, "保存失败", "密码修改失败，请稍后重试")
             # Do not close the dialog on failure

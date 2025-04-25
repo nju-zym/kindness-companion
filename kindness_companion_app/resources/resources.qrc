@@ -28,6 +28,14 @@
     <file>icons/user.svg</file>
     <file>icons/users.svg</file>
     <file>icons/x-circle.svg</file>
+    <!-- Added achievement icons -->
+    <file>icons/award.svg</file>
+    <file>icons/zap.svg</file>
+    <file>icons/book-open.svg</file>
+    <file>icons/leaf.svg</file>
+    <file>icons/star.svg</file>
+    <file>icons/target.svg</file>
+    <file>icons/image.svg</file> <!-- Added missing image icon -->
     <!-- Add image file -->
     <file>images/profilePicture.png</file>
 </qresource>

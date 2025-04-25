@@ -316,10 +316,14 @@ def main():
         screen = QApplication.primaryScreen()
         if screen:
             screen_geometry = screen.availableGeometry()
-            # Get geometry AFTER show()
-            window_geometry = main_window.frameGeometry()
+            # Ensure window size is finalized before getting geometry
+            main_window.adjustSize() # Adjust size based on content first
+            window_geometry = main_window.frameGeometry() # Get geometry AFTER show() and adjustSize()
             center_point = screen_geometry.center()
             top_left = center_point - QPoint(window_geometry.width() // 2, window_geometry.height() // 2)
+            # Ensure top-left is within available screen bounds
+            top_left.setX(max(screen_geometry.left(), min(top_left.x(), screen_geometry.right() - window_geometry.width())))
+            top_left.setY(max(screen_geometry.top(), min(top_left.y(), screen_geometry.bottom() - window_geometry.height())))
             main_window.move(top_left)
             logger.info(f"Centered main window on screen at {top_left.x()},{top_left.y()} (post-show)")
         else:

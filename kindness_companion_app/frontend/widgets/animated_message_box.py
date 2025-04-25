@@ -121,9 +121,9 @@ class AnimatedMessageBox(QMessageBox):
     def _handle_animation_finished(self):
         """Called after fade-out animation completes."""
         if self._is_closing:
-            # Use super().done() with the stored role to finish closing
-            # This ensures the correct result is set for exec()
-            super().done(self._result_role)
+            # Use QMessageBox.done() directly, passing self as the instance,
+            # to correctly handle the ButtonRole enum.
+            QMessageBox.done(self, self._result_role)
             self.animation_finished.emit() # Emit signal after closing
             # Reset flag after closing is complete
             # self._is_closing = False # Resetting here might be too early if done() triggers events

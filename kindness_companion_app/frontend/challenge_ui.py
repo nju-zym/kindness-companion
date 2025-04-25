@@ -193,6 +193,8 @@ class ChallengeListWidget(QWidget):
         self.category_combo = QComboBox()
         self.category_combo.addItem("全部分类", None)
         self.category_combo.currentIndexChanged.connect(self.filter_challenges)
+        self.category_combo.setMinimumWidth(140) # Increased minimum width
+        self.category_combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.filter_layout.addWidget(self.category_label)
         self.filter_layout.addWidget(self.category_combo)
 
@@ -203,6 +205,8 @@ class ChallengeListWidget(QWidget):
         for i in range(1, 6):
             self.difficulty_combo.addItem("★" * i, i)
         self.difficulty_combo.currentIndexChanged.connect(self.filter_challenges)
+        self.difficulty_combo.setMinimumWidth(120) # Increased minimum width
+        self.difficulty_combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.filter_layout.addWidget(self.difficulty_label)
         self.filter_layout.addWidget(self.difficulty_combo)
 
@@ -213,6 +217,8 @@ class ChallengeListWidget(QWidget):
         self.subscription_combo.addItem("已订阅", True)
         self.subscription_combo.addItem("未订阅", False)
         self.subscription_combo.currentIndexChanged.connect(self.filter_challenges)
+        self.subscription_combo.setMinimumWidth(120) # Increased minimum width
+        self.subscription_combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.filter_layout.addWidget(self.subscription_label)
         self.filter_layout.addWidget(self.subscription_combo)
 

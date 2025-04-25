@@ -3,8 +3,8 @@ import os
 import platform
 import logging
 from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QIcon, QFont, QFontDatabase
-from PySide6.QtCore import QFile, QTextStream, QDir, QOperatingSystemVersion, Qt, QEvent
+from PySide6.QtGui import QIcon, QFont, QFontDatabase, QScreen
+from PySide6.QtCore import QFile, QTextStream, QDir, QOperatingSystemVersion, Qt, QEvent, QPoint
 
 from frontend.main_window import MainWindow
 from backend.database_manager import DatabaseManager
@@ -285,6 +285,23 @@ def main():
         progress_tracker,
         reminder_scheduler # Pass the instance
     )
+
+    # --- Center the main window before showing --- Start
+    try:
+        screen = QApplication.primaryScreen()
+        if screen:
+            screen_geometry = screen.availableGeometry()
+            # Use frameGeometry() to get size including window frame for better centering
+            window_geometry = main_window.frameGeometry()
+            center_point = screen_geometry.center()
+            top_left = center_point - QPoint(window_geometry.width() // 2, window_geometry.height() // 2)
+            main_window.move(top_left)
+            logger.info(f"Centered main window on screen at {top_left.x()},{top_left.y()}")
+        else:
+            logger.warning("Could not get primary screen to center main window.")
+    except Exception as e:
+        logger.error(f"Error centering main window: {e}")
+    # --- Center the main window before showing --- End
 
     # Connect the scheduler shutdown to the application's aboutToQuit signal
     app.aboutToQuit.connect(reminder_scheduler.shutdown)

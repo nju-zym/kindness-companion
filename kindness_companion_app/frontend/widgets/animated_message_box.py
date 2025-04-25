@@ -1,115 +1,139 @@
 from PySide6.QtWidgets import QMessageBox, QWidget, QDialog, QApplication
-from PySide6.QtCore import QPropertyAnimation, QEasingCurve, QTimer, Signal, Slot
+# Make sure QPoint is imported
+from PySide6.QtCore import QPropertyAnimation, QEasingCurve, QTimer, Signal, Slot, QPoint, QEvent
 from PySide6.QtGui import QScreen
 
 
+# Keep inheriting from QMessageBox
 class AnimatedMessageBox(QMessageBox):
     """
     A QMessageBox subclass with fade-in and fade-out animations.
-    Provides static methods similar to QMessageBox and a non-modal option.
+    Uses the same animation and centering logic as BaseDialog.
     """
     animation_finished = Signal() # Signal emitted when close animation finishes
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
+        # --- Copied from BaseDialog --- Start
         self.setWindowOpacity(0.0) # Start fully transparent
+        # self.setModal(True) # QMessageBox handles modality differently (exec vs show)
+
+        self._is_closing = False
+        # QMessageBox uses button roles/results differently than QDialog.Accepted/Rejected
+        # We'll store the clicked button role or a default if closed via 'X'
+        self._result_role = QMessageBox.InvalidRole
 
         # Fade-in animation
         self.fade_in_animation = QPropertyAnimation(self, b"windowOpacity")
-        self.fade_in_animation.setDuration(300) # Adjust duration as needed
+        self.fade_in_animation.setDuration(300)
         self.fade_in_animation.setStartValue(0.0)
         self.fade_in_animation.setEndValue(1.0)
         self.fade_in_animation.setEasingCurve(QEasingCurve.InOutQuad)
 
         # Fade-out animation
         self.fade_out_animation = QPropertyAnimation(self, b"windowOpacity")
-        self.fade_out_animation.setDuration(300) # Adjust duration as needed
+        self.fade_out_animation.setDuration(300)
         self.fade_out_animation.setStartValue(1.0)
         self.fade_out_animation.setEndValue(0.0)
         self.fade_out_animation.setEasingCurve(QEasingCurve.InOutQuad)
 
-        # Connect fade-out finished to actually close the dialog
+        # Connect fade-out finished to the handler
         self.fade_out_animation.finished.connect(self._handle_animation_finished)
+        # --- Copied from BaseDialog --- End
 
-        self._is_closing = False # Flag to prevent multiple close attempts
-        self._result = QMessageBox.NoButton # Store result for accept/reject
+    # --- Copied from BaseDialog (_center_window logic) --- Start
+    def _center_window(self):
+        """Centers the dialog on the parent or screen."""
+        try:
+            if self.parent():
+                parent_rect = self.parent().geometry()
+                geo = self.frameGeometry() # Use frameGeometry for size including decorations
+                center_point = parent_rect.center()
+                top_left = center_point - QPoint(geo.width() // 2, geo.height() // 2)
+                self.move(top_left)
+            else:
+                # Center on the screen if no parent
+                screen = QApplication.primaryScreen()
+                if screen:
+                    screen_geometry = screen.availableGeometry()
+                    geo = self.frameGeometry()
+                    center_point = screen_geometry.center()
+                    top_left = center_point - QPoint(geo.width() // 2, geo.height() // 2)
+                    self.move(top_left)
+        except Exception as e:
+            # Log error if centering fails, but don't prevent showing
+            print(f"Error centering AnimatedMessageBox: {e}")
+    # --- Copied from BaseDialog (_center_window logic) --- End
 
-    def _handle_animation_finished(self):
-        """Called after fade-out animation completes."""
-        self._is_closing = False # Reset flag
-        # Use done() which handles both accept and reject based on _result (now an int)
-        super().done(self._result) # Pass the integer result
-        self.animation_finished.emit() # Emit signal after closing
-
+    # --- Copied/Adapted from BaseDialog --- Start
     def showEvent(self, event):
-        """Override showEvent to trigger fade-in animation."""
-        # Center the window before showing
-        if self.parent():
-            parent_rect = self.parent().geometry()
-            self.move(parent_rect.center() - self.rect().center())
-        else:
-            # Center on the screen if no parent
-            screen_geometry = QScreen.availableGeometry(QApplication.primaryScreen())
-            self.move(screen_geometry.center() - self.rect().center())
-
-        self.fade_in_animation.start()
+        """Override showEvent to center and trigger fade-in animation."""
+        # Call super().showEvent first
         super().showEvent(event)
+        # Then center the window
+        self._center_window()
+        self._is_closing = False # Reset closing flag on show
+        # Start animation AFTER centering and super().showEvent
+        self.setWindowOpacity(0.0) # Ensure starts transparent
+        self.fade_in_animation.start()
 
     def closeEvent(self, event):
         """Override closeEvent to trigger fade-out animation."""
         if not self._is_closing and self.windowOpacity() > 0:
             self._is_closing = True
-            event.ignore() # Ignore the immediate close request
-            # Default result for closing via 'X' is Rejected
-            self._result = QDialog.Rejected # Use integer result code
+            # For QMessageBox, closing via 'X' usually means RejectRole or NoRole depending on buttons
+            # Let's default to RejectRole, exec() will handle the actual return value.
+            self._result_role = QMessageBox.RejectRole
+            event.ignore()
             self.fade_out_animation.start()
+        elif self._is_closing:
+            event.ignore() # Ignore subsequent close events while animating
         else:
-            # Allow close if already closing or transparent
-            # Check if the event is spontaneous (system-generated) before accepting
-            if not event.spontaneous() or self._is_closing:
-                 super().closeEvent(event)
-            else:
-                 # If spontaneous and not already closing, ignore it
-                 # as the animation should handle the closing.
-                 event.ignore()
+            # If already transparent or not shown, accept the event to allow normal closing
+            # This case might happen if close() is called before show() or after fade-out
+            event.accept()
 
+    # QMessageBox doesn't have accept/reject like QDialog.
+    # Instead, clicking buttons calls done() with the button's role.
+    # We override done() to handle the animation.
 
-    def accept(self):
-        """Override accept to trigger fade-out animation."""
+    def done(self, role: int): # role is typically QMessageBox.ButtonRole
+        """Override done to set result role and trigger animated close."""
+        # Only start closing animation if not already closing and visible
         if not self._is_closing and self.windowOpacity() > 0:
             self._is_closing = True
-            self._result = QDialog.Accepted # Use integer result code
+            self._result_role = role # Store the role of the button clicked
+            # Don't call super().done() yet, start animation
             self.fade_out_animation.start()
-        # Do not call super().accept() here, wait for animation
+        elif not self._is_closing:
+             # If done() is called when not visible (e.g., programmatically before show()),
+             # just call the original done() to set the result immediately.
+             super().done(role)
 
-    def reject(self):
-        """Override reject to trigger fade-out animation."""
-        if not self._is_closing and self.windowOpacity() > 0:
-            self._is_closing = True
-            self._result = QDialog.Rejected # Use integer result code
-            self.fade_out_animation.start()
-        # Do not call super().reject() here, wait for animation
-
-    def done(self, result: int): # Ensure result is an integer
-        """Override done to trigger fade-out animation."""
-        if not self._is_closing and self.windowOpacity() > 0:
-            self._is_closing = True
-            self._result = result # Store the integer result
-            self.fade_out_animation.start()
-        # Do not call super().done() here, wait for animation
+    def _handle_animation_finished(self):
+        """Called after fade-out animation completes."""
+        if self._is_closing:
+            # Use super().done() with the stored role to finish closing
+            # This ensures the correct result is set for exec()
+            super().done(self._result_role)
+            self.animation_finished.emit() # Emit signal after closing
+            # Reset flag after closing is complete
+            # self._is_closing = False # Resetting here might be too early if done() triggers events
+            # It's better to reset in showEvent
+    # --- Copied/Adapted from BaseDialog --- End
 
     def showNonModal(self, auto_close_delay_ms=3000):
         """Show the message box non-modally and optionally auto-close."""
         self.setModal(False)
-        self.show() # Triggers showEvent for fade-in
+        self.show() # Triggers showEvent for centering and fade-in
 
         if auto_close_delay_ms > 0:
             # Use QTimer.singleShot connected to the close method
-            # Use self.close which triggers the fade-out animation
+            # self.close triggers the animated closeEvent
             QTimer.singleShot(auto_close_delay_ms, self.close)
 
-    # --- Static Methods ---
-    # Ensure static methods return the integer result from exec()
+    # --- Static Methods (remain largely the same) ---
+    # They now benefit from the updated animation/centering logic when creating instances
     @staticmethod
     def showInformation(parent, title, text, buttons=QMessageBox.Ok, defaultButton=QMessageBox.NoButton):
         msgBox = AnimatedMessageBox(parent)
@@ -118,7 +142,7 @@ class AnimatedMessageBox(QMessageBox):
         msgBox.setIcon(QMessageBox.Information)
         msgBox.setStandardButtons(buttons)
         msgBox.setDefaultButton(defaultButton)
-        return msgBox.exec() # exec() returns the integer result
+        return msgBox.exec() # exec() returns the standard button clicked (e.g., QMessageBox.Ok)
 
     @staticmethod
     def showWarning(parent, title, text, buttons=QMessageBox.Ok, defaultButton=QMessageBox.NoButton):
@@ -128,7 +152,7 @@ class AnimatedMessageBox(QMessageBox):
         msgBox.setIcon(QMessageBox.Warning)
         msgBox.setStandardButtons(buttons)
         msgBox.setDefaultButton(defaultButton)
-        return msgBox.exec() # exec() returns the integer result
+        return msgBox.exec()
 
     @staticmethod
     def showCritical(parent, title, text, buttons=QMessageBox.Ok, defaultButton=QMessageBox.NoButton):
@@ -138,7 +162,7 @@ class AnimatedMessageBox(QMessageBox):
         msgBox.setIcon(QMessageBox.Critical)
         msgBox.setStandardButtons(buttons)
         msgBox.setDefaultButton(defaultButton)
-        return msgBox.exec() # exec() returns the integer result
+        return msgBox.exec()
 
     @staticmethod
     def showQuestion(parent, title, text, buttons=QMessageBox.Yes | QMessageBox.No, defaultButton=QMessageBox.NoButton):
@@ -148,35 +172,8 @@ class AnimatedMessageBox(QMessageBox):
         msgBox.setIcon(QMessageBox.Question)
         msgBox.setStandardButtons(buttons)
         msgBox.setDefaultButton(defaultButton)
-
-        msgBox.exec() # Execute the dialog
-
-        # After exec() returns, get the button that was clicked
-        clicked_button_widget = msgBox.clickedButton()
-
-        if clicked_button_widget:
-            # If a button was clicked, find its corresponding standard enum value
-            standard_button_enum = msgBox.standardButton(clicked_button_widget)
-            if standard_button_enum != QMessageBox.NoButton:
-                # Return the standard enum (e.g., QMessageBox.Yes, QMessageBox.No)
-                return standard_button_enum
-            else:
-                # It was a custom button, not a standard one.
-                # For showQuestion, typically we expect standard buttons.
-                # Return the default button as a fallback.
-                return defaultButton
-        else:
-            # No button was clicked (e.g., closed via 'X' button)
-            # Typically corresponds to rejection. Return No if available, else Cancel, else default.
-            # Check if No button exists in the provided buttons flags
-            if buttons & QMessageBox.No:
-                return QMessageBox.No
-            # Check if Cancel button exists
-            elif buttons & QMessageBox.Cancel:
-                return QMessageBox.Cancel
-            # Otherwise, return the default button if it's not NoButton, else No as a final fallback
-            else:
-                return defaultButton if defaultButton != QMessageBox.NoButton else QMessageBox.No
+        # exec() returns the standard button enum value (e.g., QMessageBox.Yes)
+        return msgBox.exec()
 
 # Example Usage (if run directly)
 if __name__ == '__main__':

@@ -1,0 +1,4 @@
+PySide6
+zhipuai
+APScheduler
+# Add other dependencies here if needed

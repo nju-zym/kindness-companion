@@ -1,3 +1,5 @@
+# TODO: 实现社区善意墙展示界面 ([可选])
+
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PySide6.QtCore import Slot
 

@@ -53,17 +53,85 @@ def generate_weekly_report(user_id: int) -> str:
 
 def _get_user_data_for_report(user_id: int) -> Dict[str, Any]:
     """
-    Placeholder: Fetches aggregated user data needed for the report for the past week.
-    TODO: Replace with actual database queries using backend modules.
+    Fetches aggregated user data needed for the report for the past week.
     """
-    logger.info(f"Fetching report data for user {user_id} (using placeholder data).")
-    # Return mock data for now
-    return {
-        "check_ins": 5,
-        "streak": 3,
-        "reflections": 2,
-        "top_category": "社区服务",
-        "new_achievements": ["善意新手"]
+    logger.info(f"Fetching report data for user {user_id}")
+
+    try:
+        # Import backend modules here to avoid circular imports
+        from backend.database_manager import DatabaseManager
+        from backend.progress_tracker import ProgressTracker
+        from backend.challenge_manager import ChallengeManager
+
+        # Initialize backend components
+        db_manager = DatabaseManager()
+        progress_tracker = ProgressTracker(db_manager)
+        challenge_manager = ChallengeManager(db_manager)
+
+        # Get data for the past week
+        import datetime
+        end_date = datetime.date.today()
+        start_date = end_date - datetime.timedelta(days=7)
+
+        # Get check-ins for the past week
+        check_ins = progress_tracker.get_all_user_check_ins(
+            user_id,
+            start_date.isoformat(),
+            end_date.isoformat()
+        )
+
+        # Count total check-ins
+        total_check_ins = len(check_ins)
+
+        # Count reflections (check-ins with non-empty notes)
+        reflections = sum(1 for ci in check_ins if ci.get("notes") and ci.get("notes").strip())
+
+        # Get current streak across all challenges
+        longest_streak = progress_tracker.get_longest_streak_all_challenges(user_id)
+
+        # Get top category
+        category_counts = {}
+        for ci in check_ins:
+            challenge = challenge_manager.get_challenge_by_id(ci.get("challenge_id"))
+            if challenge and "category" in challenge:
+                category = challenge["category"]
+                category_counts[category] = category_counts.get(category, 0) + 1
+
+        top_category = "无" if not category_counts else max(category_counts, key=category_counts.get)
+
+        # Get newly achieved milestones
+        # For simplicity, we'll just check if any achievements were reached in the past week
+        # A more sophisticated implementation would track when achievements were unlocked
+        all_check_ins = progress_tracker.get_total_check_ins(user_id)
+        new_achievements = []
+
+        # Check for check-in milestones
+        for milestone, name in [(10, "善行初学者"), (50, "善行践行者"), (100, "善意大师")]:
+            if all_check_ins >= milestone and all_check_ins - total_check_ins < milestone:
+                new_achievements.append(name)
+
+        # Check for streak milestones
+        for milestone, name in [(7, "坚持不懈"), (14, "毅力之星"), (30, "恒心典范")]:
+            if longest_streak >= milestone:
+                new_achievements.append(name)
+
+        # Return the aggregated data
+        return {
+            "check_ins": total_check_ins,
+            "streak": longest_streak,
+            "reflections": reflections,
+            "top_category": top_category,
+            "new_achievements": new_achievements
+        }
+    except Exception as e:
+        logger.error(f"Error fetching user data for report: {e}", exc_info=True)
+        # Return fallback data if there's an error
+        return {
+            "check_ins": 0,
+            "streak": 0,
+            "reflections": 0,
+            "top_category": "无",
+            "new_achievements": []
         }
 
 def _call_text_generation_api(prompt: str) -> str | None:

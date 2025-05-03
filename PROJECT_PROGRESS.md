@@ -25,7 +25,8 @@
     *   `frontend/progress_ui.py`: 实现了进度统计、日历高亮、打卡记录表格、成就徽章的加载和展示逻辑。
     *   `frontend/widgets/`: 包含一些自定义控件，如 `AnimatedMessageBox`, `BaseDialog`。
     *   `frontend/widgets/ai_consent_dialog.py`: ✅ 已创建 AI 同意对话框 UI。
-    *   `frontend/pet_ui.py`: ✅ 已实现 AI 电子宠物交互界面逻辑，连接 `ai_core.pet_handler`。**已集成 AI 同意检查和对话框弹出逻辑。**
+    *   `frontend/pet_ui.py`: ✅ 已实现 AI 电子宠物交互界面逻辑，连接 `ai_core.pet_handler`。**已集成 AI 同意检查和对话框弹出逻辑。** **已实现 GIF 动画圆形遮罩和透明背景。**
+    *   `frontend/user_auth.py`: ✅ 实现了登录和注册界面。**已集成 `PetWidget` 以在登录界面显示动画，并修复了动画不显示的 Bug。**
 *   **✅ 应用配置与资源:**
     *   `main.py`: 应用入口，包含字体加载 (`load_fonts`)、主题管理 (`ThemeManager` 支持浅色/深色模式切换)、基础组件初始化。
     *   `resources/`: 包含图标、字体、样式表 (QSS)、动画等资源。
@@ -38,7 +39,7 @@
     *   `emotion_analyzer.py`: ✅ 已实现调用 ZhipuAI API 分析情感。
     *   `pet_handler.py`: ✅ 已实现核心宠物交互逻辑，集成对话和情感分析。
 *   **✅ 隐私与安全:**
-    *   **✅** 实现明确的用户同意 (Opt-in) 流程：在 `frontend/pet_ui.py` 中首次调用 AI 功能前检查同意状态 (`user_manager.get_ai_consent`)，如果未同意则显示 `AIConsentDialog`，并根据结果更新数据库 (`user_manager.set_ai_consent`)。
+    *   **✅** 实现明确的用户同意 (Opt-in) 流程：在 `frontend/pet_ui.py` 中首次调用 AI 功能前检查同意状态 (`user_manager.get_ai_consent`)，如果未同意则显示 `AIConsentDialog`，并根据结果更新数据库 (`user_manager.set_ai_consent`)。**已修复同意对话框在每次登录时都弹出的 Bug。**
     *   **✅** 确保 `config.py` 中的 API Key 安全管理（已添加到 `.gitignore`）。
 
 ## 3. 进行中 / 待办事项 (TODO)

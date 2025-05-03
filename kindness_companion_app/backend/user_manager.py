@@ -128,7 +128,7 @@ class UserManager:
                 (user["id"],)
             )
 
-            # Set current user, including the avatar blob
+            # Set current user, including the avatar blob and AI consent
             self.current_user = {
                 "id": user["id"],
                 "username": user["username"],
@@ -136,7 +136,8 @@ class UserManager:
                 "bio": user.get("bio", ""),
                 "avatar_path": user.get("avatar_path", ":/images/profilePicture.png"),  # Keep path
                 "avatar": user.get("avatar"),  # Get avatar blob (bytes or None)
-                "registration_date": user.get("created_at")
+                "registration_date": user.get("created_at"),
+                "ai_consent_given": user.get("ai_consent_given")  # Get AI consent status
             }
 
             return self.current_user
@@ -277,18 +278,35 @@ class UserManager:
             bool: True if the update was successful, False otherwise.
         """
         try:
+            # First, check if the user exists and log the current consent status
+            user_check = self.db_manager.execute_query(
+                "SELECT id, ai_consent_given FROM users WHERE id = ?",
+                (user_id,)
+            )
+
+            if not user_check:
+                logger.warning(f"User with ID {user_id} not found when trying to set AI consent.")
+                return False
+
+            current_consent = user_check[0].get("ai_consent_given")
+            logger.info(f"Current AI consent for user {user_id}: {current_consent}, attempting to set to: {consent_status}")
+
+            # Convert boolean to integer for storage
+            consent_int = 1 if consent_status else 0
+
             affected_rows = self.db_manager.execute_update(
                 "UPDATE users SET ai_consent_given = ? WHERE id = ?",
-                (int(consent_status), user_id)  # Store as 1 or 0
+                (consent_int, user_id)  # Store as 1 or 0
             )
+
             if affected_rows > 0:
-                logger.info(f"AI consent status set to {consent_status} for user {user_id}.")
+                logger.info(f"AI consent status successfully set to {consent_status} for user {user_id}.")
                 # Update current user if applicable
                 if self.current_user and self.current_user["id"] == user_id:
                     self.current_user["ai_consent_given"] = consent_status  # Add/Update field
                 return True
             else:
-                logger.warning(f"Could not find user with ID {user_id} to set AI consent.")
+                logger.warning(f"Update query executed but no rows affected for user {user_id}.")
                 return False
         except sqlite3.Error as e:
             logger.error(f"Database error setting AI consent for user {user_id}: {e}")

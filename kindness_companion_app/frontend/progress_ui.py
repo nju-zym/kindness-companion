@@ -2,13 +2,20 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QFrame, QCalendarWidget, QComboBox, QGridLayout,
     QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QMessageBox,
-    QGroupBox, QSpacerItem, QProgressBar, QScrollArea # Add QScrollArea again for clarity
+    QGroupBox, QSpacerItem, QProgressBar, QScrollArea, QTextEdit # Add QTextEdit
 )
-from PySide6.QtCore import Qt, Signal, Slot, QDate, QSize
+from PySide6.QtCore import Qt, Signal, Slot, QDate, QSize, QTimer
 from PySide6.QtGui import QFont, QColor, QIcon, QTextCharFormat, QBrush
 
 # Import the custom message box
 from .widgets.animated_message_box import AnimatedMessageBox
+
+# Import AI report generator
+try:
+    from ai_core.report_generator import generate_weekly_report
+except ImportError:
+    logging.error("Could not import generate_weekly_report. AI report features will be disabled.")
+    generate_weekly_report = None  # type: ignore
 
 import datetime
 import logging
@@ -32,6 +39,8 @@ class ProgressWidget(QWidget):
         self.progress_tracker = progress_tracker
         self.challenge_manager = challenge_manager
         self.current_user = None
+        self.weekly_report_text = ""
+        self.report_last_generated = None
 
         # Initialize UI attributes to None for clarity
         self.main_layout = None
@@ -51,6 +60,9 @@ class ProgressWidget(QWidget):
         self.total_label = None
         self.streak_label = None
         self.rate_label = None
+        self.weekly_report_group = None
+        self.weekly_report_text_edit = None
+        self.generate_report_button = None
         self.achievements_group = None
         self.achievements_scroll_area = None
         self.achievements_container = None
@@ -128,6 +140,39 @@ class ProgressWidget(QWidget):
         self.stats_layout.addWidget(self.rate_label)
         self.stats_layout.addStretch()
         self.left_panel_layout.addWidget(self.stats_group)
+
+        # Weekly Report GroupBox
+        self.weekly_report_group = QGroupBox("AI 周报")
+        self.weekly_report_group.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        weekly_report_layout = QVBoxLayout(self.weekly_report_group)
+
+        # Report text area
+        self.weekly_report_text_edit = QTextEdit()
+        self.weekly_report_text_edit.setReadOnly(True)
+        self.weekly_report_text_edit.setPlaceholderText("点击下方按钮生成本周善行报告...")
+        self.weekly_report_text_edit.setMinimumHeight(100)
+        self.weekly_report_text_edit.setMaximumHeight(150)
+        self.weekly_report_text_edit.setStyleSheet("""
+            QTextEdit {
+                background-color: #f8f9fa;
+                border: 1px solid #e0e0e0;
+                border-radius: 5px;
+                padding: 8px;
+                font-size: 13px;
+            }
+        """)
+        weekly_report_layout.addWidget(self.weekly_report_text_edit)
+
+        # Generate report button
+        button_layout = QHBoxLayout()
+        button_layout.setAlignment(Qt.AlignCenter)
+        self.generate_report_button = QPushButton("生成周报")
+        self.generate_report_button.setIcon(QIcon(":/icons/refresh-cw.svg"))
+        self.generate_report_button.clicked.connect(self.generate_weekly_report)
+        button_layout.addWidget(self.generate_report_button)
+        weekly_report_layout.addLayout(button_layout)
+
+        self.left_panel_layout.addWidget(self.weekly_report_group)
 
         # Achievements GroupBox - Now contains the ScrollArea
         self.achievements_group = QGroupBox("我的成就")
@@ -381,6 +426,11 @@ class ProgressWidget(QWidget):
         self.streak_label.setText("当前连续打卡: 0 天")
         self.rate_label.setText("完成率: 0%")
 
+        # Reset weekly report
+        self.weekly_report_text_edit.setText("点击下方按钮生成本周善行报告...")
+        self.weekly_report_text = ""
+        self.report_last_generated = None
+
         self.clear_achievements()
 
     def calendar_date_clicked(self, date):
@@ -564,6 +614,66 @@ class ProgressWidget(QWidget):
             self.achievements_placeholder.show()
             self.achievements_spacer.changeSize(0, 0, QSizePolicy.Minimum, QSizePolicy.Fixed) # Collapse spacer if no achievements
 
+
+    def generate_weekly_report(self):
+        """Generate and display a weekly AI report for the user."""
+        if not self.current_user:
+            AnimatedMessageBox.showWarning(self, "无法生成报告", "请先登录")
+            return
+
+        if not generate_weekly_report:
+            AnimatedMessageBox.showWarning(
+                self,
+                "功能不可用",
+                "AI 报告功能不可用。请确保 AI 核心模块已正确安装。"
+            )
+            return
+
+        # Check if user has consented to AI features
+        user_id = self.current_user.get('id')
+        ai_consent = self.current_user.get('ai_consent_given')
+
+        if not ai_consent:
+            AnimatedMessageBox.showInformation(
+                self,
+                "AI 功能未启用",
+                "请在个人信息页面启用 AI 功能以使用周报生成功能。"
+            )
+            return
+
+        # Show loading state
+        self.generate_report_button.setEnabled(False)
+        self.generate_report_button.setText("生成中...")
+        self.weekly_report_text_edit.setText("AI 正在生成您的周报，请稍候...")
+
+        # Use QTimer to allow UI to update before starting the potentially slow API call
+        QTimer.singleShot(100, lambda: self._execute_report_generation(user_id))
+
+    def _execute_report_generation(self, user_id):
+        """Execute the actual report generation (called after UI updates)."""
+        try:
+            # Call the AI report generator
+            report_text = generate_weekly_report(user_id)
+
+            # Update the report text
+            self.weekly_report_text = report_text
+            self.report_last_generated = datetime.datetime.now()
+
+            # Format the report with a timestamp
+            formatted_report = (
+                f"<p><b>生成时间:</b> {self.report_last_generated.strftime('%Y-%m-%d %H:%M')}</p>"
+                f"<p>{report_text}</p>"
+            )
+
+            self.weekly_report_text_edit.setHtml(formatted_report)
+
+        except Exception as e:
+            logging.error(f"Error generating weekly report: {e}")
+            self.weekly_report_text_edit.setText(f"生成报告时出错: {str(e)}")
+        finally:
+            # Reset button state
+            self.generate_report_button.setEnabled(True)
+            self.generate_report_button.setText("生成周报")
 
     def clear_achievements(self):
         """Clear the achievements display area within the scroll area, keeping the placeholder and spacer."""

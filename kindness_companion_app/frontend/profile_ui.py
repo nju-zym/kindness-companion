@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QFormLayout, QLineEdit, QMessageBox, QGroupBox, QFrame,
     QGridLayout, QProgressBar, QSizePolicy, QTextEdit,
-    QFileDialog, QScrollArea, QSpacerItem, QInputDialog # Added QInputDialog
+    QFileDialog, QScrollArea, QSpacerItem, QInputDialog, QCheckBox # Added QCheckBox
 )
 # Import QByteArray and potentially QBuffer, QIODevice for resizing
 from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer, QByteArray, QBuffer, QIODevice
@@ -189,6 +189,31 @@ class ProfileWidget(QWidget):
         profile_layout.addWidget(bio_group)
 
 
+        # --- AI Settings Section ---
+        ai_settings_group = QGroupBox("AI 功能设置")
+        ai_settings_layout = QVBoxLayout(ai_settings_group)
+        ai_settings_layout.setSpacing(10)
+
+        # AI consent checkbox
+        self.ai_consent_checkbox = QCheckBox("启用 AI 功能")
+        self.ai_consent_checkbox.setToolTip("启用或禁用 AI 电子宠物和智能报告功能")
+        self.ai_consent_checkbox.stateChanged.connect(self.toggle_ai_consent)
+
+        # AI features explanation
+        ai_info_label = QLabel(
+            "启用后，应用将使用 AI 功能增强您的体验：\n"
+            "• AI 电子宠物互动\n"
+            "• 个性化善举报告\n\n"
+            "这需要将部分数据发送至第三方 AI 服务。"
+        )
+        ai_info_label.setWordWrap(True)
+        ai_info_label.setStyleSheet("color: #666; font-size: 12px;")
+
+        ai_settings_layout.addWidget(self.ai_consent_checkbox)
+        ai_settings_layout.addWidget(ai_info_label)
+
+        profile_layout.addWidget(ai_settings_group)
+
         # --- Action Buttons ---
         action_button_layout = QVBoxLayout()
         action_button_layout.setSpacing(15) # Ensure equal spacing between all buttons
@@ -207,9 +232,6 @@ class ProfileWidget(QWidget):
         self.logout_button.setMinimumHeight(38)
         self.logout_button.clicked.connect(self.logout)
         action_button_layout.addWidget(self.logout_button)
-
-        # Removed the extra spacing before the delete button to make spacing equal
-        # action_button_layout.addSpacing(20)
 
         # --- Delete Account Button ---
         self.delete_account_button = QPushButton("注销账号")
@@ -350,6 +372,61 @@ class ProfileWidget(QWidget):
         self.avatar_label.setPixmap(final_pixmap)
 
 
+    @Slot(int)
+    def toggle_ai_consent(self, state):
+        """
+        Toggle AI consent status when the checkbox is clicked.
+
+        Args:
+            state (int): Qt.Checked (2) if checked, Qt.Unchecked (0) if unchecked
+        """
+        logger = logging.getLogger(__name__)
+
+        if not self.current_user:
+            logger.warning("Cannot toggle AI consent: No user logged in")
+            return
+
+        user_id = self.current_user.get('id')
+        if not user_id:
+            logger.error("Cannot toggle AI consent: User ID not found")
+            return
+
+        # Convert checkbox state to boolean
+        consent_status = state == Qt.Checked
+        logger.info(f"Setting AI consent for user {user_id} to: {consent_status}")
+
+        # Update the database
+        success = self.user_manager.set_ai_consent(user_id, consent_status)
+
+        if success:
+            # Update the current user object
+            self.current_user["ai_consent_given"] = consent_status
+
+            # Show a confirmation message
+            if consent_status:
+                AnimatedMessageBox.showInformation(
+                    self,
+                    "AI 功能已启用",
+                    "AI 功能已启用。您现在可以使用 AI 电子宠物和智能报告功能。"
+                )
+            else:
+                AnimatedMessageBox.showInformation(
+                    self,
+                    "AI 功能已禁用",
+                    "AI 功能已禁用。应用将不再发送数据至 AI 服务。"
+                )
+
+            # Emit signal to notify other parts of the app
+            self.user_updated.emit(self.current_user)
+        else:
+            # Revert checkbox state if update failed
+            self.ai_consent_checkbox.setChecked(not consent_status)
+            AnimatedMessageBox.showWarning(
+                self,
+                "设置失败",
+                "无法更新 AI 功能设置，请稍后重试。"
+            )
+
     @Slot(dict)
     def set_user(self, user):
         """Set the current user and update UI elements using avatar data."""
@@ -400,6 +477,17 @@ class ProfileWidget(QWidget):
             avatar_data = user.get("avatar") # Get bytes or None
             self._set_circular_avatar(avatar_data) # Use the helper method
 
+            # --- Set AI Consent Checkbox ---
+            ai_consent = user.get("ai_consent_given")
+            logger.info(f"Setting AI consent checkbox based on user data: {ai_consent}")
+            # Disconnect signal temporarily to avoid triggering toggle_ai_consent
+            self.ai_consent_checkbox.blockSignals(True)
+            if ai_consent is True:
+                self.ai_consent_checkbox.setChecked(True)
+            else:
+                self.ai_consent_checkbox.setChecked(False)
+            self.ai_consent_checkbox.blockSignals(False)
+
             # Load stats (which now includes loading achievements)
             self.load_stats()
         else: # User is None (logout or initial state)
@@ -412,6 +500,11 @@ class ProfileWidget(QWidget):
             self.bio_display_label.setText("请先登录")
             self.bio_edit.setText("")
             self.toggle_bio_edit(edit_mode=False) # Ensure display mode
+
+            # Reset AI consent checkbox
+            self.ai_consent_checkbox.blockSignals(True)
+            self.ai_consent_checkbox.setChecked(False)
+            self.ai_consent_checkbox.blockSignals(False)
 
             # Reset avatar to default circular avatar
             self._set_circular_avatar(None) # Pass None to use default
@@ -694,20 +787,13 @@ class ProfileWidget(QWidget):
     @Slot() # Changed from @Slot(bool)
     def toggle_bio_edit(self, edit_mode=None):
         """Toggle between displaying and editing the bio."""
-        logger = logging.getLogger(__name__) # Get logger instance
-        # logger.info(f"toggle_bio_edit called with edit_mode={edit_mode}") # Reduce verbosity
-
+        # Use class-level logger instead of local variable
         if edit_mode is None:
             # Toggle based on current visibility of edit button
             edit_button_visible = self.edit_bio_button.isVisible()
-            # logger.info(f"  edit_bio_button.isVisible() = {edit_button_visible}")
             currently_editing = not edit_button_visible
             edit_mode = not currently_editing
-            # logger.info(f"  Determined currently_editing={currently_editing}, setting edit_mode={edit_mode}")
-        # else:
-            # logger.info(f"  Using provided edit_mode={edit_mode}")
 
-        # logger.info(f"  Setting visibility: bio_display={not edit_mode}, edit_button={not edit_mode}, bio_edit={edit_mode}, save_button={edit_mode}, cancel_button={edit_mode}")
         self.bio_display_label.setVisible(not edit_mode)
         self.edit_bio_button.setVisible(not edit_mode)
 
@@ -716,7 +802,6 @@ class ProfileWidget(QWidget):
         self.cancel_bio_button.setVisible(edit_mode)
 
         if not edit_mode: # If switching back to display mode
-             # logger.info("  Switching back to display mode, resetting bio_edit text.")
              # Reset edit text to current display text in case of cancel
              current_bio = self.bio_display_label.text()
              if current_bio == "这个人很神秘，什么也没留下..." or current_bio == "请先登录":
@@ -724,7 +809,6 @@ class ProfileWidget(QWidget):
              else:
                  self.bio_edit.setText(current_bio)
         else:
-            # logger.info("  Switching to edit mode.")
             # Optionally set focus to the editor when entering edit mode
             self.bio_edit.setFocus()
 

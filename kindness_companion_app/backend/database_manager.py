@@ -58,7 +58,8 @@ class DatabaseManager:
             bio TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP,
-            avatar BLOB        -- Add avatar blob column
+            avatar BLOB,       -- Add avatar blob column
+            ai_consent_given INTEGER  -- Add AI consent column (1=true, 0=false, NULL=not set)
         )
         ''')
 
@@ -82,6 +83,12 @@ class DatabaseManager:
                 self.connection.commit()
                 print("Added 'bio' TEXT column to 'users' table.")
             # --- Add check for bio column --- End
+            # --- Add check for ai_consent_given column --- Start
+            if 'ai_consent_given' not in columns:
+                self.cursor.execute("ALTER TABLE users ADD COLUMN ai_consent_given INTEGER")
+                self.connection.commit()
+                print("Added 'ai_consent_given' INTEGER column to 'users' table.")
+            # --- Add check for ai_consent_given column --- End
         except sqlite3.Error as e:
             print(f"Error checking/adding columns: {e}")
         # --- End check ---

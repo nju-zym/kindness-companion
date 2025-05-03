@@ -27,7 +27,7 @@ def handle_pet_event(user_id: int, event_type: str, event_data: Dict[str, Any]) 
     emotion = None
     dialogue_prompt_context = event_data.copy() # Start with base event data
 
-    # 1. Analyze emotion if it's a reflection event
+    # 1. Analyze emotion if it's a reflection event or user message
     if event_type == 'reflection_added' and 'text' in event_data:
         reflection_text = event_data.get('text', '')
         if reflection_text:
@@ -43,6 +43,21 @@ def handle_pet_event(user_id: int, event_type: str, event_data: Dict[str, Any]) 
         else:
             logger.warning("Reflection event received but no text found in event_data.")
 
+    # Handle direct user messages
+    elif event_type == 'user_message' and 'message' in event_data:
+        user_message = event_data.get('message', '')
+        if user_message:
+            try:
+                # Optionally analyze emotion for user messages too
+                emotion = analyze_emotion_for_pet(user_id, user_message)
+                if emotion:
+                    dialogue_prompt_context['analyzed_emotion'] = emotion
+                    logger.info(f"Analyzed emotion for user message: {emotion}")
+            except Exception as e:
+                logger.error(f"Error during emotion analysis for user message: {e}")
+        else:
+            logger.warning("User message event received but no message found in event_data.")
+
     # 2. Generate dialogue based on the event and context (including potential emotion)
     try:
         dialogue = generate_pet_dialogue(user_id, event_type, dialogue_prompt_context)
@@ -54,6 +69,14 @@ def handle_pet_event(user_id: int, event_type: str, event_data: Dict[str, Any]) 
     suggested_animation = 'idle' # Default animation
     if event_type == 'check_in':
         suggested_animation = 'happy' # Simple positive feedback for check-in
+    elif event_type == 'user_message':
+        # For user messages, base animation on detected emotion or default to 'happy'
+        if emotion == 'positive':
+            suggested_animation = 'excited'
+        elif emotion == 'negative':
+            suggested_animation = 'concerned'
+        else:
+            suggested_animation = 'happy'  # Default for user messages
     elif emotion == 'positive':
         suggested_animation = 'excited'
     elif emotion == 'negative':

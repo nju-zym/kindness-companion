@@ -1,4 +1,5 @@
 import logging
+import datetime
 from typing import Dict, Any
 from .api_client import get_api_key, make_api_request
 from requests.exceptions import RequestException
@@ -10,45 +11,209 @@ DEFAULT_MODEL = "glm-4-flash" # Or a model suitable for summarization/reporting
 def generate_weekly_report(user_id: int) -> str:
     """
     Generates a personalized weekly kindness report for the user using an AI API.
+
+    Args:
+        user_id: The ID of the user to generate a report for.
+
+    Returns:
+        A string containing the generated report text, or an error message if generation fails.
     """
     logger.info(f"Generating weekly report for user {user_id}.")
 
-    # 1. Fetch user data for the report period (Placeholder)
+    # 1. Fetch user data for the report period
     try:
         user_data = _get_user_data_for_report(user_id)
-        if not user_data:
+        if not user_data or (user_data.get('check_ins', 0) == 0 and user_data.get('streak', 0) == 0):
             logger.warning("No user data found to generate report.")
-            return "无法生成报告，似乎还没有足够的活动数据。"
+            return "无法生成报告，似乎还没有足够的活动数据。请先完成一些善行挑战后再尝试生成报告。"
     except Exception as e:
         logger.error(f"Error fetching user data for report: {e}")
-        return "生成报告时出错（获取数据失败）。"
+        return "生成报告时出错（获取数据失败）。请稍后再试或联系支持团队。"
 
-    # 2. Construct a prompt for the text generation API
-    prompt = f"""
-为 Kindness Companion 应用的用户生成一份简短（2-3句话）且鼓励性的周报总结。
-用户 ID: {user_id}
-本周数据:
-- 完成打卡次数: {user_data.get('check_ins', 0)}
-- 当前连胜天数: {user_data.get('streak', 0)}
-- 撰写反思次数: {user_data.get('reflections', 0)}
-- 主要参与的挑战类别: {user_data.get('top_category', '无')}
-- 解锁成就: {', '.join(user_data.get('new_achievements', [])) or '无'}
+    # 2. Get additional context for a more personalized report
+    try:
+        additional_context = _get_additional_context(user_id, user_data)
+    except Exception as e:
+        logger.warning(f"Error getting additional context: {e}. Will proceed with basic report.")
+        additional_context = {}
 
-请根据以上数据，生成一段积极、温暖、鼓励用户继续行善的文字。可以提及具体数据，例如连胜或打卡次数。
-"""
+    # 3. Construct a prompt for the text generation API with enhanced personalization
+    prompt = _build_report_prompt(user_id, user_data, additional_context)
 
-    # 3. Call the text generation API
+    # 4. Call the text generation API
     try:
         report_text = _call_text_generation_api(prompt)
         if not report_text:
             logger.warning("Text generation API returned empty response for report.")
-            return "AI 正在思考中，暂时无法生成报告..."
+            return "AI 正在思考中，暂时无法生成报告...请稍后再试。"
+
+        # Post-process the report text if needed (e.g., remove unwanted prefixes)
+        report_text = _post_process_report(report_text)
+
         logger.info(f"Generated report text (first 50 chars): {report_text[:50]}...")
         # Return only the generated text, formatting can happen in the UI
         return report_text
     except Exception as e:
         logger.error(f"Error calling text generation API for report: {e}")
-        return "生成报告时与 AI 连接出现问题。"
+        return "生成报告时与 AI 连接出现问题。请检查网络连接或稍后再试。"
+
+def _build_report_prompt(user_id: int, user_data: Dict[str, Any], additional_context: Dict[str, Any]) -> str:
+    """
+    Builds a detailed prompt for the AI to generate a personalized report.
+
+    Args:
+        user_id: The ID of the user.
+        user_data: Basic user data for the report period.
+        additional_context: Additional context for personalization.
+
+    Returns:
+        A string containing the prompt for the AI.
+    """
+    # Format achievements for better readability
+    achievements_text = ', '.join(user_data.get('new_achievements', [])) or '无'
+
+    # Get time-based greeting
+    current_hour = datetime.datetime.now().hour
+    time_greeting = "早上好" if 5 <= current_hour < 12 else "下午好" if 12 <= current_hour < 18 else "晚上好"
+
+    # Get day of week in Chinese
+    days_in_chinese = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
+    today_chinese = days_in_chinese[datetime.datetime.now().weekday()]
+
+    # Build the prompt with enhanced personalization
+    prompt = f"""
+为善行伴侣（Kindness Companion）应用的用户生成一份个性化的周报总结。
+
+用户信息:
+- 用户 ID: {user_id}
+- 当前时间: {time_greeting}，{today_chinese}
+
+本周数据:
+- 完成打卡次数: {user_data.get('check_ins', 0)}
+- 当前连胜天数: {user_data.get('streak', 0)}
+- 撰写反思次数: {user_data.get('reflections', 0)}
+- 主要参与的挑战类别: {user_data.get('top_category', '无')}
+- 解锁成就: {achievements_text}
+"""
+
+    # Add additional context if available
+    if additional_context:
+        if 'total_challenges' in additional_context:
+            prompt += f"- 参与的总挑战数: {additional_context.get('total_challenges', 0)}\n"
+
+        if 'completion_rate' in additional_context:
+            rate = additional_context.get('completion_rate', 0) * 100
+            prompt += f"- 本周完成率: {rate:.1f}%\n"
+
+        if 'previous_week_check_ins' in additional_context:
+            prev = additional_context.get('previous_week_check_ins', 0)
+            curr = user_data.get('check_ins', 0)
+            if prev > 0:
+                change = ((curr - prev) / prev) * 100 if prev > 0 else 0
+                trend = "增加" if change >= 0 else "减少"
+                prompt += f"- 与上周相比: {trend} {abs(change):.1f}%\n"
+
+    prompt += f"""
+请根据以上数据，生成一份温暖、鼓励且个性化的周报（3-4句话）。报告应该：
+1. 以友好的问候开始
+2. 肯定用户的善行成就
+3. 提及具体数据（如打卡次数、连胜）
+4. 鼓励用户继续坚持善行
+5. 如果用户解锁了成就，特别祝贺他们
+6. 如果用户本周表现不佳，给予温和的鼓励而非批评
+
+语调应保持积极、温暖，像一位支持性的朋友。请直接给出报告内容，不要包含额外的解释或前缀。
+"""
+
+    return prompt
+
+def _post_process_report(report_text: str) -> str:
+    """
+    Post-processes the report text to remove unwanted prefixes or format issues.
+
+    Args:
+        report_text: The raw report text from the API.
+
+    Returns:
+        The cleaned report text.
+    """
+    # Remove common prefixes that the AI might add
+    prefixes_to_remove = [
+        "以下是为用户生成的周报：",
+        "这是您的周报：",
+        "周报：",
+        "善行周报：",
+        "善行伴侣周报："
+    ]
+
+    cleaned_text = report_text
+    for prefix in prefixes_to_remove:
+        if cleaned_text.startswith(prefix):
+            cleaned_text = cleaned_text[len(prefix):].strip()
+
+    return cleaned_text
+
+def _get_additional_context(user_id: int, current_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Gets additional context for the report to make it more personalized.
+
+    Args:
+        user_id: The ID of the user.
+        current_data: The current week's data.
+
+    Returns:
+        A dictionary containing additional context.
+    """
+    try:
+        # Import backend modules here to avoid circular imports
+        from backend.database_manager import DatabaseManager
+        from backend.progress_tracker import ProgressTracker
+        from backend.challenge_manager import ChallengeManager
+
+        # Initialize backend components
+        db_manager = DatabaseManager()
+        progress_tracker = ProgressTracker(db_manager)
+        challenge_manager = ChallengeManager(db_manager)
+
+        # Get data for the previous week for comparison
+        end_date = datetime.date.today() - datetime.timedelta(days=7)
+        start_date = end_date - datetime.timedelta(days=7)
+
+        # Get check-ins for the previous week
+        previous_check_ins = progress_tracker.get_all_user_check_ins(
+            user_id,
+            start_date.isoformat(),
+            end_date.isoformat()
+        )
+
+        # Get total number of challenges the user is participating in
+        subscribed_challenges = challenge_manager.get_user_challenges(user_id)
+
+        # Calculate completion rate for the current week
+        # (Number of unique days with check-ins / 7 days)
+        unique_days = set()
+
+        # Get check-ins for the current week again to count unique days
+        current_week_data = progress_tracker.get_all_user_check_ins(
+            user_id,
+            (datetime.date.today() - datetime.timedelta(days=7)).isoformat(),
+            datetime.date.today().isoformat()
+        )
+
+        for check_in in current_week_data:
+            if "check_in_date" in check_in:
+                unique_days.add(check_in["check_in_date"])
+
+        completion_rate = len(unique_days) / 7 if unique_days else 0
+
+        return {
+            "previous_week_check_ins": len(previous_check_ins),
+            "total_challenges": len(subscribed_challenges),
+            "completion_rate": completion_rate
+        }
+    except Exception as e:
+        logger.warning(f"Error getting additional context: {e}")
+        return {}
 
 
 def _get_user_data_for_report(user_id: int) -> Dict[str, Any]:

@@ -2,7 +2,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QFrame, QTimeEdit, QComboBox, QGridLayout,
     QTableWidget, QTableWidgetItem, QHeaderView, QCheckBox,
-    QMessageBox, QGroupBox, QFormLayout, QSizePolicy # Keep QFormLayout import for now, might remove later if unused
+    QMessageBox, QGroupBox, QFormLayout, QSizePolicy, QRadioButton, QButtonGroup
 )
 from PySide6.QtCore import Qt, Signal, Slot, QTime, QSize, QTimer
 from PySide6.QtGui import QFont, QIcon
@@ -14,21 +14,26 @@ from .widgets.animated_message_box import AnimatedMessageBox
 
 class ReminderWidget(QWidget):
     """
-    Widget for managing reminders.
+    Widget for managing reminders and application settings.
     """
 
-    def __init__(self, reminder_scheduler, challenge_manager):
+    # 添加主题变更信号
+    theme_changed = Signal(str, str)  # 主题类型（light/dark）, 主题样式（standard/warm）
+
+    def __init__(self, reminder_scheduler, challenge_manager, theme_manager=None):
         """
         Initialize the reminder widget.
 
         Args:
             reminder_scheduler: Reminder scheduler instance
             challenge_manager: Challenge manager instance
+            theme_manager: Theme manager instance (optional)
         """
         super().__init__()
 
         self.reminder_scheduler = reminder_scheduler
         self.challenge_manager = challenge_manager
+        self.theme_manager = theme_manager
         self.current_user = None
 
         self.setup_ui()
@@ -40,11 +45,11 @@ class ReminderWidget(QWidget):
         self.main_layout.setContentsMargins(20, 20, 20, 20)
 
         # Header
-        self.title_label = QLabel("提醒设置")
+        self.title_label = QLabel("设置")
         self.title_label.setObjectName("title_label")  # Set object name for styling
         self.main_layout.addWidget(self.title_label)
 
-        self.subtitle_label = QLabel("设置善行挑战的提醒，帮助您坚持完成挑战")
+        self.subtitle_label = QLabel("管理应用设置和提醒")
         self.main_layout.addWidget(self.subtitle_label)
 
         self.main_layout.addSpacing(15) # Reduced spacing slightly
@@ -52,6 +57,12 @@ class ReminderWidget(QWidget):
         # Content layout (Changed to QVBoxLayout)
         self.content_layout = QVBoxLayout() # Changed from QHBoxLayout to QVBoxLayout
         self.content_layout.setSpacing(20) # Add spacing between form and list
+
+        # 添加主题设置部分
+        if self.theme_manager:
+            self.setup_theme_settings()
+            self.content_layout.addWidget(self.theme_settings_group)
+            self.content_layout.addSpacing(10)
 
         # Create reminder form (Challenge, Time, Create Button)
         self.setup_reminder_form()
@@ -347,6 +358,134 @@ class ReminderWidget(QWidget):
                     "删除失败",
                     "删除提醒失败，请稍后重试。"
                 )
+
+    def setup_theme_settings(self):
+        """设置主题设置部分"""
+        self.theme_settings_group = QGroupBox("主题设置")
+        theme_layout = QVBoxLayout(self.theme_settings_group)
+        theme_layout.setContentsMargins(10, 25, 10, 15)
+        theme_layout.setSpacing(15)
+
+        # 主题模式选择（深色/浅色）
+        theme_mode_label = QLabel("主题模式:")
+        theme_layout.addWidget(theme_mode_label)
+
+        theme_mode_layout = QHBoxLayout()
+        theme_mode_layout.setSpacing(20)
+
+        # 创建单选按钮组
+        self.theme_mode_group = QButtonGroup(self)
+
+        # 系统默认选项
+        self.system_theme_radio = QRadioButton("跟随系统")
+        self.light_theme_radio = QRadioButton("浅色模式")
+        self.dark_theme_radio = QRadioButton("深色模式")
+
+        # 根据当前主题选中相应的单选按钮
+        if self.theme_manager:
+            if self.theme_manager.follow_system:
+                self.system_theme_radio.setChecked(True)
+            elif self.theme_manager.current_theme == "light":
+                self.light_theme_radio.setChecked(True)
+            else:
+                self.dark_theme_radio.setChecked(True)
+
+        # 添加到按钮组
+        self.theme_mode_group.addButton(self.system_theme_radio)
+        self.theme_mode_group.addButton(self.light_theme_radio)
+        self.theme_mode_group.addButton(self.dark_theme_radio)
+
+        # 添加到布局
+        theme_mode_layout.addWidget(self.system_theme_radio)
+        theme_mode_layout.addWidget(self.light_theme_radio)
+        theme_mode_layout.addWidget(self.dark_theme_radio)
+        theme_layout.addLayout(theme_mode_layout)
+
+        # 主题样式选择（标准/温馨）
+        theme_style_label = QLabel("主题风格:")
+        theme_layout.addWidget(theme_style_label)
+
+        theme_style_layout = QHBoxLayout()
+        theme_style_layout.setSpacing(20)
+
+        # 创建单选按钮组
+        self.theme_style_group = QButtonGroup(self)
+
+        self.standard_style_radio = QRadioButton("标准风格")
+        self.warm_style_radio = QRadioButton("温馨风格")
+
+        # 根据当前样式选中相应的单选按钮
+        if self.theme_manager:
+            if self.theme_manager.theme_style == "warm":
+                self.warm_style_radio.setChecked(True)
+            else:
+                self.standard_style_radio.setChecked(True)
+
+        # 添加到按钮组
+        self.theme_style_group.addButton(self.standard_style_radio)
+        self.theme_style_group.addButton(self.warm_style_radio)
+
+        # 添加到布局
+        theme_style_layout.addWidget(self.standard_style_radio)
+        theme_style_layout.addWidget(self.warm_style_radio)
+        theme_layout.addLayout(theme_style_layout)
+
+        # 应用按钮
+        self.apply_theme_button = QPushButton("应用主题设置")
+        self.apply_theme_button.clicked.connect(self.apply_theme_settings)
+        theme_layout.addWidget(self.apply_theme_button)
+
+        # 连接信号
+        self.theme_mode_group.buttonClicked.connect(self.on_theme_mode_changed)
+        self.theme_style_group.buttonClicked.connect(self.on_theme_style_changed)
+
+    def on_theme_mode_changed(self, button):
+        """当主题模式改变时调用"""
+        # 这里只是记录选择，实际应用在点击应用按钮时进行
+        pass
+
+    def on_theme_style_changed(self, button):
+        """当主题样式改变时调用"""
+        # 这里只是记录选择，实际应用在点击应用按钮时进行
+        pass
+
+    def apply_theme_settings(self):
+        """应用主题设置"""
+        if not self.theme_manager:
+            return
+
+        # 获取选中的主题模式
+        if self.system_theme_radio.isChecked():
+            # 设置为跟随系统
+            self.theme_manager.follow_system = True
+            # 检测系统主题
+            self.theme_manager.detect_system_theme()
+        else:
+            # 设置为手动选择
+            self.theme_manager.follow_system = False
+            if self.light_theme_radio.isChecked():
+                self.theme_manager.current_theme = "light"
+            else:
+                self.theme_manager.current_theme = "dark"
+
+        # 获取选中的主题样式
+        if self.standard_style_radio.isChecked():
+            self.theme_manager.theme_style = "standard"
+        else:
+            self.theme_manager.theme_style = "warm"
+
+        # 应用主题
+        self.theme_manager.apply_theme()
+
+        # 显示成功消息
+        AnimatedMessageBox.showInformation(
+            self,
+            "主题设置",
+            "主题设置已应用成功！"
+        )
+
+        # 发送主题变更信号
+        self.theme_changed.emit(self.theme_manager.current_theme, self.theme_manager.theme_style)
 
     def get_day_names(self, day_numbers):
         """

@@ -1,6 +1,6 @@
 # Kindness Companion (善意伴侣) v3.0 项目进展与计划
 
-**最后更新:** 2025-05-03
+**最后更新:** 2025-05-05
 
 ## 1. 项目概述
 
@@ -38,6 +38,7 @@
     *   `dialogue_generator.py`: ✅ 已实现调用 ZhipuAI API 生成对话。
     *   `emotion_analyzer.py`: ✅ 已实现调用 ZhipuAI API 分析情感。
     *   `pet_handler.py`: ✅ 已实现核心宠物交互逻辑，集成对话和情感分析。
+    *   `report_generator.py`: ✅ 已实现调用 ZhipuAI API 生成个性化周报，包含丰富的上下文信息和数据比较。
 *   **✅ 隐私与安全:**
     *   **✅** 实现明确的用户同意 (Opt-in) 流程：在 `frontend/pet_ui.py` 中首次调用 AI 功能前检查同意状态 (`user_manager.get_ai_consent`)，如果未同意则显示 `AIConsentDialog`，并根据结果更新数据库 (`user_manager.set_ai_consent`)。**已修复同意对话框在每次登录时都弹出的 Bug。**
     *   **✅** 确保 `config.py` 中的 API Key 安全管理（已添加到 `.gitignore`）。
@@ -47,13 +48,14 @@
 ### 3.1 MVP (最小可行产品)
 
 *   **🤖 AI 核心 API 集成 (`ai_core/`):**
-    *   `report_generator.py`: **TODO:** 实现调用云端文本生成 API 生成善举报告的逻辑。
+    *   ✅ `report_generator.py`: 已实现调用云端文本生成 API 生成善举报告的逻辑，包含丰富的上下文信息和数据比较。
 *   **🎨 前端 AI 功能集成 (`frontend/`):**
-    *   **TODO:** 在 `progress_ui.py` 或新界面中展示由 `report_generator` 生成的 AI 报告。
+    *   ✅ 已在 `progress_ui.py` 中实现 AI 报告展示功能，包括报告生成按钮、报告显示区域、加载状态显示和错误处理。报告生成前会检查用户是否已同意 AI 功能。
 *   **🔒 隐私与安全:**
-    *   **TODO:** 提供设置选项 (例如在 `profile_ui.py`)，允许用户启用/禁用 AI 功能或撤销同意 (更新 `ai_consent_given` 状态)。
+    *   ✅ 已在 `profile_ui.py` 中实现 AI 功能设置开关，允许用户通过复选框启用/禁用 AI 功能，并更新 `ai_consent_given` 状态。设置更改后会显示确认消息，并通过信号通知应用的其他部分。
 *   **🧪 测试:**
-    *   `tests/test_ai_core/`: **TODO:** 为 `ai_core` 中的模块添加单元测试，特别是 API 请求的构建和响应的处理逻辑 (使用 mock)。(#README.md:158)
+    *   `tests/test_ai_core/`: ✅ 已为 `report_generator.py` 添加全面的单元测试，包括 API 请求的构建和响应的处理逻辑 (使用 mock)。
+    *   **TODO:** 继续为其他 `ai_core` 模块添加单元测试。(#README.md:158)
 
 ### 3.2 未来增强特性 (Post-MVP)
 
@@ -72,13 +74,13 @@
 
 ## 4. 下一步计划 (优先级)
 
-1.  **实现 AI 功能设置开关:**
-    *   在设置界面 (如 `profile_ui`) 添加启用/禁用 AI 功能的选项，允许用户修改 `ai_consent_given` 状态。
-2.  **实现 AI 报告生成与展示:**
-    *   完成 `ai_core.report_generator`。
-    *   在前端展示报告。
-3.  **编写 AI 核心单元测试:**
-    *   为 `ai_core` 模块编写测试用例，mock API 调用。
+1.  **✅ 实现 AI 功能设置开关:**
+    *   ✅ 已在 `profile_ui.py` 中实现 AI 功能设置开关，允许用户通过复选框启用/禁用 AI 功能，并更新 `ai_consent_given` 状态。
+2.  **✅ 在前端展示 AI 报告:**
+    *   ✅ 已完成 `ai_core.report_generator` 的实现和测试。
+    *   ✅ 已确认 `progress_ui.py` 中的报告展示功能正常工作，包括报告生成按钮、报告显示区域、加载状态显示和错误处理。
+3.  **继续编写 AI 核心单元测试:**
+    *   为其他 `ai_core` 模块编写测试用例，mock API 调用。
 4.  **完善 MVP 测试:**
     *   进行 GUI 测试和手动集成测试。
 5.  **探索未来增强功能:**

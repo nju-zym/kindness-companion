@@ -21,6 +21,12 @@ def generate_pet_dialogue(user_id: int, event_type: str, event_data: dict) -> st
             prompt_parts.append(f"They added a reflection: \"{event_data['text']}\".")
         if 'analyzed_emotion' in event_data:
              prompt_parts.append(f"The reflection seems '{event_data['analyzed_emotion']}'.")
+    elif event_type == 'user_message':
+        if 'message' in event_data and event_data['message']:
+            prompt_parts.append(f"They sent you a direct message: \"{event_data['message']}\".")
+            prompt_parts.append("Please respond to their message in a friendly, helpful way.")
+        if 'analyzed_emotion' in event_data:
+            prompt_parts.append(f"The message seems '{event_data['analyzed_emotion']}'.")
     # Add more context based on other event types if needed
 
     prompt_parts.append("Generate a short, warm, and encouraging response (in Chinese) suitable for a virtual pet.")

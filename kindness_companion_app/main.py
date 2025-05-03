@@ -80,6 +80,8 @@ class ThemeManager:
         self.app = app
         self.logger = logger
         self.current_theme = "light"  # 默认为浅色主题
+        self.theme_style = "warm"     # 默认使用温馨主题样式
+        self.follow_system = True     # 默认跟随系统主题
 
         # 检测当前系统主题
         self.detect_system_theme()
@@ -163,8 +165,16 @@ class ThemeManager:
 
     def apply_theme(self):
         """应用当前主题，使用莫兰迪色系"""
-        # Determine the correct Morandi theme file based on the detected theme
-        style_file_name = "morandi_light.qss" if self.current_theme == "light" else "morandi_dark.qss"
+        # 根据当前主题和样式选择合适的样式表
+        if self.current_theme == "dark" and self.theme_style == "warm":
+            # 使用增强版温馨深色主题
+            style_file_name = "warm_dark_enhanced.qss"
+        elif self.theme_style == "warm":
+            # 使用温馨主题
+            style_file_name = f"morandi_warm_{self.current_theme}.qss"
+        else:
+            # 使用标准主题
+            style_file_name = f"morandi_{self.current_theme}.qss"
 
         # Use the resource path prefix for loading QSS files
         style_file_path = f":/styles/{style_file_name}"
@@ -199,9 +209,15 @@ class ThemeManager:
 
     def on_palette_change(self):
         """当系统调色板变化时调用此方法"""
-        self.logger.info("检测到系统主题变化，正在更新应用主题...")
-        self.detect_system_theme()
-        self.apply_theme() # Re-apply the theme (will pick the correct Morandi style)
+        self.logger.info("检测到系统主题变化...")
+
+        # 只有在跟随系统主题时才自动切换
+        if self.follow_system:
+            self.logger.info("正在更新应用主题...")
+            self.detect_system_theme()
+            self.apply_theme() # Re-apply the theme (will pick the correct Morandi style)
+        else:
+            self.logger.info("用户已设置手动主题模式，忽略系统主题变化")
 
 
 def main():
@@ -210,9 +226,34 @@ def main():
     logger = setup_logging(log_level=logging.DEBUG) # Set log level to DEBUG
     logger.info("Starting Kindness Challenge application")
 
+    # 启用高DPI缩放 - 增强版
+    # 必须在创建QApplication之前设置
+    # 使用 Round 策略而不是 PassThrough，以确保更好的缩放效果
+    QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.Round)
+
+    # 启用高DPI缩放
+    if hasattr(Qt, 'AA_EnableHighDpiScaling'):
+        QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+
+    # 使用高DPI图像
+    if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
+        QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+
+    # 禁用字体DPI缩放，由我们的自适应布局系统处理
+    if hasattr(Qt, 'AA_DisableHighDpiScaling'):
+        QApplication.setAttribute(Qt.AA_DisableHighDpiScaling, False)
+
+    # 启用每个屏幕DPI感知
+    if hasattr(Qt, 'AA_DontUseNativeDialogs'):
+        QApplication.setAttribute(Qt.AA_DontUseNativeDialogs, False)
+
     # Create application
     app = QApplication(sys.argv)
     app.setApplicationName("善行挑战")
+
+    # 获取系统缩放因子并记录
+    screen = app.primaryScreen()
+    logger.info(f"Screen: {screen.name()}, DPI: {screen.logicalDotsPerInch()}, Scale Factor: {screen.devicePixelRatio()}")
 
     # Load custom fonts *before* loading stylesheet or creating widgets
     loaded_font_families = load_fonts()
@@ -234,8 +275,13 @@ def main():
             default_font_family = None  # Rely on system default if no custom fonts work
 
     if default_font_family:
-        default_font_size = 16  # Increased from 14 to 16
+        # 使用较小的基础字体大小，让我们的响应式布局系统来处理缩放
+        default_font_size = 10  # 降低基础字体大小，由响应式布局系统动态调整
         app_font = QFont(default_font_family, default_font_size)
+        # 设置字体权重为正常，避免过粗
+        app_font.setWeight(QFont.Normal)
+        # 启用字体提示，提高清晰度
+        app_font.setHintingPreference(QFont.PreferFullHinting)
         app.setFont(app_font)
         logger.info(f"Set application default font to: {default_font_family}, Size: {default_font_size}pt")
     else:
@@ -263,6 +309,9 @@ def main():
         # Windows 10+ 监听应用样式变化
         app.styleChanged.connect(lambda: theme_manager.on_palette_change())
         logger.info("已启用Windows系统主题变化监听")
+
+    # 将 theme_manager 保存到应用程序实例中，以便在其他地方访问
+    app.theme_manager = theme_manager
 
     # Initialize backend components
     db_manager = DatabaseManager()

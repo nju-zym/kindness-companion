@@ -1,14 +1,46 @@
 import logging
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QDialog
+import sys
+import os
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDialog,
+    QLineEdit, QPushButton, QSizePolicy
+)
 from PySide6.QtCore import Slot, Qt, QTimer, QSize
-from PySide6.QtGui import QMovie, QPainter, QBitmap, QPainterPath, QRegion
+from PySide6.QtGui import QMovie, QPainter, QBitmap, QPainterPath, QRegion, QIcon
 
-# Import the AI handler function
+# Enhanced logging for debugging import issues
+logger = logging.getLogger(__name__)
+logger.info(f"Current working directory: {os.getcwd()}")
+logger.info(f"sys.path: {sys.path}")
+
+# Try to import the AI handler function with better error handling
 try:
+    # First try relative import
     from ai_core.pet_handler import handle_pet_event
-except ImportError:
-    logging.error("Could not import handle_pet_event. AI pet features will be disabled.")
-    handle_pet_event = None  # type: ignore
+    logger.info("Successfully imported handle_pet_event using relative import")
+except ImportError as e:
+    logger.error(f"Failed to import handle_pet_event using relative import: {e}")
+
+    # Try absolute import
+    try:
+        from kindness_companion_app.ai_core.pet_handler import handle_pet_event
+        logger.info("Successfully imported handle_pet_event using absolute import")
+    except ImportError as e:
+        logger.error(f"Failed to import handle_pet_event using absolute import: {e}")
+
+        # Try to add parent directory to sys.path and retry
+        try:
+            parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            if parent_dir not in sys.path:
+                sys.path.insert(0, parent_dir)
+                logger.info(f"Added {parent_dir} to sys.path")
+
+            from ai_core.pet_handler import handle_pet_event
+            logger.info("Successfully imported handle_pet_event after path adjustment")
+        except ImportError as e:
+            logger.error(f"All import attempts failed: {e}")
+            logger.error("AI pet features will be disabled.")
+            handle_pet_event = None  # type: ignore
 
 # Import UserManager and AIConsentDialog
 from backend.user_manager import UserManager
@@ -57,6 +89,56 @@ class PetWidget(QWidget):
         self.pet_status_label.setStyleSheet("font-style: italic; color: gray; margin-top: 5px;")
         layout.addWidget(self.pet_status_label)
 
+        # Chat Input Area
+        chat_layout = QHBoxLayout()
+        chat_layout.setContentsMargins(10, 10, 10, 10)
+
+        # Message input field
+        self.message_input = QLineEdit()
+        self.message_input.setPlaceholderText("和宠物聊天...")
+        self.message_input.setMinimumHeight(36)
+        self.message_input.setStyleSheet("""
+            QLineEdit {
+                border: 1px solid #b2ebf2;
+                border-radius: 18px;
+                padding: 5px 15px;
+                background-color: #f5f5f5;
+                font-size: 14px;
+            }
+            QLineEdit:focus {
+                border: 1px solid #4dd0e1;
+                background-color: white;
+            }
+        """)
+        self.message_input.returnPressed.connect(self.send_message)
+
+        # Send button
+        self.send_button = QPushButton()
+        self.send_button.setIcon(QIcon(":/icons/send.png"))  # Assuming you have a send icon in resources
+        self.send_button.setFixedSize(36, 36)
+        self.send_button.setStyleSheet("""
+            QPushButton {
+                border: none;
+                border-radius: 18px;
+                background-color: #4dd0e1;
+                padding: 5px;
+            }
+            QPushButton:hover {
+                background-color: #26c6da;
+            }
+            QPushButton:pressed {
+                background-color: #00bcd4;
+            }
+        """)
+        self.send_button.clicked.connect(self.send_message)
+
+        # Add widgets to chat layout
+        chat_layout.addWidget(self.message_input, 1)  # Stretch factor 1
+        chat_layout.addWidget(self.send_button, 0)    # No stretch
+
+        # Add chat layout to main layout
+        layout.addLayout(chat_layout)
+
         # Timer to hide dialogue after a while
         self.dialogue_timer = QTimer(self)
         self.dialogue_timer.setSingleShot(True)
@@ -94,6 +176,7 @@ class PetWidget(QWidget):
 
         if consent_status is True:
             # Consent granted, proceed with AI call
+            logger.info(f"AI consent granted for user {user_id}. Proceeding with event.")
             self._call_ai_handler(user_id, event_type, event_data)
         elif consent_status is False:
             # Consent explicitly denied
@@ -119,29 +202,47 @@ class PetWidget(QWidget):
         logger.info(f"User {user_id} responded to AI consent dialog: {consented}")
         # Save the consent status to the database
         success = self.user_manager.set_ai_consent(user_id, consented)
-        if not success:
-            logger.error(f"Failed to save AI consent status for user {user_id}.")
-            # Optionally inform the user about the failure
+        logger.info(f"AI consent update successful: {success}")
 
-        # If consent was granted and there's a pending event, retry the AI call
-        if consented and self._pending_event:
-            logger.info(f"Retrying pending event for user {user_id} after consent granted.")
-            event_type, event_data = self._pending_event
-            self._pending_event = None  # Clear pending event
-            # Use QTimer.singleShot to avoid potential recursion issues if dialog closes immediately
-            QTimer.singleShot(0, lambda: self._call_ai_handler(user_id, event_type, event_data))
+        if consented and success:
+            # Consent granted, process the pending event if any
+            if self._pending_event:
+                event_type, event_data = self._pending_event
+                self._pending_event = None  # Clear pending event
+                logger.info(f"Processing pending event after consent: {event_type}")
+                # Use QTimer.singleShot to ensure the dialog is fully closed before proceeding
+                QTimer.singleShot(0, lambda: self._call_ai_handler(user_id, event_type, event_data))
+            else:
+                logger.info("Consent granted, but no pending event.")
+                self.update_pet_display({"dialogue": "AI 功能已启用！", "suggested_animation": "idle_happy"})
         elif not consented:
             # Consent denied, update display accordingly
+            logger.info("Consent denied by user.")
             self.update_pet_display({"dialogue": "AI 功能未启用。", "suggested_animation": "idle"})
             self._pending_event = None  # Clear pending event if consent denied
+        elif consented and not success:
+            logger.error(f"Failed to update AI consent status for user {user_id} in the database.")
+            self.update_pet_display({"dialogue": "保存同意状态时出错。", "suggested_animation": "confused"})
+            self._pending_event = None
 
     def _call_ai_handler(self, user_id: int, event_type: str, event_data: dict):
         """Internal method to actually call the AI handler."""
         logger.info(f"Calling AI core: User {user_id}, Type: {event_type}, Data: {event_data}")
         self.pet_status_label.setText("正在思考...")  # Changed thinking text
 
+        # Check if handle_pet_event is available
+        if handle_pet_event is None:
+            logger.error("Cannot call AI handler: handle_pet_event is None")
+            self.update_pet_display({"dialogue": "AI 功能未正确加载。请检查日志。", "suggested_animation": "confused"})
+            return
+
         try:
+            # Log the type of handle_pet_event for debugging
+            logger.info(f"handle_pet_event type: {type(handle_pet_event)}")
+            logger.info(f"handle_pet_event callable: {callable(handle_pet_event)}")
+
             # Call the AI handler
+            logger.info("About to call handle_pet_event...")
             response = handle_pet_event(user_id, event_type, event_data)
             logger.info(f"Received AI response: {response}")
             self.update_pet_display(response)
@@ -219,6 +320,23 @@ class PetWidget(QWidget):
             self.pet_animation_label.setText("🐾") # Set fallback text
             self.pet_animation_label.clearMask() # Clear mask if animation failed
 
+    def send_message(self):
+        """Handles sending a user message to the pet."""
+        message = self.message_input.text().strip()
+        if not message:
+            return  # Don't send empty messages
+
+        logger.info(f"User sent message to pet: {message}")
+
+        # Clear the input field
+        self.message_input.clear()
+
+        # Create event data with the user's message
+        event_data = {'message': message}
+
+        # Send the event to the pet
+        self.send_event_to_pet('user_message', event_data)
+
     @Slot(dict)
     def set_user(self, user: dict | None):
         """Sets the current user and initializes/clears pet state."""
@@ -229,9 +347,17 @@ class PetWidget(QWidget):
             self.update_pet_display({"dialogue": "", "suggested_animation": "idle"})
             self.pet_status_label.setText("准备好迎接新的善举了吗？")  # Changed logged-in text
             QTimer.singleShot(0, lambda: self.resizeEvent(None))  # Force mask update
+
+            # Enable chat input when user is logged in
+            self.message_input.setEnabled(True)
+            self.send_button.setEnabled(True)
         else:
             logger.info("Pet UI deactivated (user logged out).")
             self.update_pet_display({"dialogue": "", "suggested_animation": "idle"})
             self.dialogue_label.setVisible(False)
             self.pet_status_label.setText("再见！")  # Changed logged-out text
             QTimer.singleShot(0, lambda: self.resizeEvent(None))  # Force mask update
+
+            # Disable chat input when no user is logged in
+            self.message_input.setEnabled(False)
+            self.send_button.setEnabled(False)

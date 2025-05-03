@@ -253,6 +253,8 @@ class UserManager:
             )
             if result:
                 consent_value = result[0]["ai_consent_given"]
+                # Add detailed logging for the raw value from DB
+                logger.debug(f"Raw consent value from DB for user {user_id}: {consent_value} (type: {type(consent_value)})")
                 if consent_value is None:
                     return None  # Not set yet
                 return bool(consent_value)  # Return True (1) or False (0)
@@ -300,13 +302,15 @@ class UserManager:
             )
 
             if affected_rows > 0:
-                logger.info(f"AI consent status successfully set to {consent_status} for user {user_id}.")
+                logger.info(f"AI consent status successfully set to {consent_status} for user {user_id} in DB.")
                 # Update current user if applicable
                 if self.current_user and self.current_user["id"] == user_id:
                     self.current_user["ai_consent_given"] = consent_status  # Add/Update field
+                    # Add log to confirm in-memory update
+                    logger.info(f"Updated in-memory current_user AI consent to: {self.current_user.get('ai_consent_given')}")
                 return True
             else:
-                logger.warning(f"Update query executed but no rows affected for user {user_id}.")
+                logger.warning(f"DB update query executed but no rows affected for user {user_id} when setting AI consent.")
                 return False
         except sqlite3.Error as e:
             logger.error(f"Database error setting AI consent for user {user_id}: {e}")

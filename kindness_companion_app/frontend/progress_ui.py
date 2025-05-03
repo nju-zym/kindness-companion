@@ -676,70 +676,66 @@ class ProgressWidget(QWidget):
             self.generate_report_button.setText("生成周报")
 
     def clear_achievements(self):
-        """Clear the achievements display area within the scroll area, keeping the placeholder and spacer."""
-        # Iterate backwards to remove achievement layouts, stopping before placeholder and spacer
-        # The last two items are placeholder (QLabel) and spacer (QSpacerItem)
-        while self.achievements_layout.count() > 2: # Keep placeholder and spacer
-            item = self.achievements_layout.takeAt(0) # Remove from the top
-            if item is None:
-                continue
+        """Safely clear the achievements display area, preserving placeholder and spacer."""
+        if not self.achievements_layout:
+            logging.error("clear_achievements called but achievements_layout is None.")
+            return
 
+        items_to_remove = []
+        # Identify items to remove (excluding placeholder widget and spacer item)
+        for i in range(self.achievements_layout.count()):
+            item = self.achievements_layout.itemAt(i)
+            if item:
+                widget = item.widget()
+                spacer = item.spacerItem()
+                # Check if it's NOT the placeholder widget AND NOT the spacer item
+                if widget != self.achievements_placeholder and not spacer:
+                    items_to_remove.append(item)
+                # Also check if it's a layout item that doesn't contain the placeholder
+                elif item.layout() is not None:
+                     # We assume achievement items are layouts, placeholder is a direct widget
+                     items_to_remove.append(item)
+
+        # Remove identified items and delete their contents
+        for item in items_to_remove:
+            self.achievements_layout.removeItem(item)
             layout = item.layout()
             if layout is not None:
                 # Delete widgets within the layout
                 while layout.count():
                     child_item = layout.takeAt(0)
                     if child_item:
-                        widget = child_item.widget()
-                        if widget:
-                            widget.deleteLater()
-                # Delete the layout itself (though takeAt should handle removal)
-                # del layout # Optional explicit deletion
+                        child_widget = child_item.widget()
+                        if child_widget:
+                            child_widget.deleteLater()
+                # Delete the layout itself after clearing children
+                # layout.deleteLater() # removeItem should detach it, Python GC handles layout object
             else:
-                # Should not happen if we only add layouts, but handle just in case
                 widget = item.widget()
                 if widget:
                     widget.deleteLater()
+            # del item # Let Python GC handle the QLayoutItem object
 
-        # Ensure the placeholder is visible and has the correct text after clearing
-        if self.achievements_layout.count() == 2: # Should be placeholder + spacer
-            placeholder_item = self.achievements_layout.itemAt(0)
-            spacer_item = self.achievements_layout.itemAt(1)
-
-            if placeholder_item and isinstance(placeholder_item.widget(), QLabel) and spacer_item and spacer_item.spacerItem():
-                placeholder_item.widget().setText("成就徽章将在此处展示。")
-                placeholder_item.widget().show()
-                # Collapse spacer when placeholder is shown
-                spacer_item.spacerItem().changeSize(0, 0, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        # After clearing, ensure placeholder is valid and visible
+        try:
+            # Check if the C++ object still exists before accessing it
+            if self.achievements_placeholder and self.achievements_placeholder.parent(): # Check if it's still part of a valid hierarchy
+                self.achievements_placeholder.setText("成就徽章将在此处展示。")
+                self.achievements_placeholder.show()
+                # Find and collapse spacer
+                for i in range(self.achievements_layout.count()):
+                    item = self.achievements_layout.itemAt(i)
+                    if item and item.spacerItem():
+                        item.spacerItem().changeSize(0, 0, QSizePolicy.Minimum, QSizePolicy.Fixed)
+                        break
             else:
-                 logging.warning("clear_achievements: Layout structure incorrect after clearing.")
-                 # Attempt to reset placeholder anyway
-                 self.achievements_placeholder.setText("成就徽章将在此处展示。")
-                 self.achievements_placeholder.show()
-                 # Try to find and collapse spacer
-                 for i in range(self.achievements_layout.count()):
-                     item = self.achievements_layout.itemAt(i)
-                     if item and item.spacerItem():
-                         item.spacerItem().changeSize(0, 0, QSizePolicy.Minimum, QSizePolicy.Fixed)
-                         break
+                logging.warning("clear_achievements: achievements_placeholder seems invalid or deleted.")
+                # Optionally recreate placeholder if necessary, though this indicates a deeper issue
+                # self.achievements_placeholder = QLabel("成就徽章将在此处展示。")
+                # self.achievements_layout.insertWidget(0, self.achievements_placeholder) # Re-add if needed
 
-        elif self.achievements_layout.count() == 0: # Should not happen with placeholder/spacer logic
-             logging.warning("clear_achievements: Layout became empty, re-adding placeholder and spacer.")
-             self.achievements_layout.addWidget(self.achievements_placeholder)
-             self.achievements_layout.addSpacerItem(self.achievements_spacer)
-             self.achievements_placeholder.setText("成就徽章将在此处展示。")
-             self.achievements_placeholder.show()
-             self.achievements_spacer.changeSize(0, 0, QSizePolicy.Minimum, QSizePolicy.Fixed)
-        else:
-             logging.warning(f"clear_achievements: {self.achievements_layout.count()} items remain, expected 2.")
-             # Ensure placeholder is visible
-             self.achievements_placeholder.setText("成就徽章将在此处展示。")
-             self.achievements_placeholder.show()
-             # Try to find and collapse spacer
-             for i in range(self.achievements_layout.count()):
-                 item = self.achievements_layout.itemAt(i)
-                 if item and item.spacerItem():
-                     item.spacerItem().changeSize(0, 0, QSizePolicy.Minimum, QSizePolicy.Fixed)
-                     break
+        except RuntimeError as e:
+            # Catch the specific error if the check somehow fails
+            logging.error(f"RuntimeError in clear_achievements accessing placeholder: {e}")
 
 # ... (rest of the class) ...

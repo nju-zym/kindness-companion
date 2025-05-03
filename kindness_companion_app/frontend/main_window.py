@@ -1,7 +1,8 @@
 import logging
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QStackedWidget, QPushButton, QLabel, QMessageBox, QButtonGroup, QSizePolicy
+    QStackedWidget, QPushButton, QLabel, QMessageBox, QButtonGroup, QSizePolicy,
+    QApplication
 )
 from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer
 from PySide6.QtGui import QIcon, QFont, QFontMetrics
@@ -45,20 +46,37 @@ class MainWindow(QMainWindow):
         self.progress_tracker = progress_tracker
         self.reminder_scheduler = reminder_scheduler
 
+        # 设置窗口大小变化时的响应
+        self.timer = QTimer(self)
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(self.adjust_layout_for_size)
+
         # Set up reminder callback
         self.reminder_scheduler.set_callback(self.show_reminder)
 
         # Set window properties
         self.setWindowTitle("善行挑战 (Kindness Challenge)")
-        self.setMinimumSize(800, 600)
+
+        # 获取屏幕尺寸，设置窗口为屏幕的一定比例
+        screen = QApplication.primaryScreen().availableGeometry()
+        width = int(screen.width() * 0.75)  # 窗口宽度为屏幕宽度的75%
+        height = int(screen.height() * 0.75)  # 窗口高度为屏幕高度的75%
+
+        # 设置最小尺寸，确保在小屏幕上也有合理的显示
+        self.setMinimumSize(min(800, width), min(600, height))
+
+        # 设置初始大小
+        self.resize(width, height)
 
         # Create central widget and layout
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
+        self.central_widget.setObjectName("main_central_widget")  # 为中央部件设置对象名，便于样式表定制
 
+        # 创建主布局
         self.main_layout = QHBoxLayout(self.central_widget)
-        self.main_layout.setSpacing(0)  # Remove spacing between sidebar and content/pet
-        self.main_layout.setContentsMargins(0, 0, 0, 0)  # Remove main layout margins
+        self.main_layout.setSpacing(12)  # 增加间距，使各区域有更明显的分隔
+        self.main_layout.setContentsMargins(15, 15, 15, 15)  # 添加更大的边距，使布局更加宽松
 
         # Create navigation sidebar
         self.setup_navigation()
@@ -79,15 +97,23 @@ class MainWindow(QMainWindow):
         """Set up the navigation sidebar."""
         self.nav_widget = QWidget()
         self.nav_widget.setObjectName("nav_widget")  # Set object name for styling
-        self.nav_widget.setMinimumWidth(200)  # 确保侧边栏有足够宽度
+
+        # 获取屏幕宽度，设置侧边栏为屏幕宽度的一定比例
+        screen_width = QApplication.primaryScreen().availableGeometry().width()
+        nav_min_width = min(int(screen_width * 0.15), 220)  # 最小宽度为屏幕宽度的15%，但不超过220
+        nav_max_width = min(int(screen_width * 0.2), 280)   # 最大宽度为屏幕宽度的20%，但不超过280
+
+        self.nav_widget.setMinimumWidth(nav_min_width)
+        self.nav_widget.setMaximumWidth(nav_max_width)
 
         self.nav_layout = QVBoxLayout(self.nav_widget)
-        self.nav_layout.setAlignment(Qt.AlignTop)
-        self.nav_layout.setContentsMargins(5, 15, 5, 10)  # 调整侧边栏内边距
+        self.nav_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.nav_layout.setContentsMargins(15, 25, 15, 25)  # 增加内边距，使布局更加宽松
+        self.nav_layout.setSpacing(15)  # 增加元素间距，改善布局
 
         # 创建一个容器控件来包含标题标签
         self.title_container = QWidget()
-        self.title_container.setMinimumHeight(70)  # 确保容器有足够的高度
+        self.title_container.setMinimumHeight(80)  # 增加容器高度，使标题更加突出
         self.title_layout = QVBoxLayout(self.title_container)
         self.title_layout.setContentsMargins(0, 0, 0, 0)  # 移除内边距
         self.title_layout.setAlignment(Qt.AlignCenter)
@@ -98,10 +124,10 @@ class MainWindow(QMainWindow):
         self.title_label.setAlignment(Qt.AlignCenter)
 
         # 设置字体并显式指定大小
-        title_font = QFont("Hiragino Sans GB", 20, QFont.Bold)
+        title_font = QFont("Hiragino Sans GB", 22, QFont.Bold)  # 增加字体大小
         self.title_label.setFont(title_font)
-        self.title_label.setMinimumHeight(40)  # 固定高度
-        self.title_label.setStyleSheet("padding: 0px; margin: 0px;")  # 覆盖样式表中的内边距
+        self.title_label.setMinimumHeight(50)  # 增加高度
+        self.title_label.setStyleSheet("padding: 5px; margin: 0px; color: #3D405B;")  # 调整内边距和颜色
 
         # 添加标题到容器并显式设置大小策略
         self.title_layout.addWidget(self.title_label)
@@ -109,7 +135,7 @@ class MainWindow(QMainWindow):
 
         # 添加标题容器到导航布局
         self.nav_layout.addWidget(self.title_container)
-        self.nav_layout.addSpacing(10)  # 在标题下方添加额外空间
+        self.nav_layout.addSpacing(15)  # 增加标题下方的空间
 
         # Navigation buttons
         self.nav_buttons = {}
@@ -126,10 +152,18 @@ class MainWindow(QMainWindow):
             ("profile", "个人信息", self.show_profile, ":/icons/user.svg"),
         ]
 
-        icon_size = QSize(18, 18)  # Define a standard icon size
+        icon_size = QSize(22, 22)  # 增加图标尺寸，使其更加明显
 
         for item_id, label, callback, icon_path in nav_items:
             button = QPushButton(label)
+            button.setObjectName(f"nav_button_{item_id}")  # 为每个按钮设置唯一的对象名，便于样式表定制
+
+            # 设置固定高度，使按钮更加突出
+            button.setMinimumHeight(45)
+
+            # 设置文本对齐方式，使图标和文本有更好的间距
+            button.setStyleSheet("text-align: left; padding-left: 15px;")
+
             if icon_path:
                 try:
                     icon = QIcon(icon_path)
@@ -142,9 +176,14 @@ class MainWindow(QMainWindow):
 
             button.setCheckable(True)  # Make buttons checkable
             button.clicked.connect(callback)
-            button.clicked.connect(lambda checked=False, b=button: self.update_button_style(b))
+            # 修复 lambda 函数，使用 _ 忽略 checked 参数
+            button.clicked.connect(lambda _, b=button: self.update_button_style(b))
             self.nav_buttons[item_id] = button
             self.nav_button_group.addButton(button)  # Add to group
+
+            # 设置按钮的大小策略，使其在水平方向上填充可用空间
+            button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
             self.nav_layout.addWidget(button)
             button.setEnabled(False)  # Disabled until login
 
@@ -156,8 +195,22 @@ class MainWindow(QMainWindow):
 
     def setup_content_area(self):
         """Set up the content area with stacked widget."""
+        # 创建一个容器来包裹内容区域，便于添加边距和样式
+        self.content_container = QWidget()
+        self.content_container.setObjectName("content_container")
+
+        # 为容器创建布局
+        self.content_container_layout = QVBoxLayout(self.content_container)
+        self.content_container_layout.setContentsMargins(25, 25, 25, 25)  # 增加内边距，使内容更加宽松
+        self.content_container_layout.setSpacing(15)  # 增加内部间距，改善布局
+        self.content_container_layout.setAlignment(Qt.AlignmentFlag.AlignTop)  # 内容顶部对齐
+
+        # 创建堆叠部件
         self.content_widget = QStackedWidget()
         self.content_widget.setObjectName("content_widget")  # For styling if needed
+
+        # 将堆叠部件添加到容器布局中
+        self.content_container_layout.addWidget(self.content_widget)
 
         # Create pages
         self.login_widget = LoginWidget(self.user_manager)
@@ -165,7 +218,13 @@ class MainWindow(QMainWindow):
         self.challenge_widget = ChallengeListWidget(self.challenge_manager, self.progress_tracker)
         self.checkin_widget = CheckinWidget(self.progress_tracker, self.challenge_manager)
         self.progress_widget = ProgressWidget(self.progress_tracker, self.challenge_manager)
-        self.reminder_widget = ReminderWidget(self.reminder_scheduler, self.challenge_manager)
+
+        # 获取主题管理器并传递给提醒设置界面
+        theme_manager = None
+        if hasattr(QApplication.instance(), 'theme_manager'):
+            theme_manager = QApplication.instance().theme_manager
+
+        self.reminder_widget = ReminderWidget(self.reminder_scheduler, self.challenge_manager, theme_manager)
         self.community_widget = CommunityWidget()
         self.profile_widget = ProfileWidget(self.user_manager, self.progress_tracker, self.challenge_manager)
 
@@ -179,17 +238,38 @@ class MainWindow(QMainWindow):
         self.content_widget.addWidget(self.community_widget)
         self.content_widget.addWidget(self.profile_widget)
 
-        # Add content stack to main layout
-        self.main_layout.addWidget(self.content_widget, 3)  # Give content area more stretch factor
+        # Add content container to main layout
+        self.main_layout.addWidget(self.content_container, 3)  # Give content area more stretch factor
 
     def setup_pet_area(self):
         """Sets up the area for the PetWidget."""
+        # 创建一个容器来包裹宠物区域，便于添加边距和样式
+        self.pet_container = QWidget()
+        self.pet_container.setObjectName("pet_container")
+
+        # 为容器创建布局
+        self.pet_container_layout = QVBoxLayout(self.pet_container)
+        self.pet_container_layout.setContentsMargins(20, 25, 20, 25)  # 增加内边距，使宠物区域更加宽松
+        self.pet_container_layout.setSpacing(15)  # 增加内部间距，改善布局
+        self.pet_container_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)  # 居中对齐
+
+        # 实例化宠物部件
         self.pet_widget = PetWidget(self.user_manager)  # Instantiate PetWidget
         self.pet_widget.setObjectName("pet_widget_area")  # For potential styling
-        self.pet_widget.setMinimumWidth(250)  # Give pet area a minimum width
-        self.pet_widget.setMaximumWidth(350)  # And a maximum width
-        # Add pet widget to the main layout
-        self.main_layout.addWidget(self.pet_widget, 1)  # Give pet area less stretch factor
+
+        # 将宠物部件添加到容器布局中
+        self.pet_container_layout.addWidget(self.pet_widget)
+
+        # 设置宠物容器的尺寸限制，使用相对尺寸
+        screen_width = QApplication.primaryScreen().availableGeometry().width()
+        pet_min_width = min(int(screen_width * 0.18), 260)  # 最小宽度为屏幕宽度的18%，但不超过260
+        pet_max_width = min(int(screen_width * 0.22), 320)  # 最大宽度为屏幕宽度的22%，但不超过320
+
+        self.pet_container.setMinimumWidth(pet_min_width)
+        self.pet_container.setMaximumWidth(pet_max_width)
+
+        # 添加宠物容器到主布局
+        self.main_layout.addWidget(self.pet_container, 1)  # Give pet area less stretch factor
 
     def connect_signals(self):
         """Connect signals between widgets."""
@@ -213,6 +293,10 @@ class MainWindow(QMainWindow):
         # Connect profile widget signals
         self.profile_widget.user_updated.connect(self.update_user_info)
         self.profile_widget.user_logged_out.connect(self.handle_logout)
+
+        # 连接主题变更信号
+        if hasattr(self.reminder_widget, 'theme_changed'):
+            self.reminder_widget.theme_changed.connect(self.handle_theme_changed)
 
     @Slot(dict)
     def on_login_successful(self, user):
@@ -358,3 +442,181 @@ class MainWindow(QMainWindow):
     def handle_logout(self):
         """Handle logout triggered from the profile widget."""
         self.logout()
+
+    @Slot(str, str)
+    def handle_theme_changed(self, theme_type, theme_style):
+        """
+        处理主题变更事件
+
+        Args:
+            theme_type (str): 主题类型（light/dark）
+            theme_style (str): 主题样式（standard/warm）
+        """
+        # 显示主题变更成功消息
+        theme_msg = AnimatedMessageBox(self)
+        theme_msg.setWindowTitle("主题已更新")
+
+        theme_type_text = "浅色" if theme_type == "light" else "深色"
+        theme_style_text = "温馨" if theme_style == "warm" else "标准"
+
+        theme_msg.setText(f"已切换到{theme_style_text}{theme_type_text}主题")
+        theme_msg.setIcon(QMessageBox.Information)
+        theme_msg.showNonModal()
+
+    def resizeEvent(self, event):
+        """处理窗口大小变化事件"""
+        super().resizeEvent(event)
+        # 使用计时器延迟执行布局调整，避免频繁调整
+        self.timer.start(200)  # 200毫秒后执行布局调整
+
+    def adjust_layout_for_size(self):
+        """根据窗口大小调整布局，实现响应式设计"""
+        width = self.width()
+        height = self.height()
+
+        # 计算基础缩放因子 - 基于窗口尺寸与参考尺寸的比例
+        # 参考尺寸为 1200x800
+        width_scale = width / 1200.0
+        height_scale = height / 800.0
+
+        # 使用较小的缩放因子，确保UI元素不会过大
+        scale_factor = min(width_scale, height_scale)
+
+        # 限制缩放范围，避免过小或过大
+        scale_factor = max(0.7, min(scale_factor, 1.3))
+
+        # 根据窗口宽度调整布局比例
+        if width < 1000:  # 窄窗口
+            # 调整主布局的比例
+            self.main_layout.setStretch(0, 1)  # 导航区域
+            self.main_layout.setStretch(1, 3)  # 内容区域
+            self.main_layout.setStretch(2, 1)  # 宠物区域
+
+            # 调整内容区域的内边距，使其在小窗口中更紧凑
+            self.content_container_layout.setContentsMargins(
+                int(15 * scale_factor),
+                int(15 * scale_factor),
+                int(15 * scale_factor),
+                int(15 * scale_factor)
+            )
+
+            # 调整导航区域的内边距
+            self.nav_layout.setContentsMargins(
+                int(8 * scale_factor),
+                int(15 * scale_factor),
+                int(8 * scale_factor),
+                int(15 * scale_factor)
+            )
+
+            # 调整宠物区域的内边距
+            self.pet_container_layout.setContentsMargins(
+                int(10 * scale_factor),
+                int(15 * scale_factor),
+                int(10 * scale_factor),
+                int(15 * scale_factor)
+            )
+
+        elif width < 1400:  # 中等窗口
+            # 调整主布局的比例
+            self.main_layout.setStretch(0, 1)  # 导航区域
+            self.main_layout.setStretch(1, 3)  # 内容区域
+            self.main_layout.setStretch(2, 1)  # 宠物区域
+
+            # 调整内容区域的内边距
+            self.content_container_layout.setContentsMargins(
+                int(20 * scale_factor),
+                int(20 * scale_factor),
+                int(20 * scale_factor),
+                int(20 * scale_factor)
+            )
+
+            # 调整导航区域的内边距
+            self.nav_layout.setContentsMargins(
+                int(10 * scale_factor),
+                int(20 * scale_factor),
+                int(10 * scale_factor),
+                int(20 * scale_factor)
+            )
+
+            # 调整宠物区域的内边距
+            self.pet_container_layout.setContentsMargins(
+                int(15 * scale_factor),
+                int(20 * scale_factor),
+                int(15 * scale_factor),
+                int(20 * scale_factor)
+            )
+
+        else:  # 宽窗口
+            # 调整主布局的比例
+            self.main_layout.setStretch(0, 1)  # 导航区域
+            self.main_layout.setStretch(1, 4)  # 内容区域
+            self.main_layout.setStretch(2, 1)  # 宠物区域
+
+            # 调整内容区域的内边距
+            self.content_container_layout.setContentsMargins(
+                int(25 * scale_factor),
+                int(25 * scale_factor),
+                int(25 * scale_factor),
+                int(25 * scale_factor)
+            )
+
+            # 调整导航区域的内边距
+            self.nav_layout.setContentsMargins(
+                int(12 * scale_factor),
+                int(25 * scale_factor),
+                int(12 * scale_factor),
+                int(25 * scale_factor)
+            )
+
+            # 调整宠物区域的内边距
+            self.pet_container_layout.setContentsMargins(
+                int(18 * scale_factor),
+                int(25 * scale_factor),
+                int(18 * scale_factor),
+                int(25 * scale_factor)
+            )
+
+        # 调整字体大小 - 基于缩放因子
+        base_font_size = 10  # 基础字体大小
+        font = self.font()
+
+        if width < 1000:  # 窄窗口
+            adjusted_size = int(base_font_size * scale_factor * 1.2)  # 窄窗口字体稍大
+        elif width < 1400:  # 中等窗口
+            adjusted_size = int(base_font_size * scale_factor * 1.4)  # 中等窗口字体更大
+        else:  # 宽窗口
+            adjusted_size = int(base_font_size * scale_factor * 1.6)  # 宽窗口字体最大
+
+        # 确保字体大小在合理范围内
+        adjusted_size = max(9, min(adjusted_size, 18))
+        font.setPointSize(adjusted_size)
+        self.setFont(font)
+
+        # 调整主布局的间距
+        self.main_layout.setSpacing(int(8 * scale_factor))
+        self.main_layout.setContentsMargins(
+            int(10 * scale_factor),
+            int(10 * scale_factor),
+            int(10 * scale_factor),
+            int(10 * scale_factor)
+        )
+
+        # 更新挑战列表布局
+        if hasattr(self, 'challenge_widget') and self.challenge_widget:
+            # 根据窗口宽度调整挑战卡片的列数
+            if hasattr(self.challenge_widget, 'challenges_layout') and self.challenge_widget.challenges_layout:
+                if width < 1200:
+                    max_cols = 1  # 窄窗口只显示一列
+                else:
+                    max_cols = 2  # 宽窗口显示两列
+
+                # 重新布局挑战卡片
+                if hasattr(self.challenge_widget, 'challenge_cards') and self.challenge_widget.challenge_cards:
+                    row, col = 0, 0
+                    for card_id, card in self.challenge_widget.challenge_cards.items():
+                        if card.isVisible():
+                            self.challenge_widget.challenges_layout.addWidget(card, row, col)
+                            col += 1
+                            if col >= max_cols:
+                                col = 0
+                                row += 1

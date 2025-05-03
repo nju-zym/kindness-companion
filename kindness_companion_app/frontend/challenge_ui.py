@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
     QSizePolicy
 )
 from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer
-from PySide6.QtGui import QFont, QIcon
+from PySide6.QtGui import QFont, QIcon, QFontMetrics
 import datetime
 
 # Import the custom message box
@@ -46,51 +46,103 @@ class ChallengeCard(QFrame):
         self.setFrameShadow(QFrame.Raised)  # Keep shadow for card effect
         self.setLineWidth(1)
 
+        # 设置卡片的最小高度，确保卡片有足够的空间
+        self.setMinimumHeight(200)
+
+        # 设置卡片的大小策略，使其在垂直方向上可以扩展
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+
         # Main layout
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(15, 15, 15, 15)
+        self.main_layout.setContentsMargins(20, 20, 20, 20)  # 增加内边距
+        self.main_layout.setSpacing(12)  # 增加元素间距
 
         # Title
         self.title_label = QLabel(self.challenge["title"])
-        self.title_label.setObjectName("title_label")  # Use object name if specific styling needed
+        self.title_label.setObjectName("challenge_title_label")  # 使用特定的对象名
+
+        # 设置标题字体
+        title_font = QFont("Hiragino Sans GB", 18, QFont.Bold)
+        self.title_label.setFont(title_font)
+
         self.main_layout.addWidget(self.title_label)
+
+        # 添加分隔线
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setFrameShadow(QFrame.Sunken)
+        separator.setLineWidth(1)
+        separator.setStyleSheet("background-color: #EAEAEA;")
+        self.main_layout.addWidget(separator)
 
         # Description
         self.description_label = QLabel(self.challenge["description"])
         self.description_label.setWordWrap(True)
+        self.description_label.setObjectName("challenge_description_label")
+
+        # 设置描述文本的最小高度，确保有足够的空间
+        self.description_label.setMinimumHeight(60)
+
         self.main_layout.addWidget(self.description_label)
+        self.main_layout.addSpacing(10)  # 添加额外的空间
 
         # Metadata layout
         self.meta_layout = QHBoxLayout()
+        self.meta_layout.setSpacing(15)  # 增加元素间距
 
         # Category
         self.category_label = QLabel(f"分类: {self.challenge['category']}")
+        self.category_label.setObjectName("challenge_category_label")
         self.meta_layout.addWidget(self.category_label)
 
         # Difficulty
         difficulty_text = "★" * self.challenge["difficulty"]
         self.difficulty_label = QLabel(f"难度: {difficulty_text}")
+        self.difficulty_label.setObjectName("challenge_difficulty_label")
         self.meta_layout.addWidget(self.difficulty_label)
 
         # --- Add streak label placeholder (always present, visibility toggled) ---
         self.streak_label = QLabel("") # Create label, initially empty
         self.streak_label.setObjectName("streak_label")
         self.streak_label.setVisible(False) # Initially hidden
+
+        # 设置连续打卡标签的字体
+        streak_font = QFont("Hiragino Sans GB", 16, QFont.Bold)
+        self.streak_label.setFont(streak_font)
+
         self.meta_layout.addWidget(self.streak_label)
 
+        # 添加弹性空间，使连续打卡标签靠右对齐
+        self.meta_layout.addStretch()
+
         self.main_layout.addLayout(self.meta_layout)
+
+        # 添加分隔线
+        separator2 = QFrame()
+        separator2.setFrameShape(QFrame.HLine)
+        separator2.setFrameShadow(QFrame.Sunken)
+        separator2.setLineWidth(1)
+        separator2.setStyleSheet("background-color: #EAEAEA;")
+        self.main_layout.addWidget(separator2)
 
         # Button layout
         self.button_layout = QHBoxLayout()
         self.button_layout.setAlignment(Qt.AlignRight)
+        self.button_layout.setSpacing(10)  # 增加按钮间距
+        self.button_layout.setContentsMargins(0, 10, 0, 0)  # 添加上边距
 
         # --- Create buttons but don't add them yet ---
-        self.icon_size = QSize(16, 16)  # Store icon size
+        self.icon_size = QSize(20, 20)  # 增加图标尺寸
 
         self.subscribe_button = QPushButton("订阅挑战")
         self.subscribe_button.setObjectName("subscribe_button")
         self.subscribe_button.setIcon(QIcon(":/icons/plus-circle.svg"))
         self.subscribe_button.setIconSize(self.icon_size)
+        # 使用相对尺寸，基于字体大小
+        font_metrics = QFontMetrics(self.subscribe_button.font())
+        text_width = font_metrics.horizontalAdvance("订阅挑战") + 40  # 文本宽度加上一些额外空间
+        self.subscribe_button.setMinimumWidth(max(120, text_width))  # 确保最小宽度足够
+        self.subscribe_button.setMinimumHeight(font_metrics.height() * 2)  # 高度为字体高度的2倍
         self.subscribe_button.clicked.connect(
             lambda: self.subscribe_clicked.emit(self.challenge["id"])
         )
@@ -99,6 +151,11 @@ class ChallengeCard(QFrame):
         self.unsubscribe_button.setObjectName("unsubscribe_button")
         self.unsubscribe_button.setIcon(QIcon(":/icons/x-circle.svg"))
         self.unsubscribe_button.setIconSize(self.icon_size)
+        # 使用相对尺寸，基于字体大小
+        font_metrics = QFontMetrics(self.unsubscribe_button.font())
+        text_width = font_metrics.horizontalAdvance("取消订阅") + 40  # 文本宽度加上一些额外空间
+        self.unsubscribe_button.setMinimumWidth(max(120, text_width))  # 确保最小宽度足够
+        self.unsubscribe_button.setMinimumHeight(font_metrics.height() * 2)  # 高度为字体高度的2倍
         self.unsubscribe_button.clicked.connect(
             lambda: self.unsubscribe_clicked.emit(self.challenge["id"])
         )
@@ -107,6 +164,13 @@ class ChallengeCard(QFrame):
         self.check_in_button.setObjectName("check_in_button")
         self.check_in_button.setIcon(QIcon(":/icons/check-square.svg"))
         self.check_in_button.setIconSize(self.icon_size)
+        # 使用相对尺寸，基于字体大小
+        font_metrics = QFontMetrics(self.check_in_button.font())
+        text_width = font_metrics.horizontalAdvance("今日打卡") + 40  # 文本宽度加上一些额外空间
+        self.check_in_button.setMinimumWidth(max(120, text_width))  # 确保最小宽度足够
+        self.check_in_button.setMinimumHeight(font_metrics.height() * 2)  # 高度为字体高度的2倍
+        # 设置打卡按钮为主要按钮样式
+        self.check_in_button.setProperty("class", "primaryButton")
         self.check_in_button.clicked.connect(
             lambda: self.check_in_clicked.emit(self.challenge["id"])
         )
@@ -168,77 +232,114 @@ class ChallengeListWidget(QWidget):
         self.current_user = None
         self.challenge_cards = {}  # Dictionary to store challenge cards by ID
 
+        # 设置窗口大小变化时的响应
+        self.resize_timer = QTimer(self)
+        self.resize_timer.setSingleShot(True)
+        self.resize_timer.timeout.connect(self.adjust_layout)
+
         self.setup_ui()
 
     def setup_ui(self):
         """Set up the user interface."""
         # Main layout
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(20, 20, 20, 20)
+        self.main_layout.setContentsMargins(25, 25, 25, 25)  # 增加内边距
+        self.main_layout.setSpacing(20)  # 增加元素间距
 
         # Header layout
         self.header_layout = QHBoxLayout()
+        self.header_layout.setContentsMargins(0, 0, 0, 15)  # 添加底部边距
 
         # Title
         self.title_label = QLabel("善行挑战列表")
         self.title_label.setObjectName("title_label")  # Set object name for styling
+
+        # 设置标题字体
+        title_font = QFont("Hiragino Sans GB", 22, QFont.Bold)
+        self.title_label.setFont(title_font)
+
         self.header_layout.addWidget(self.title_label)
 
         # Filter layout
         self.filter_layout = QHBoxLayout()
         self.filter_layout.setAlignment(Qt.AlignRight)
+        self.filter_layout.setSpacing(15)  # 增加过滤器间距
 
         # Category filter
         self.category_label = QLabel("分类:")
+        self.category_label.setObjectName("filter_label")  # 设置对象名，便于样式表定制
         self.category_combo = QComboBox()
+        self.category_combo.setObjectName("filter_combo")  # 设置对象名，便于样式表定制
         self.category_combo.addItem("全部分类", None)
         self.category_combo.currentIndexChanged.connect(self.filter_challenges)
-        self.category_combo.setMinimumWidth(140) # Increased minimum width
+        # 使用相对尺寸，基于字体大小
+        font_metrics = QFontMetrics(self.category_combo.font())
+        self.category_combo.setMinimumWidth(font_metrics.horizontalAdvance("全部分类XXXXX"))  # 确保足够宽度显示内容
+        self.category_combo.setMinimumHeight(font_metrics.height() * 2.2)  # 高度为字体高度的2.2倍
         self.category_combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.filter_layout.addWidget(self.category_label)
         self.filter_layout.addWidget(self.category_combo)
 
         # Difficulty filter
         self.difficulty_label = QLabel("难度:")
+        self.difficulty_label.setObjectName("filter_label")  # 设置对象名，便于样式表定制
         self.difficulty_combo = QComboBox()
+        self.difficulty_combo.setObjectName("filter_combo")  # 设置对象名，便于样式表定制
         self.difficulty_combo.addItem("全部难度", None)
         for i in range(1, 6):
             self.difficulty_combo.addItem("★" * i, i)
         self.difficulty_combo.currentIndexChanged.connect(self.filter_challenges)
-        self.difficulty_combo.setMinimumWidth(120) # Increased minimum width
+        # 使用相对尺寸，基于字体大小
+        font_metrics = QFontMetrics(self.difficulty_combo.font())
+        self.difficulty_combo.setMinimumWidth(font_metrics.horizontalAdvance("全部难度★★★★★"))  # 确保足够宽度显示内容
+        self.difficulty_combo.setMinimumHeight(font_metrics.height() * 2.2)  # 高度为字体高度的2.2倍
         self.difficulty_combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.filter_layout.addWidget(self.difficulty_label)
         self.filter_layout.addWidget(self.difficulty_combo)
 
         # Subscription filter
         self.subscription_label = QLabel("订阅:")
+        self.subscription_label.setObjectName("filter_label")  # 设置对象名，便于样式表定制
         self.subscription_combo = QComboBox()
+        self.subscription_combo.setObjectName("filter_combo")  # 设置对象名，便于样式表定制
         self.subscription_combo.addItem("全部挑战", None)
         self.subscription_combo.addItem("已订阅", True)
         self.subscription_combo.addItem("未订阅", False)
         self.subscription_combo.currentIndexChanged.connect(self.filter_challenges)
-        self.subscription_combo.setMinimumWidth(120) # Increased minimum width
+        # 使用相对尺寸，基于字体大小
+        font_metrics = QFontMetrics(self.subscription_combo.font())
+        self.subscription_combo.setMinimumWidth(font_metrics.horizontalAdvance("全部挑战XXXXX"))  # 确保足够宽度显示内容
+        self.subscription_combo.setMinimumHeight(font_metrics.height() * 2.2)  # 高度为字体高度的2.2倍
         self.subscription_combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.filter_layout.addWidget(self.subscription_label)
         self.filter_layout.addWidget(self.subscription_combo)
 
         self.header_layout.addLayout(self.filter_layout)
-
         self.main_layout.addLayout(self.header_layout)
+
+        # 添加分隔线
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setFrameShadow(QFrame.Sunken)
+        separator.setLineWidth(1)
+        separator.setStyleSheet("background-color: #EAEAEA;")
+        self.main_layout.addWidget(separator)
 
         # Scroll area for challenges
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setFrameShape(QFrame.NoFrame)
+        self.scroll_area.setObjectName("challenges_scroll_area")  # 设置对象名，便于样式表定制
 
         # Container widget for challenges
         self.challenges_widget = QWidget()
+        self.challenges_widget.setObjectName("challenges_container")  # 设置对象名，便于样式表定制
         self.challenges_layout = QGridLayout(self.challenges_widget)
-        self.challenges_layout.setContentsMargins(0, 0, 0, 0)
-        self.challenges_layout.setSpacing(15)
+        self.challenges_layout.setContentsMargins(5, 10, 5, 10)  # 调整内边距
+        self.challenges_layout.setSpacing(20)  # 增加卡片间距
+        self.challenges_layout.setAlignment(Qt.AlignTop)  # 确保卡片从顶部开始排列
 
         self.scroll_area.setWidget(self.challenges_widget)
-
         self.main_layout.addWidget(self.scroll_area)
 
     @Slot(dict)
@@ -299,7 +400,13 @@ class ChallengeListWidget(QWidget):
 
         # Create challenge cards
         row, col = 0, 0
-        max_cols = 2  # Number of columns in the grid
+
+        # 根据容器宽度动态确定列数
+        container_width = self.challenges_widget.width()
+        if container_width < 600:
+            max_cols = 1  # 窄容器只显示一列
+        else:
+            max_cols = 2  # 宽容器显示两列
 
         for challenge in challenges:
             is_subscribed = challenge["id"] in subscribed_ids
@@ -434,6 +541,37 @@ class ChallengeListWidget(QWidget):
                 if challenge_id in self.challenge_cards:
                     card = self.challenge_cards[challenge_id]
                     card.update_ui(is_subscribed=False, streak=0) # Update UI directly
+
+    def resizeEvent(self, event):
+        """处理窗口大小变化事件"""
+        super().resizeEvent(event)
+        # 使用计时器延迟执行布局调整，避免频繁调整
+        self.resize_timer.start(200)  # 200毫秒后执行布局调整
+
+    def adjust_layout(self):
+        """根据容器宽度调整布局"""
+        if not self.challenge_cards:
+            return
+
+        # 根据容器宽度动态确定列数
+        container_width = self.challenges_widget.width()
+        if container_width < 600:
+            max_cols = 1  # 窄容器只显示一列
+        else:
+            max_cols = 2  # 宽容器显示两列
+
+        # 重新布局挑战卡片
+        row, col = 0, 0
+        for card_id, card in self.challenge_cards.items():
+            if card.isVisible():
+                # 先从布局中移除
+                self.challenges_layout.removeWidget(card)
+                # 再添加到新位置
+                self.challenges_layout.addWidget(card, row, col)
+                col += 1
+                if col >= max_cols:
+                    col = 0
+                    row += 1
 
     def check_in_challenge(self, challenge_id):
         """

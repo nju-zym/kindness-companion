@@ -1,10 +1,20 @@
 import requests
 from requests.exceptions import RequestException
 import time
+import logging
+
+# Attempt to import the config module directly (absolute import)
+try:
+    import config
+except ImportError:
+    logging.warning("Could not import config.py. API keys might not be available.")
+    config = None # type: ignore
 
 DEFAULT_TIMEOUT = 15 # seconds
 MAX_RETRIES = 3
 BACKOFF_FACTOR = 0.5 # seconds
+
+logger = logging.getLogger(__name__)
 
 def make_api_request(method: str, url: str, api_key: str = None, headers: dict = None, params: dict = None, json_data: dict = None) -> dict:
     """
@@ -69,11 +79,28 @@ def make_api_request(method: str, url: str, api_key: str = None, headers: dict =
         # Should ideally never happen if loop runs at least once
         raise RequestException("API request failed without specific exception after retries.")
 
-def get_api_key(service_name: str) -> str:
-    """Securely retrieves the API key for a given service."""
-    # Import config or use os.environ
-    # Example:
-    # import config
-    # return getattr(config, f'{service_name.upper()}_API_KEY', None)
-    print(f"Retrieving API key for {service_name}") # Placeholder
-    return "DUMMY_API_KEY" # Placeholder
+def get_api_key(service_name: str) -> str | None:
+    """
+    Securely retrieves the API key for a given service from config.py.
+
+    Args:
+        service_name: The name of the service (e.g., 'ZHIPUAI').
+                      The function will look for a variable named
+                      f'{service_name.upper()}_API_KEY' in config.py.
+
+    Returns:
+        The API key string if found, otherwise None.
+    """
+    if not config:
+        logger.error("Config module not loaded. Cannot retrieve API key.")
+        return None
+
+    key_variable_name = f'{service_name.upper()}_API_KEY'
+    api_key = getattr(config, key_variable_name, None)
+
+    if not api_key:
+        logger.warning(f"API key '{key_variable_name}' not found in config.py.")
+        return None
+
+    logger.info(f"Retrieved API key for {service_name}.")
+    return api_key

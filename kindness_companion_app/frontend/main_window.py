@@ -16,6 +16,7 @@ from .progress_ui import ProgressWidget
 from .reminder_ui import ReminderWidget
 from .profile_ui import ProfileWidget
 from .community_ui import CommunityWidget
+from .pet_ui import PetWidget  # Import PetWidget
 
 
 class MainWindow(QMainWindow):
@@ -56,12 +57,17 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.central_widget)
 
         self.main_layout = QHBoxLayout(self.central_widget)
+        self.main_layout.setSpacing(0)  # Remove spacing between sidebar and content/pet
+        self.main_layout.setContentsMargins(0, 0, 0, 0)  # Remove main layout margins
 
         # Create navigation sidebar
         self.setup_navigation()
 
-        # Create content area
+        # Create content area (stacked widget)
         self.setup_content_area()
+
+        # Create Pet Widget Area
+        self.setup_pet_area()  # New method to setup pet widget
 
         # Connect signals
         self.connect_signals()
@@ -151,6 +157,7 @@ class MainWindow(QMainWindow):
     def setup_content_area(self):
         """Set up the content area with stacked widget."""
         self.content_widget = QStackedWidget()
+        self.content_widget.setObjectName("content_widget")  # For styling if needed
 
         # Create pages
         self.login_widget = LoginWidget(self.user_manager)
@@ -172,8 +179,17 @@ class MainWindow(QMainWindow):
         self.content_widget.addWidget(self.community_widget)
         self.content_widget.addWidget(self.profile_widget)
 
-        # Add content to main layout
-        self.main_layout.addWidget(self.content_widget, 4)
+        # Add content stack to main layout
+        self.main_layout.addWidget(self.content_widget, 3)  # Give content area more stretch factor
+
+    def setup_pet_area(self):
+        """Sets up the area for the PetWidget."""
+        self.pet_widget = PetWidget(self.user_manager)  # Instantiate PetWidget
+        self.pet_widget.setObjectName("pet_widget_area")  # For potential styling
+        self.pet_widget.setMinimumWidth(250)  # Give pet area a minimum width
+        self.pet_widget.setMaximumWidth(350)  # And a maximum width
+        # Add pet widget to the main layout
+        self.main_layout.addWidget(self.pet_widget, 1)  # Give pet area less stretch factor
 
     def connect_signals(self):
         """Connect signals between widgets."""
@@ -192,6 +208,7 @@ class MainWindow(QMainWindow):
         self.user_changed.connect(self.reminder_widget.set_user)
         self.user_changed.connect(self.community_widget.set_user)
         self.user_changed.connect(self.profile_widget.set_user)
+        self.user_changed.connect(self.pet_widget.set_user)  # Connect user_changed to PetWidget
 
         # Connect profile widget signals
         self.profile_widget.user_updated.connect(self.update_user_info)

@@ -3,6 +3,9 @@ import secrets
 import time
 import sqlite3
 from .database_manager import DatabaseManager
+import logging  # Add logging
+
+logger = logging.getLogger(__name__)  # Add logger
 
 
 class UserManager:
@@ -67,13 +70,13 @@ class UserManager:
         # Insert user with default empty bio, default avatar path, and NULL avatar blob
         user_id = self.db_manager.execute_insert(
             "INSERT INTO users (username, password_hash, email, bio, avatar_path, avatar) VALUES (?, ?, ?, ?, ?, ?)",
-            (username, stored_hash, email, "", ":/images/profilePicture.png", None) # Set avatar blob to None initially
+            (username, stored_hash, email, "", ":/images/profilePicture.png", None)  # Set avatar blob to None initially
         )
 
         if user_id:
             # Fetch the newly created user including the avatar blob
             new_user = self.db_manager.execute_query(
-                "SELECT id, username, email, bio, avatar_path, avatar, created_at FROM users WHERE id = ?", # Select avatar blob
+                "SELECT id, username, email, bio, avatar_path, avatar, created_at FROM users WHERE id = ?",  # Select avatar blob
                 (user_id,)
             )
             if new_user:
@@ -83,8 +86,8 @@ class UserManager:
                     "username": user_data["username"],
                     "email": user_data["email"],
                     "bio": user_data["bio"],
-                    "avatar_path": user_data["avatar_path"], # Keep path for now
-                    "avatar": user_data["avatar"], # Add avatar blob (bytes or None)
+                    "avatar_path": user_data["avatar_path"],  # Keep path for now
+                    "avatar": user_data["avatar"],  # Add avatar blob (bytes or None)
                     "registration_date": user_data["created_at"]
                 }
 
@@ -131,8 +134,8 @@ class UserManager:
                 "username": user["username"],
                 "email": user.get("email"),
                 "bio": user.get("bio", ""),
-                "avatar_path": user.get("avatar_path", ":/images/profilePicture.png"), # Keep path
-                "avatar": user.get("avatar"), # Get avatar blob (bytes or None)
+                "avatar_path": user.get("avatar_path", ":/images/profilePicture.png"),  # Keep path
+                "avatar": user.get("avatar"),  # Get avatar blob (bytes or None)
                 "registration_date": user.get("created_at")
             }
 
@@ -153,7 +156,7 @@ class UserManager:
         """
         return self.current_user
 
-    def update_profile(self, user_id, new_password=None, bio=None, avatar_path=None, avatar_data=None): # Add avatar_data parameter
+    def update_profile(self, user_id, new_password=None, bio=None, avatar_path=None, avatar_data=None):  # Add avatar_data parameter
         """
         Update user profile information. Now accepts avatar_data (bytes).
         avatar_path is kept for potential future use but not actively updated here.
@@ -188,7 +191,7 @@ class UserManager:
 
         if not updates:
             print("No profile updates provided.")
-            return True # Nothing to update
+            return True  # Nothing to update
 
         set_clause = ", ".join([f"{key} = ?" for key in updates.keys()])
         query = f"UPDATE users SET {set_clause} WHERE id = ?"
@@ -202,16 +205,16 @@ class UserManager:
                 if self.current_user and self.current_user["id"] == user_id:
                     # Password changed, force re-login for security? Or just update locally?
                     if new_password:
-                        pass # Decide on security implications
+                        pass  # Decide on security implications
                     if bio is not None:
                         self.current_user["bio"] = bio
                     if avatar_data is not None:
-                        self.current_user["avatar"] = avatar_data # Store bytes
+                        self.current_user["avatar"] = avatar_data  # Store bytes
                         # self.current_user["avatar_path"] = None # Optionally clear path
                 return True
             else:
                 print(f"No user found with id {user_id} or no changes made.")
-                return False # Or True if no change is not an error?
+                return False  # Or True if no change is not an error?
         except sqlite3.Error as e:
             print(f"Error updating user profile for user_id {user_id}: {e}")
             # self.logger.error(...) # Use proper logging if available
@@ -229,6 +232,72 @@ class UserManager:
             user_data = dict(user_result[0])
             return user_data
         return None
+
+    # --- AI Consent Methods ---
+
+    def get_ai_consent(self, user_id: int) -> bool | None:
+        """
+        Get the AI consent status for a given user.
+
+        Args:
+            user_id (int): The ID of the user.
+
+        Returns:
+            bool | None: True if consented, False if explicitly denied, None if not set.
+        """
+        try:
+            result = self.db_manager.execute_query(
+                "SELECT ai_consent_given FROM users WHERE id = ?",
+                (user_id,)
+            )
+            if result:
+                consent_value = result[0]["ai_consent_given"]
+                if consent_value is None:
+                    return None  # Not set yet
+                return bool(consent_value)  # Return True (1) or False (0)
+            else:
+                logger.warning(f"Could not find user with ID {user_id} to get AI consent.")
+                return None  # User not found
+        except sqlite3.Error as e:
+            logger.error(f"Database error getting AI consent for user {user_id}: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error getting AI consent for user {user_id}: {e}")
+            return None
+
+    def set_ai_consent(self, user_id: int, consent_status: bool) -> bool:
+        """
+        Set the AI consent status for a given user.
+
+        Args:
+            user_id (int): The ID of the user.
+            consent_status (bool): True to grant consent, False to deny.
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+        """
+        try:
+            affected_rows = self.db_manager.execute_update(
+                "UPDATE users SET ai_consent_given = ? WHERE id = ?",
+                (int(consent_status), user_id)  # Store as 1 or 0
+            )
+            if affected_rows > 0:
+                logger.info(f"AI consent status set to {consent_status} for user {user_id}.")
+                # Update current user if applicable
+                if self.current_user and self.current_user["id"] == user_id:
+                    self.current_user["ai_consent_given"] = consent_status  # Add/Update field
+                return True
+            else:
+                logger.warning(f"Could not find user with ID {user_id} to set AI consent.")
+                return False
+        except sqlite3.Error as e:
+            logger.error(f"Database error setting AI consent for user {user_id}: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error setting AI consent for user {user_id}: {e}")
+            return False
+
+    # --- End AI Consent Methods ---
 
     def delete_user_account(self, user_id, password):
         """
@@ -249,7 +318,7 @@ class UserManager:
 
         if not user_result:
             print(f"Delete failed: User with ID {user_id} not found.")
-            return False # User not found
+            return False  # User not found
 
         user_data = user_result[0]
         stored_hash_full = user_data["password_hash"]
@@ -264,11 +333,11 @@ class UserManager:
 
         if provided_hash != stored_hash:
             print(f"Delete failed: Incorrect password for user {user_id}.")
-            return False # Incorrect password
+            return False  # Incorrect password
 
         # Step 2: Delete associated data (use transaction for atomicity)
         try:
-            self.db_manager.connect() # Start transaction
+            self.db_manager.connect()  # Start transaction
 
             # Delete reminders
             self.db_manager.cursor.execute("DELETE FROM reminders WHERE user_id = ?", (user_id,))
@@ -286,7 +355,7 @@ class UserManager:
             self.db_manager.cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
             print(f"Deleted user record for user {user_id}.")
 
-            self.db_manager.connection.commit() # Commit all changes
+            self.db_manager.connection.commit()  # Commit all changes
             print(f"Account deletion successful for user {user_id}.")
 
             # If the deleted user is the currently logged-in user, log them out
@@ -298,7 +367,7 @@ class UserManager:
         except sqlite3.Error as e:
             print(f"Error during account deletion transaction for user {user_id}: {e}")
             if self.db_manager.connection:
-                self.db_manager.connection.rollback() # Rollback on error
+                self.db_manager.connection.rollback()  # Rollback on error
             return False
         finally:
-            self.db_manager.disconnect() # Ensure connection is closed
+            self.db_manager.disconnect()  # Ensure connection is closed

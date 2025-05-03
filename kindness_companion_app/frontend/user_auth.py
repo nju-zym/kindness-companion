@@ -1,11 +1,18 @@
+import logging
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QFormLayout, QMessageBox, QCheckBox, QSizePolicy, QGridLayout
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
+    QStackedWidget, QDialog, QDialogButtonBox, QCheckBox, QSizePolicy,
+    QGridLayout, QFormLayout
 )
-from PySide6.QtCore import Qt, Signal, Slot, QSize
-from PySide6.QtGui import QFont, QIcon
-# Import the custom message box
+from PySide6.QtCore import Qt, Signal, QSize, QTimer, Slot
+from PySide6.QtGui import QIcon, QPixmap, QPainter, QBitmap, QPainterPath
+
+from backend.user_manager import UserManager
 from .widgets.animated_message_box import AnimatedMessageBox
+from .widgets.base_dialog import BaseDialog
+from .pet_ui import PetWidget
+
+logger = logging.getLogger(__name__)
 
 
 class LoginWidget(QWidget):
@@ -358,3 +365,107 @@ class RegisterWidget(QWidget):
         self.password_edit.clear()
         self.confirm_password_edit.clear()
         self.terms_checkbox.setChecked(False)
+
+
+class UserAuthDialog(BaseDialog):
+    """
+    Dialog for handling user login and registration using a stacked widget.
+    Inherits from BaseDialog for consistent styling and animation.
+    """
+    login_successful = Signal(dict)
+
+    def __init__(self, user_manager, parent=None):
+        super().__init__(parent)
+        self.user_manager = user_manager
+        self.setWindowTitle("欢迎来到善行伴侣")
+        self.setMinimumSize(450, 550) # Increased minimum height to accommodate pet
+
+        # --- Create Pet Widget Instance ---
+        # Pass None for user_manager initially, as it's not needed for idle animation
+        self.pet_widget = PetWidget(None, self)
+        self.pet_widget.setObjectName("auth_pet_widget") # Optional: for specific styling
+        # Hide dialogue bubble and status label in auth screen
+        self.pet_widget.dialogue_label.setVisible(False)
+        # Keep status label simple or hide it
+        self.pet_widget.pet_status_label.setText("...")
+        self.pet_widget.pet_status_label.setVisible(False) # Hide status label on auth
+
+        self.setup_ui()
+        self.connect_signals()
+
+    def setup_ui(self):
+        """Set up the main UI with stacked widgets."""
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(20, 20, 20, 20) # Adjusted margins
+        self.main_layout.setSpacing(15) # Adjusted spacing
+
+        # --- Add Pet Widget ---
+        # Center the pet widget horizontally
+        pet_layout = QHBoxLayout()
+        pet_layout.addStretch()
+        pet_layout.addWidget(self.pet_widget)
+        pet_layout.addStretch()
+        self.main_layout.addLayout(pet_layout)
+        self.main_layout.addSpacing(10) # Space below pet
+
+        # Stacked widget for login and registration
+        self.stacked_widget = QStackedWidget()
+
+        # Create login and register widgets
+        self.login_widget = LoginWidget(self.user_manager)
+        self.register_widget = RegisterWidget(self.user_manager)
+
+        # Add widgets to stack
+        self.stacked_widget.addWidget(self.login_widget)
+        self.stacked_widget.addWidget(self.register_widget)
+
+        self.main_layout.addWidget(self.stacked_widget)
+
+    def connect_signals(self):
+        """Connect signals between widgets and the dialog."""
+        # Switch to register view
+        self.login_widget.register_requested.connect(
+            lambda: self.stacked_widget.setCurrentWidget(self.register_widget)
+        )
+        # Switch back to login view
+        self.register_widget.login_requested.connect(
+            lambda: self.stacked_widget.setCurrentWidget(self.login_widget)
+        )
+
+        # Handle successful login
+        self.login_widget.login_successful.connect(self.on_login_success)
+        # Handle successful registration (which also logs in)
+        self.register_widget.register_successful.connect(self.on_login_success)
+
+    @Slot(dict)
+    def on_login_success(self, user_info):
+        """Handle successful login or registration."""
+        logger.info(f"Login/Registration successful for user: {user_info.get('username')}")
+        self.login_successful.emit(user_info)
+        self.accept() # Close the dialog with Accepted status
+
+    def showEvent(self, event):
+        """Override showEvent to clear fields, set focus, and show pet animation."""
+        super().showEvent(event) # Call BaseDialog's showEvent first
+        # Reset to login view and clear fields
+        self.stacked_widget.setCurrentWidget(self.login_widget)
+        self.login_widget.clear_fields()
+        self.register_widget.clear_fields()
+
+        # --- Trigger initial pet animation AFTER dialog is shown --- START
+        # Use QTimer.singleShot with 100ms delay to ensure it runs after the event loop processes the show event and layout stabilizes
+        QTimer.singleShot(100, lambda: self.pet_widget.update_pet_display({"suggested_animation": "idle"}))
+        # --- Trigger initial pet animation AFTER dialog is shown --- END
+
+        # Set focus to username field in login widget
+        QTimer.singleShot(0, self.login_widget.username_edit.setFocus) # Keep focus setting immediate
+
+    # Override closeEvent to ensure BaseDialog's animated close is triggered
+    def closeEvent(self, event):
+        super().closeEvent(event)
+
+    # Override reject to ensure BaseDialog's animated close is triggered if Escape is pressed
+    def reject(self):
+        # Check if the dialog is already closing to prevent double animation
+        if not self._is_closing:
+             super().reject() # This will call BaseDialog's reject, triggering animation

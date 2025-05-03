@@ -115,3 +115,6 @@ celerybeat.pid
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+
+# Configuration files containing secrets
+kindness_companion_app/config.py

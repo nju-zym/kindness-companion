@@ -121,13 +121,37 @@ class AnimatedMessageBox(QMessageBox):
     def _handle_animation_finished(self):
         """Called after fade-out animation completes."""
         if self._is_closing:
-            # Use QMessageBox.done() directly, passing self as the instance,
-            # to correctly handle the ButtonRole enum.
-            QMessageBox.done(self, self._result_role)
+            # Map the stored button role/enum to the integer result code
+            result_code = QDialog.Rejected # Default to Rejected
+
+            # Check if it's a StandardButton enum
+            if isinstance(self._result_role, QMessageBox.StandardButton):
+                # Map standard buttons that typically mean acceptance
+                if self._result_role in [
+                    QMessageBox.Ok,
+                    QMessageBox.Yes,
+                    QMessageBox.Save,
+                    QMessageBox.Open,
+                    QMessageBox.Apply # Added Apply as acceptance
+                ]:
+                    result_code = QDialog.Accepted
+                # Other standard buttons (Cancel, No, Abort, etc.) default to Rejected
+
+            # Check if it's a ButtonRole enum (less common for standard buttons but possible)
+            elif isinstance(self._result_role, QMessageBox.ButtonRole):
+                # Map button roles that typically mean acceptance
+                if self._result_role in [
+                    QMessageBox.AcceptRole,
+                    QMessageBox.YesRole,
+                    QMessageBox.ApplyRole
+                ]:
+                    result_code = QDialog.Accepted
+                # Other roles (RejectRole, NoRole, DestructiveRole, etc.) default to Rejected
+
+            # Now call the original QDialog.done() with the correct integer result code
+            QDialog.done(self, result_code)
             self.animation_finished.emit() # Emit signal after closing
-            # Reset flag after closing is complete
-            # self._is_closing = False # Resetting here might be too early if done() triggers events
-            # It's better to reset in showEvent
+            # Resetting flag is handled in showEvent
     # --- Copied/Adapted from BaseDialog --- End
 
     def showNonModal(self, auto_close_delay_ms=3000):

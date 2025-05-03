@@ -3,3 +3,7 @@ apscheduler>=3.9.1
 pytest>=7.0.0
 pytest-qt>=4.0.0
 pyobjc
+requests # Added for API calls
+flask    # Added for optional community API
+zhipuai
+APScheduler

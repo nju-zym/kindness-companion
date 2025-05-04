@@ -66,8 +66,8 @@ class ProfileWidget(QWidget):
         """Set up the user interface using sub-widgets."""
         # Main layout
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(25, 25, 25, 25)
-        self.main_layout.setSpacing(20)
+        self.main_layout.setContentsMargins(30, 30, 30, 30)
+        self.main_layout.setSpacing(25)
 
         # Scroll Area
         scroll_area = QScrollArea()
@@ -75,18 +75,32 @@ class ProfileWidget(QWidget):
         scroll_area.setFrameShape(QFrame.NoFrame)
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setObjectName("profile_scroll_area")
 
         # Content Container
         content_container = QWidget()
         content_container.setObjectName("profile_content_container")
 
         container_layout = QVBoxLayout(content_container)
-        container_layout.setContentsMargins(20, 20, 20, 20)
-        container_layout.setSpacing(25)
+        container_layout.setContentsMargins(25, 25, 25, 25)
+        container_layout.setSpacing(30)
 
-        # Main content layout (Vertical) - Changed from QHBoxLayout
-        self.content_layout = QVBoxLayout()  # Changed to QVBoxLayout
-        self.content_layout.setSpacing(20)
+        # Title Label
+        title_label = QLabel("个人资料")
+        title_label.setObjectName("profile_title_label")
+        title_label.setAlignment(Qt.AlignLeft)
+        title_label.setStyleSheet("""
+            font-size: 28pt;
+            font-weight: 600;
+            color: #E67E22;
+            margin-bottom: 15px;
+            padding-left: 5px;
+        """)
+        container_layout.addWidget(title_label)
+
+        # Main content layout (Vertical)
+        self.content_layout = QVBoxLayout()
+        self.content_layout.setSpacing(25)
         self.content_layout.setContentsMargins(0, 0, 0, 0)
 
         # Setup the profile info section
@@ -112,111 +126,297 @@ class ProfileWidget(QWidget):
         self.profile_info_frame = QFrame()
         self.profile_info_frame.setObjectName("profile_info_card")
         self.profile_info_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.profile_info_frame.setStyleSheet("""
+            #profile_info_card {
+                background-color: #202020;
+                border: 1px solid #333333;
+                border-radius: 16px;
+            }
+        """)
 
         profile_layout = QVBoxLayout(self.profile_info_frame)
-        profile_layout.setContentsMargins(20, 20, 20, 20)
-        profile_layout.setSpacing(18)
+        profile_layout.setContentsMargins(25, 25, 25, 25)
+        profile_layout.setSpacing(25)
 
-        # --- Avatar Area ---
-        avatar_container_widget = QWidget()
-        avatar_container_layout = QVBoxLayout(avatar_container_widget)
-        avatar_container_layout.setAlignment(Qt.AlignCenter)
-        avatar_container_layout.setContentsMargins(0, 0, 0, 0)
-        avatar_container_layout.setSpacing(10)
+        # --- Header Section with Avatar and User Info ---
+        header_layout = QHBoxLayout()
+        header_layout.setSpacing(25)
+
+        # Avatar Container
+        avatar_container = QFrame()
+        avatar_container.setObjectName("avatar_container")
+        avatar_container.setStyleSheet("""
+            #avatar_container {
+                background-color: transparent;
+                border: none;
+            }
+        """)
+        avatar_layout = QVBoxLayout(avatar_container)
+        avatar_layout.setAlignment(Qt.AlignCenter)
+        avatar_layout.setContentsMargins(0, 0, 0, 0)
+        avatar_layout.setSpacing(12)
 
         self.avatar_label = QLabel()
         self.avatar_label.setObjectName("profile_avatar_label")
-        self.avatar_label.setFixedSize(120, 120)
+        self.avatar_label.setFixedSize(140, 140)  # Larger avatar
         self.avatar_label.setAlignment(Qt.AlignCenter)
-        avatar_container_layout.addWidget(self.avatar_label)
+        self.avatar_label.setStyleSheet("""
+            #profile_avatar_label {
+                border: 3px solid #E67E22;
+                border-radius: 70px;
+                background-color: #252525;
+                padding: 4px;
+            }
+        """)
+        avatar_layout.addWidget(self.avatar_label)
 
         self.change_avatar_button = QPushButton("更换头像")
         self.change_avatar_button.setObjectName("change_avatar_button")
-        self.change_avatar_button.setIcon(QIcon(":/icons/image.svg"))
+        # 使用文本代替图标，避免SVG加载问题
         self.change_avatar_button.clicked.connect(self.change_avatar)
-        avatar_container_layout.addWidget(self.change_avatar_button)
+        self.change_avatar_button.setStyleSheet("""
+            #change_avatar_button {
+                background-color: rgba(230, 126, 34, 0.8);
+                color: white;
+                border: none;
+                border-radius: 15px;
+                padding: 8px 15px;
+                font-size: 11pt;
+                font-weight: 500;
+            }
+            #change_avatar_button:hover {
+                background-color: #E67E22;
+            }
+        """)
+        avatar_layout.addWidget(self.change_avatar_button)
 
-        profile_layout.addWidget(avatar_container_widget, 0, Qt.AlignCenter)
+        header_layout.addWidget(avatar_container)
 
-        # --- User Info Area ---
-        user_info_layout = QVBoxLayout()
-        user_info_layout.setSpacing(8)
+        # User Info Container
+        user_info_container = QFrame()
+        user_info_container.setObjectName("user_info_container")
+        user_info_container.setStyleSheet("""
+            #user_info_container {
+                background-color: transparent;
+            }
+        """)
+        user_info_layout = QVBoxLayout(user_info_container)
+        user_info_layout.setContentsMargins(0, 10, 0, 10)
+        user_info_layout.setSpacing(15)
+        user_info_layout.setAlignment(Qt.AlignVCenter)
 
-        username_layout = QHBoxLayout()
-        username_title = QLabel("用户名:")
+        # Username with label
+        username_layout = QVBoxLayout()
+        username_layout.setSpacing(5)
+
+        username_title = QLabel("用户名")
         username_title.setObjectName("profile_label_title")
+        username_title.setStyleSheet("""
+            #profile_label_title {
+                color: #BBBBBB;
+                font-size: 12pt;
+            }
+        """)
+        username_layout.addWidget(username_title)
+
         self.username_label = QLabel("N/A")
         self.username_label.setObjectName("profile_username_label")
-        username_layout.addWidget(username_title)
-        username_layout.addWidget(self.username_label, 1)
+        self.username_label.setStyleSheet("""
+            #profile_username_label {
+                color: #F5F5F5;
+                font-size: 20pt;
+                font-weight: 600;
+            }
+        """)
+        username_layout.addWidget(self.username_label)
+
         user_info_layout.addLayout(username_layout)
 
-        reg_date_layout = QHBoxLayout()
-        reg_date_title = QLabel("注册日期:")
+        # Registration date with label
+        reg_date_layout = QVBoxLayout()
+        reg_date_layout.setSpacing(5)
+
+        reg_date_title = QLabel("注册日期")
         reg_date_title.setObjectName("profile_label_title")
+        reg_date_layout.addWidget(reg_date_title)
+
         self.reg_date_label = QLabel("N/A")
         self.reg_date_label.setObjectName("profile_reg_date_label")
-        reg_date_layout.addWidget(reg_date_title)
-        reg_date_layout.addWidget(self.reg_date_label, 1)
+        self.reg_date_label.setStyleSheet("""
+            #profile_reg_date_label {
+                color: #BBBBBB;
+                font-size: 12pt;
+            }
+        """)
+        reg_date_layout.addWidget(self.reg_date_label)
+
         user_info_layout.addLayout(reg_date_layout)
 
-        profile_layout.addLayout(user_info_layout)
+        user_info_layout.addStretch()
+        header_layout.addWidget(user_info_container, 1)  # Give it stretch factor
+
+        profile_layout.addLayout(header_layout)
+
+        # Separator
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setFrameShadow(QFrame.Sunken)
+        separator.setStyleSheet("background-color: #333333; margin: 5px 0;")
+        separator.setMaximumHeight(1)
+        profile_layout.addWidget(separator)
 
         # --- Bio Section ---
-        bio_frame = QFrame()
-        bio_frame.setObjectName("profile_bio_frame")
-        bio_layout = QVBoxLayout(bio_frame)
-        bio_layout.setContentsMargins(15, 15, 15, 15)
-        bio_layout.setSpacing(10)
+        bio_container = QFrame()
+        bio_container.setObjectName("profile_bio_container")
+        bio_container.setStyleSheet("""
+            #profile_bio_container {
+                background-color: transparent;
+            }
+        """)
+        bio_layout = QVBoxLayout(bio_container)
+        bio_layout.setContentsMargins(0, 5, 0, 5)
+        bio_layout.setSpacing(15)
 
         bio_header_layout = QHBoxLayout()
         bio_title = QLabel("个人简介")
         bio_title.setObjectName("profile_section_title")
+        bio_title.setStyleSheet("""
+            #profile_section_title {
+                color: #BBBBBB;
+                font-size: 14pt;
+                font-weight: 600;
+            }
+        """)
         bio_header_layout.addWidget(bio_title)
         bio_header_layout.addStretch()
+
         self.edit_bio_button = QPushButton("编辑")
         self.edit_bio_button.setObjectName("edit_bio_button")
-        self.edit_bio_button.setIcon(QIcon(":/icons/edit-2.svg"))
+        # 使用文本代替图标，避免SVG加载问题
+        self.edit_bio_button.setText("编辑")
         self.edit_bio_button.clicked.connect(lambda: self.toggle_bio_edit())
+        self.edit_bio_button.setStyleSheet("""
+            #edit_bio_button {
+                background-color: transparent;
+                color: #E67E22;
+                border: none;
+                padding: 6px;
+                font-size: 11pt;
+                font-weight: 500;
+            }
+            #edit_bio_button:hover {
+                color: #D35400;
+                background-color: rgba(230, 126, 34, 0.1);
+                border-radius: 6px;
+            }
+        """)
         bio_header_layout.addWidget(self.edit_bio_button)
         bio_layout.addLayout(bio_header_layout)
+
+        # Bio content frame
+        bio_content_frame = QFrame()
+        bio_content_frame.setObjectName("profile_bio_content")
+        bio_content_frame.setStyleSheet("""
+            #profile_bio_content {
+                background-color: #252525;
+                border-radius: 12px;
+                border: 1px solid #333333;
+            }
+        """)
+        bio_content_layout = QVBoxLayout(bio_content_frame)
+        bio_content_layout.setContentsMargins(15, 15, 15, 15)
+        bio_content_layout.setSpacing(10)
 
         self.bio_display_label = QLabel("这个人很神秘，什么也没留下...")
         self.bio_display_label.setObjectName("profile_bio_display")
         self.bio_display_label.setWordWrap(True)
         self.bio_display_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        self.bio_display_label.setMinimumHeight(80)
+        self.bio_display_label.setMinimumHeight(100)
         self.bio_display_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        bio_layout.addWidget(self.bio_display_label)
+        self.bio_display_label.setStyleSheet("""
+            #profile_bio_display {
+                color: #F5F5F5;
+                font-size: 12pt;
+                line-height: 160%;
+            }
+        """)
+        bio_content_layout.addWidget(self.bio_display_label)
 
         self.bio_edit = QTextEdit()
         self.bio_edit.setObjectName("profile_bio_edit")
         self.bio_edit.setPlaceholderText("编辑您的个人简介...")
         self.bio_edit.setVisible(False)
-        self.bio_edit.setMinimumHeight(80)
+        self.bio_edit.setMinimumHeight(100)
         self.bio_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        bio_layout.addWidget(self.bio_edit)
+        self.bio_edit.setStyleSheet("""
+            #profile_bio_edit {
+                background-color: #2A2A2A;
+                border: 1px solid #444444;
+                border-radius: 8px;
+                padding: 12px;
+                color: #F5F5F5;
+                font-size: 12pt;
+                line-height: 160%;
+            }
+            #profile_bio_edit:focus {
+                border: 1px solid #E67E22;
+            }
+        """)
+        bio_content_layout.addWidget(self.bio_edit)
 
         bio_button_layout = QHBoxLayout()
-        bio_button_layout.setSpacing(8)
+        bio_button_layout.setSpacing(10)
         bio_button_layout.addStretch()
-        self.save_bio_button = QPushButton("保存")
-        self.save_bio_button.setObjectName("save_bio_button")
-        self.save_bio_button.setIcon(QIcon(":/icons/save.svg"))
-        self.save_bio_button.setVisible(False)
-        self.save_bio_button.clicked.connect(self.save_bio)
+
         self.cancel_bio_button = QPushButton("取消")
         self.cancel_bio_button.setObjectName("cancel_bio_button")
-        self.cancel_bio_button.setIcon(QIcon(":/icons/x.svg"))
+        # 使用文本代替图标，避免SVG加载问题
         self.cancel_bio_button.setVisible(False)
         self.cancel_bio_button.clicked.connect(lambda: self.toggle_bio_edit())
+        self.cancel_bio_button.setStyleSheet("""
+            #cancel_bio_button {
+                background-color: transparent;
+                color: #E74C3C;
+                border: none;
+                padding: 6px 12px;
+                font-size: 11pt;
+                font-weight: 500;
+            }
+            #cancel_bio_button:hover {
+                color: #C0392B;
+                background-color: rgba(231, 76, 60, 0.1);
+                border-radius: 6px;
+            }
+        """)
         bio_button_layout.addWidget(self.cancel_bio_button)
+
+        self.save_bio_button = QPushButton("保存")
+        self.save_bio_button.setObjectName("save_bio_button")
+        # 使用文本代替图标，避免SVG加载问题
+        self.save_bio_button.setVisible(False)
+        self.save_bio_button.clicked.connect(self.save_bio)
+        self.save_bio_button.setStyleSheet("""
+            #save_bio_button {
+                background-color: transparent;
+                color: #2ECC71;
+                border: none;
+                padding: 6px 12px;
+                font-size: 11pt;
+                font-weight: 500;
+            }
+            #save_bio_button:hover {
+                color: #27AE60;
+                background-color: rgba(46, 204, 113, 0.1);
+                border-radius: 6px;
+            }
+        """)
         bio_button_layout.addWidget(self.save_bio_button)
-        bio_layout.addLayout(bio_button_layout)
 
-        profile_layout.addWidget(bio_frame)
+        bio_content_layout.addLayout(bio_button_layout)
+        bio_layout.addWidget(bio_content_frame)
 
-        profile_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        profile_layout.addWidget(bio_container)
+        profile_layout.addStretch(1)
 
     def _set_circular_avatar(self, avatar_data):
         """Loads an image from bytes, makes it circular, and sets it on the avatar_label."""

@@ -75,8 +75,8 @@ class MainWindow(QMainWindow):
 
         # 创建主布局
         self.main_layout = QHBoxLayout(self.central_widget)
-        self.main_layout.setSpacing(12)  # 增加间距，使各区域有更明显的分隔
-        self.main_layout.setContentsMargins(15, 15, 15, 15)  # 添加更大的边距，使布局更加宽松
+        self.main_layout.setSpacing(15)  # 增加间距，使各区域有更明显的分隔
+        self.main_layout.setContentsMargins(20, 20, 20, 20)  # 添加更大的边距，使布局更加宽松
 
         # Create navigation sidebar
         self.setup_navigation()
@@ -108,8 +108,8 @@ class MainWindow(QMainWindow):
 
         self.nav_layout = QVBoxLayout(self.nav_widget)
         self.nav_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.nav_layout.setContentsMargins(15, 25, 15, 25)  # 增加内边距，使布局更加宽松
-        self.nav_layout.setSpacing(15)  # 增加元素间距，改善布局
+        self.nav_layout.setContentsMargins(15, 30, 15, 30)  # 增加内边距，使布局更加宽松
+        self.nav_layout.setSpacing(20)  # 增加元素间距，改善布局
 
         # 创建一个容器控件来包含标题标签
         self.title_container = QWidget()
@@ -124,10 +124,10 @@ class MainWindow(QMainWindow):
         self.title_label.setAlignment(Qt.AlignCenter)
 
         # 设置字体并显式指定大小
-        title_font = QFont("Hiragino Sans GB", 22, QFont.Bold)  # 增加字体大小
+        title_font = QFont("Hiragino Sans GB", 24, QFont.Bold)  # 增加字体大小
         self.title_label.setFont(title_font)
-        self.title_label.setMinimumHeight(50)  # 增加高度
-        self.title_label.setStyleSheet("padding: 5px; margin: 0px; color: #3D405B;")  # 调整内边距和颜色
+        self.title_label.setMinimumHeight(60)  # 增加高度
+        self.title_label.setStyleSheet("padding: 8px; margin: 0px; color: #E67E22;")  # 调整内边距和颜色为暖橙色
 
         # 添加标题到容器并显式设置大小策略
         self.title_layout.addWidget(self.title_label)
@@ -159,10 +159,10 @@ class MainWindow(QMainWindow):
             button.setObjectName(f"nav_button_{item_id}")  # 为每个按钮设置唯一的对象名，便于样式表定制
 
             # 设置固定高度，使按钮更加突出
-            button.setMinimumHeight(45)
+            button.setMinimumHeight(50)
 
             # 设置文本对齐方式，使图标和文本有更好的间距
-            button.setStyleSheet("text-align: left; padding-left: 15px;")
+            button.setStyleSheet("text-align: left; padding-left: 18px;")
 
             if icon_path:
                 try:
@@ -201,8 +201,8 @@ class MainWindow(QMainWindow):
 
         # 为容器创建布局
         self.content_container_layout = QVBoxLayout(self.content_container)
-        self.content_container_layout.setContentsMargins(25, 25, 25, 25)  # 增加内边距，使内容更加宽松
-        self.content_container_layout.setSpacing(15)  # 增加内部间距，改善布局
+        self.content_container_layout.setContentsMargins(30, 30, 30, 30)  # 增加内边距，使内容更加宽松
+        self.content_container_layout.setSpacing(20)  # 增加内部间距，改善布局
         self.content_container_layout.setAlignment(Qt.AlignmentFlag.AlignTop)  # 内容顶部对齐
 
         # 创建堆叠部件
@@ -249,8 +249,8 @@ class MainWindow(QMainWindow):
 
         # 为容器创建布局
         self.pet_container_layout = QVBoxLayout(self.pet_container)
-        self.pet_container_layout.setContentsMargins(20, 25, 20, 25)  # 增加内边距，使宠物区域更加宽松
-        self.pet_container_layout.setSpacing(15)  # 增加内部间距，改善布局
+        self.pet_container_layout.setContentsMargins(20, 30, 20, 30)  # 增加内边距，使宠物区域更加宽松
+        self.pet_container_layout.setSpacing(20)  # 增加内部间距，改善布局
         self.pet_container_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)  # 居中对齐
 
         # 实例化宠物部件
@@ -494,26 +494,26 @@ class MainWindow(QMainWindow):
 
             # 调整内容区域的内边距，使其在小窗口中更紧凑
             self.content_container_layout.setContentsMargins(
-                int(15 * scale_factor),
-                int(15 * scale_factor),
-                int(15 * scale_factor),
-                int(15 * scale_factor)
+                int(20 * scale_factor),
+                int(20 * scale_factor),
+                int(20 * scale_factor),
+                int(20 * scale_factor)
             )
 
             # 调整导航区域的内边距
             self.nav_layout.setContentsMargins(
-                int(8 * scale_factor),
-                int(15 * scale_factor),
-                int(8 * scale_factor),
-                int(15 * scale_factor)
+                int(10 * scale_factor),
+                int(20 * scale_factor),
+                int(10 * scale_factor),
+                int(20 * scale_factor)
             )
 
             # 调整宠物区域的内边距
             self.pet_container_layout.setContentsMargins(
                 int(10 * scale_factor),
-                int(15 * scale_factor),
+                int(20 * scale_factor),
                 int(10 * scale_factor),
-                int(15 * scale_factor)
+                int(20 * scale_factor)
             )
 
         elif width < 1400:  # 中等窗口
@@ -554,26 +554,26 @@ class MainWindow(QMainWindow):
 
             # 调整内容区域的内边距
             self.content_container_layout.setContentsMargins(
-                int(25 * scale_factor),
-                int(25 * scale_factor),
-                int(25 * scale_factor),
-                int(25 * scale_factor)
+                int(30 * scale_factor),
+                int(30 * scale_factor),
+                int(30 * scale_factor),
+                int(30 * scale_factor)
             )
 
             # 调整导航区域的内边距
             self.nav_layout.setContentsMargins(
-                int(12 * scale_factor),
-                int(25 * scale_factor),
-                int(12 * scale_factor),
-                int(25 * scale_factor)
+                int(15 * scale_factor),
+                int(30 * scale_factor),
+                int(15 * scale_factor),
+                int(30 * scale_factor)
             )
 
             # 调整宠物区域的内边距
             self.pet_container_layout.setContentsMargins(
-                int(18 * scale_factor),
-                int(25 * scale_factor),
-                int(18 * scale_factor),
-                int(25 * scale_factor)
+                int(20 * scale_factor),
+                int(30 * scale_factor),
+                int(20 * scale_factor),
+                int(30 * scale_factor)
             )
 
         # 调整字体大小 - 基于缩放因子

@@ -79,9 +79,9 @@ class ThemeManager:
     def __init__(self, app, logger):
         self.app = app
         self.logger = logger
-        self.current_theme = "light"  # 默认为浅色主题
-        self.theme_style = "warm"     # 默认使用温馨主题样式, 可选: "warm", "standard", "sourcio"
-        self.follow_system = True     # 默认跟随系统主题
+        self.current_theme = "dark"   # 默认为深色主题，根据用户偏好
+        self.theme_style = "sourcio"  # 默认使用Sourcio主题样式, 可选: "warm", "standard", "sourcio"
+        self.follow_system = False    # 默认不跟随系统主题，固定使用深色主题
 
     def apply_theme(self):
         """应用当前主题，根据 theme_style 选择样式"""
@@ -153,8 +153,8 @@ def main():
     print("DEBUG: Creating ThemeManager...")
     theme_manager = ThemeManager(app, logger)
     print("DEBUG: ThemeManager created.")
-    # 临时设置 theme_style 为 "sourcio" 以便测试，后续应由设置界面控制
-    # theme_manager.theme_style = "sourcio"
+    # 设置 theme_style 为 "sourcio" 以使用我们的增强主题
+    theme_manager.theme_style = "sourcio"
     print("DEBUG: Applying theme...")
     theme_manager.apply_theme() # Re-apply after changing style if needed for testing
     print("DEBUG: Theme applied.")

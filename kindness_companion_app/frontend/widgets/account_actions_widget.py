@@ -35,8 +35,9 @@ class AccountActionsWidget(QWidget):
         action_frame.setObjectName("action_frame")
         action_frame.setStyleSheet("""
             QFrame#action_frame {
-                background-color: rgba(40, 40, 40, 0.5);
-                border-radius: 8px;
+                background-color: #202020;
+                border: 1px solid #333333;
+                border-radius: 16px;
                 padding: 10px;
             }
         """)
@@ -48,7 +49,7 @@ class AccountActionsWidget(QWidget):
 
         # Add a title to the frame
         title_label = QLabel("账户操作")
-        title_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        title_label.setStyleSheet("font-weight: 600; font-size: 16pt; color: #E67E22;")
         title_label.setAlignment(Qt.AlignCenter)
         frame_layout.addWidget(title_label)
 
@@ -59,30 +60,32 @@ class AccountActionsWidget(QWidget):
         # Common button style
         button_style = """
             QPushButton {
-                background-color: #2196F3;
-                color: white;
-                border-radius: 8px;
-                padding: 10px 18px;
-                font-weight: bold;
-                font-size: 15px;
+                background-color: #2A2A2A;
+                color: #F5F5F5;
+                border: 1px solid #3A3A3A;
+                border-radius: 10px;
+                padding: 12px 20px;
+                font-weight: 600;
+                font-size: 12pt;
                 min-height: 48px; /* Ensure consistent height */
             }
             QPushButton:hover {
-                background-color: #42A5F5;
+                background-color: #333333;
+                border-color: #444444;
             }
             QPushButton:pressed {
-                background-color: #1E88E5;
+                background-color: #222222;
             }
             QPushButton:disabled { /* Style for disabled state */
-                background-color: #555;
-                color: #999;
+                background-color: #1D1D1D;
+                color: #505050;
+                border-color: #2A2A2A;
             }
         """
 
         # Change Password Button
         self.change_password_button = QPushButton("修改密码")
-        self.change_password_button.setIcon(QIcon(":/icons/lock.svg"))
-        self.change_password_button.setIconSize(QSize(22, 22))
+        # 使用文本代替图标，避免SVG加载问题
         self.change_password_button.clicked.connect(self.show_password_dialog)
         self.change_password_button.setStyleSheet(button_style)
         button_layout.addWidget(self.change_password_button)
@@ -90,10 +93,31 @@ class AccountActionsWidget(QWidget):
         # Logout Button
         self.logout_button = QPushButton("退出登录")
         self.logout_button.setObjectName("logout_button")
-        self.logout_button.setIcon(QIcon(":/icons/log-out.svg"))
-        self.logout_button.setIconSize(QSize(22, 22))
+        # 使用文本代替图标，避免SVG加载问题
         self.logout_button.clicked.connect(self.logout)
-        self.logout_button.setStyleSheet(button_style.replace("#2196F3", "#607D8B").replace("#42A5F5", "#78909C").replace("#1E88E5", "#546E7A"))
+        self.logout_button.setStyleSheet("""
+            QPushButton#logout_button {
+                background-color: transparent;
+                color: #E67E22;
+                border: 1px solid #E67E22;
+                border-radius: 10px;
+                padding: 12px 20px;
+                font-weight: 600;
+                font-size: 12pt;
+                min-height: 48px;
+            }
+            QPushButton#logout_button:hover {
+                background-color: rgba(230, 126, 34, 0.1);
+            }
+            QPushButton#logout_button:pressed {
+                background-color: rgba(230, 126, 34, 0.2);
+            }
+            QPushButton#logout_button:disabled {
+                background-color: transparent;
+                color: #505050;
+                border-color: #2A2A2A;
+            }
+        """)
         button_layout.addWidget(self.logout_button)
 
         # Add the button layout to the frame
@@ -110,28 +134,29 @@ class AccountActionsWidget(QWidget):
         # Delete Account Button (in its own row)
         self.delete_account_button = QPushButton("注销账号")
         self.delete_account_button.setObjectName("delete_account_button")
-        self.delete_account_button.setIcon(QIcon(":/icons/trash-2.svg"))
-        self.delete_account_button.setIconSize(QSize(22, 22))
+        # 使用文本代替图标，避免SVG加载问题
         self.delete_account_button.clicked.connect(self.request_delete_account)
         self.delete_account_button.setStyleSheet("""
-            QPushButton {
-                background-color: #F44336;
-                color: white;
-                border-radius: 8px;
-                padding: 10px 18px;
-                font-weight: bold;
-                font-size: 15px;
-                min-height: 48px; /* Ensure consistent height */
+            QPushButton#delete_account_button {
+                background-color: transparent;
+                color: #E74C3C;
+                border: 1px solid #E74C3C;
+                border-radius: 10px;
+                padding: 12px 20px;
+                font-weight: 600;
+                font-size: 12pt;
+                min-height: 48px;
             }
-            QPushButton:hover {
-                background-color: #EF5350;
+            QPushButton#delete_account_button:hover {
+                background-color: rgba(231, 76, 60, 0.1);
             }
-            QPushButton:pressed {
-                background-color: #E53935;
+            QPushButton#delete_account_button:pressed {
+                background-color: rgba(231, 76, 60, 0.2);
             }
-            QPushButton:disabled { /* Style for disabled state */
-                background-color: #555;
-                color: #999;
+            QPushButton#delete_account_button:disabled {
+                background-color: transparent;
+                color: #505050;
+                border-color: #2A2A2A;
             }
         """)
         frame_layout.addWidget(self.delete_account_button)

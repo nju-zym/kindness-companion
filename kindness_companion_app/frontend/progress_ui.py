@@ -632,7 +632,7 @@ class ProgressWidget(QWidget):
         # --- AI Consent Check Removed ---
         # Consent is now assumed True by default
         user_id = self.current_user.get('id')
-        logger.info(f"AI consent assumed True for user {user_id}. Proceeding with report generation.")
+        logging.info(f"AI consent assumed True for user {user_id}. Proceeding with report generation.")
         # --- End AI Consent Check Removed ---
 
         # Show loading state
@@ -664,7 +664,7 @@ class ProgressWidget(QWidget):
             self.report_thread.start()
 
         except Exception as e:
-            logger.error(f"Error preparing data for weekly report: {e}", exc_info=True)
+            logging.error(f"Error preparing data for weekly report: {e}", exc_info=True)
             self.display_report_error(f"准备报告数据时出错: {e}")
 
     def clear_achievements(self):

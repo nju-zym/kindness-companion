@@ -269,7 +269,9 @@ class PetWidget(QWidget):
     def send_message(self):
         """Handles sending a user message to the pet."""
         if not self.current_user:
-            AnimatedMessageBox.showWarning(self, "无法发送", "请先登录。")
+            # Use standard QMessageBox instead of AnimatedMessageBox
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "无法发送", "请先登录。")
             return
 
         user_message = self.message_input.text().strip()
@@ -301,8 +303,7 @@ class PetWidget(QWidget):
             logger.info(f"PetWidget set user: {user_id}")
 
             # --- AI Consent Check Removed ---
-            # Always show pet container if user is logged in
-            self.pet_container.setVisible(True)
+            # Always enable UI elements if user is logged in
             self.message_input.setEnabled(True)
             self.send_button.setEnabled(True)
             self.pet_status_label.setText("你好！今天感觉怎么样？")
@@ -321,4 +322,3 @@ class PetWidget(QWidget):
             self.message_input.clear()
             self.message_input.setEnabled(False)
             self.send_button.setEnabled(False)
-            self.pet_container.setVisible(False) # Hide the container when logged out

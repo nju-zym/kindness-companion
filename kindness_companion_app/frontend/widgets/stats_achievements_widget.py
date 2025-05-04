@@ -41,13 +41,13 @@ class StatsAchievementsWidget(QWidget):
         self.stats_group.setMinimumWidth(400)
         self.stats_group.setStyleSheet("""
             QGroupBox#stats_group {
-                font-weight: bold;
+                font-weight: 600;
                 font-size: 22px;
-                border-radius: 18px;
-                background-color: rgba(35, 35, 35, 0.9);
-                border: 1px solid rgba(80, 80, 80, 0.7);
+                border-radius: 16px;
+                background-color: #202020;
+                border: 1px solid #333333;
                 padding-top: 35px;
-                color: #FF9800;
+                color: #E67E22;
             }
         """)
 
@@ -61,13 +61,13 @@ class StatsAchievementsWidget(QWidget):
         summary_group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         summary_group.setStyleSheet("""
             QGroupBox#summary_group {
-                font-weight: bold;
+                font-weight: 600;
                 font-size: 16px;
-                border-radius: 15px;
-                background-color: rgba(35, 35, 35, 0.7);
-                border: 1px solid rgba(80, 80, 80, 0.6);
+                border-radius: 12px;
+                background-color: #252525;
+                border: 1px solid #333333;
                 padding-top: 25px;
-                color: #FF9800;
+                color: #E67E22;
                 margin: 5px;
             }
         """)
@@ -82,10 +82,10 @@ class StatsAchievementsWidget(QWidget):
             frame.setObjectName("stat_frame")
             frame.setStyleSheet("""
                 QFrame#stat_frame {
-                    background-color: rgba(40, 40, 40, 0.7);
-                    border-radius: 15px;
+                    background-color: #2A2A2A;
+                    border-radius: 12px;
                     padding: 15px;
-                    border: 1px solid rgba(80, 80, 80, 0.6);
+                    border: 1px solid #3A3A3A;
                     margin: 5px;
                 }
             """)
@@ -105,12 +105,12 @@ class StatsAchievementsWidget(QWidget):
 
             value_label = QLabel(value)
             value_label.setAlignment(Qt.AlignCenter)
-            value_label.setStyleSheet("font-size: 38px; font-weight: bold; color: #FF9800; margin-top: 8px;")
+            value_label.setStyleSheet("font-size: 38px; font-weight: bold; color: #E67E22; margin-top: 8px;")
             stat_layout.addWidget(value_label)
 
             title_label = QLabel(title)
             title_label.setAlignment(Qt.AlignCenter)
-            title_label.setStyleSheet("color: #f0f0f0; font-size: 18px; margin-top: 10px; font-weight: bold;")
+            title_label.setStyleSheet("color: #F5F5F5; font-size: 16px; margin-top: 10px; font-weight: 600;")
             stat_layout.addWidget(title_label)
 
             return frame, value_label
@@ -139,13 +139,13 @@ class StatsAchievementsWidget(QWidget):
         self.achievements_group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.achievements_group.setStyleSheet("""
             QGroupBox#achievements_group {
-                font-weight: bold;
+                font-weight: 600;
                 font-size: 20px;
-                border-radius: 18px;
-                background-color: rgba(40, 40, 40, 0.8);
-                border: 1px solid rgba(90, 90, 90, 0.7);
+                border-radius: 12px;
+                background-color: #252525;
+                border: 1px solid #333333;
                 padding-top: 30px;
-                color: #FF9800;
+                color: #E67E22;
                 margin: 8px;
             }
         """)
@@ -167,7 +167,7 @@ class StatsAchievementsWidget(QWidget):
 
         self.achievements_placeholder = QLabel("暂无成就，继续努力吧！")
         self.achievements_placeholder.setAlignment(Qt.AlignCenter)
-        self.achievements_placeholder.setStyleSheet("font-size: 16px; color: #f0f0f0; padding: 20px;")
+        self.achievements_placeholder.setStyleSheet("font-size: 14pt; color: #BBBBBB; padding: 25px; font-style: italic;")
         self.achievements_layout.addWidget(self.achievements_placeholder)
 
         self.achievements_spacer = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
@@ -272,11 +272,11 @@ class StatsAchievementsWidget(QWidget):
                     ach_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
                     ach_frame.setStyleSheet("""
                         QFrame#achievement_frame {
-                            border-radius: 12px;
-                            background-color: rgba(40, 40, 40, 0.7);
+                            border-radius: 10px;
+                            background-color: #2A2A2A;
                             padding: 10px;
-                            border: 1px solid rgba(80, 80, 80, 0.6);
-                            margin: 2px;
+                            border: 1px solid #3A3A3A;
+                            margin: 3px;
                         }
                     """)
 
@@ -302,13 +302,13 @@ class StatsAchievementsWidget(QWidget):
 
                     # Achievement Name
                     name_label = QLabel(ach["name"])
-                    name_label.setStyleSheet("font-weight: bold; font-size: 15px; color: #E0E0E0;")
+                    name_label.setStyleSheet("font-weight: 600; font-size: 13pt; color: #F5F5F5;")
                     text_layout.addWidget(name_label)
 
                     # Progress Text
                     progress_text = f"{ach['current']} / {ach['target']} {ach['unit']}"
                     progress_label = QLabel(progress_text)
-                    progress_label.setStyleSheet("font-size: 13px; color: #B0B0B0;")
+                    progress_label.setStyleSheet("font-size: 11pt; color: #BBBBBB;")
                     text_layout.addWidget(progress_label)
 
                     frame_layout.addLayout(text_layout)

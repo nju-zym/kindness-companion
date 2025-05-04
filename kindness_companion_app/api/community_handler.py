@@ -55,6 +55,8 @@ def get_wall_posts():
         return jsonify({"error": "Page and limit must be positive"}), 400
 
     # TODO: Replace with database query with pagination and ordering (e.g., newest first)
+    # TODO: 实现从数据库或其他持久化存储中真正获取帖子的逻辑
+    # TODO: 添加错误处理 (例如, 数据库连接失败)
     # Simple in-memory pagination (newest first)
     start_index = (page - 1) * limit
     end_index = start_index + limit
@@ -71,3 +73,12 @@ def get_wall_posts():
         "total_posts": total_posts,
         "total_pages": total_pages
     })
+
+# TODO: 实现添加新帖子的 API 端点
+# @community_bp.route('/wall', methods=['POST'])
+# def add_wall_post():
+#     # 1. 从请求中获取消息内容 (request.json)
+#     # 2. 对消息进行必要的验证 (例如, 非空, 长度限制)
+#     # 3. 将消息存储到数据库或其他持久化存储中
+#     # 4. 返回成功或失败的响应
+#     pass

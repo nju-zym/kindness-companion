@@ -629,51 +629,43 @@ class ProgressWidget(QWidget):
             )
             return
 
-        # Check if user has consented to AI features
+        # --- AI Consent Check Removed ---
+        # Consent is now assumed True by default
         user_id = self.current_user.get('id')
-        ai_consent = self.current_user.get('ai_consent_given')
-
-        if not ai_consent:
-            AnimatedMessageBox.showInformation(
-                self,
-                "AI 功能未启用",
-                "请在个人信息页面启用 AI 功能以使用周报生成功能。"
-            )
-            return
+        logger.info(f"AI consent assumed True for user {user_id}. Proceeding with report generation.")
+        # --- End AI Consent Check Removed ---
 
         # Show loading state
+        self.report_text_edit.setPlainText("正在生成报告，请稍候...")
         self.generate_report_button.setEnabled(False)
-        self.generate_report_button.setText("生成中...")
-        self.weekly_report_text_edit.setText("AI 正在生成您的周报，请稍候...")
 
-        # Use QTimer to allow UI to update before starting the potentially slow API call
-        QTimer.singleShot(100, lambda: self._execute_report_generation(user_id))
-
-    def _execute_report_generation(self, user_id):
-        """Execute the actual report generation (called after UI updates)."""
+        # Call the AI report generator in a separate thread
         try:
-            # Call the AI report generator
-            report_text = generate_weekly_report(user_id)
-
-            # Update the report text
-            self.weekly_report_text = report_text
-            self.report_last_generated = datetime.datetime.now()
-
-            # Format the report with a timestamp
-            formatted_report = (
-                f"<p><b>生成时间:</b> {self.report_last_generated.strftime('%Y-%m-%d %H:%M')}</p>"
-                f"<p>{report_text}</p>"
+            # Fetch recent progress data
+            end_date = datetime.date.today()
+            start_date = end_date - datetime.timedelta(days=7)
+            progress_data = self.progress_tracker.get_check_ins_between_dates(
+                user_id, start_date.isoformat(), end_date.isoformat()
             )
 
-            self.weekly_report_text_edit.setHtml(formatted_report)
+            # Prepare data for AI
+            report_input = {
+                "user_id": user_id,
+                "username": self.current_user.get("username", "用户"),
+                "progress_data": progress_data,
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+            }
+
+            # Run AI generation in a thread
+            self.report_thread = AIReportThread(generate_weekly_report, report_input)
+            self.report_thread.report_ready.connect(self.display_report)
+            self.report_thread.report_error.connect(self.display_report_error)
+            self.report_thread.start()
 
         except Exception as e:
-            logging.error(f"Error generating weekly report: {e}")
-            self.weekly_report_text_edit.setText(f"生成报告时出错: {str(e)}")
-        finally:
-            # Reset button state
-            self.generate_report_button.setEnabled(True)
-            self.generate_report_button.setText("生成周报")
+            logger.error(f"Error preparing data for weekly report: {e}", exc_info=True)
+            self.display_report_error(f"准备报告数据时出错: {e}")
 
     def clear_achievements(self):
         """Safely clear the achievements display area, preserving placeholder and spacer."""

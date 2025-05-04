@@ -42,9 +42,8 @@ except ImportError as e:
             logger.error("AI pet features will be disabled.")
             handle_pet_event = None  # type: ignore
 
-# Import UserManager and AIConsentDialog
+# Import UserManager
 from backend.user_manager import UserManager
-from .widgets.ai_consent_dialog import AIConsentDialog
 
 logger = logging.getLogger(__name__)
 
@@ -156,74 +155,21 @@ class PetWidget(QWidget):
 
     @Slot(str, dict)
     def send_event_to_pet(self, event_type: str, event_data: dict):
-        """Receives events from other parts of the app and triggers AI processing, checking consent first."""
+        """Receives events from other parts of the app and triggers AI processing."""
         if not self.current_user:
-            logger.warning("Cannot handle pet event: No user logged in.")
-            return
-        if not handle_pet_event:
-            logger.error("handle_pet_event is not available. Cannot process pet event.")
-            self.update_pet_display({"dialogue": "(AI Core not loaded)", "suggested_animation": "idle"})
+            logger.warning("Cannot send event to pet: No user logged in.")
             return
 
         user_id = self.current_user.get('id')
         if not user_id:
-            logger.error("Cannot handle pet event: User ID not found.")
+            logger.error("Cannot send event to pet: User ID is missing.")
             return
 
-        # --- Check AI Consent ---
-        consent_status = self.user_manager.get_ai_consent(user_id)
-        logger.info(f"AI consent status for user {user_id}: {consent_status}")
-
-        if consent_status is True:
-            # Consent granted, proceed with AI call
-            logger.info(f"AI consent granted for user {user_id}. Proceeding with event.")
-            self._call_ai_handler(user_id, event_type, event_data)
-        elif consent_status is False:
-            # Consent explicitly denied
-            logger.info(f"AI features disabled for user {user_id} due to denied consent.")
-            self.update_pet_display({"dialogue": "AI 功能已禁用。\n您可以在设置中更改。", "suggested_animation": "idle"})
-        else:  # consent_status is None (not set yet)
-            logger.info(f"AI consent not set for user {user_id}. Showing consent dialog.")
-            # Store the event that triggered this check
-            self._pending_event = (event_type, event_data)
-            # Show the consent dialog
-            self._show_consent_dialog(user_id)
-
-    def _show_consent_dialog(self, user_id: int):
-        """Shows the AI consent dialog to the user."""
-        dialog = AIConsentDialog(self)
-        # Connect the signal from the dialog to a handler method
-        dialog.consent_changed.connect(lambda consented: self._handle_consent_result(user_id, consented))
-        dialog.exec()  # Show the dialog modally
-
-    @Slot(int, bool)
-    def _handle_consent_result(self, user_id: int, consented: bool):
-        """Handles the result from the AIConsentDialog."""
-        logger.info(f"User {user_id} responded to AI consent dialog: {consented}")
-        # Save the consent status to the database
-        success = self.user_manager.set_ai_consent(user_id, consented)
-        logger.info(f"AI consent update successful: {success}")
-
-        if consented and success:
-            # Consent granted, process the pending event if any
-            if self._pending_event:
-                event_type, event_data = self._pending_event
-                self._pending_event = None  # Clear pending event
-                logger.info(f"Processing pending event after consent: {event_type}")
-                # Use QTimer.singleShot to ensure the dialog is fully closed before proceeding
-                QTimer.singleShot(0, lambda: self._call_ai_handler(user_id, event_type, event_data))
-            else:
-                logger.info("Consent granted, but no pending event.")
-                self.update_pet_display({"dialogue": "AI 功能已启用！", "suggested_animation": "idle_happy"})
-        elif not consented:
-            # Consent denied, update display accordingly
-            logger.info("Consent denied by user.")
-            self.update_pet_display({"dialogue": "AI 功能未启用。", "suggested_animation": "idle"})
-            self._pending_event = None  # Clear pending event if consent denied
-        elif consented and not success:
-            logger.error(f"Failed to update AI consent status for user {user_id} in the database.")
-            self.update_pet_display({"dialogue": "保存同意状态时出错。", "suggested_animation": "confused"})
-            self._pending_event = None
+        # --- AI Consent Check Removed ---
+        # AI consent is now assumed True by default.
+        logger.info(f"AI consent assumed True for user {user_id}. Proceeding with event: {event_type}")
+        self._call_ai_handler(user_id, event_type, event_data)
+        # --- End AI Consent Check Removed ---
 
     def _call_ai_handler(self, user_id: int, event_type: str, event_data: dict):
         """Internal method to actually call the AI handler."""
@@ -322,42 +268,57 @@ class PetWidget(QWidget):
 
     def send_message(self):
         """Handles sending a user message to the pet."""
-        message = self.message_input.text().strip()
-        if not message:
-            return  # Don't send empty messages
+        if not self.current_user:
+            AnimatedMessageBox.showWarning(self, "无法发送", "请先登录。")
+            return
 
-        logger.info(f"User sent message to pet: {message}")
+        user_message = self.message_input.text().strip()
+        if not user_message:
+            return
 
-        # Clear the input field
+        user_id = self.current_user.get('id')
+
+        # --- AI Consent Check Removed ---
+        logger.info(f"AI consent assumed True for user {user_id}. Proceeding with sending message.")
+        # --- End AI Consent Check Removed ---
+
+        # Clear input and show thinking state
         self.message_input.clear()
+        self.pet_status_label.setText("正在思考...")
 
-        # Create event data with the user's message
-        event_data = {'message': message}
+        # Prepare event data
+        event_data = {"message": user_message}
 
-        # Send the event to the pet
-        self.send_event_to_pet('user_message', event_data)
+        # Call the AI handler
+        self._call_ai_handler(user_id, "user_message", event_data)
 
     @Slot(dict)
     def set_user(self, user: dict | None):
         """Sets the current user and initializes/clears pet state."""
         self.current_user = user
-        self._pending_event = None  # Clear any pending event on user change
         if user:
-            logger.info(f"Pet UI activated for user: {user.get('id')}")
-            self.update_pet_display({"dialogue": "", "suggested_animation": "idle"})
-            self.pet_status_label.setText("准备好迎接新的善举了吗？")  # Changed logged-in text
-            QTimer.singleShot(0, lambda: self.resizeEvent(None))  # Force mask update
+            user_id = user.get('id')
+            logger.info(f"PetWidget set user: {user_id}")
 
-            # Enable chat input when user is logged in
+            # --- AI Consent Check Removed ---
+            # Always show pet container if user is logged in
+            self.pet_container.setVisible(True)
             self.message_input.setEnabled(True)
             self.send_button.setEnabled(True)
-        else:
-            logger.info("Pet UI deactivated (user logged out).")
-            self.update_pet_display({"dialogue": "", "suggested_animation": "idle"})
-            self.dialogue_label.setVisible(False)
-            self.pet_status_label.setText("再见！")  # Changed logged-out text
-            QTimer.singleShot(0, lambda: self.resizeEvent(None))  # Force mask update
+            self.pet_status_label.setText("你好！今天感觉怎么样？")
+            # Load initial pet state or default animation
+            self.update_pet_display({"dialogue": "你好！很高兴见到你！", "suggested_animation": "idle"})
+            logger.info(f"AI consent assumed True for user {user_id}. Pet UI enabled.")
+            # --- End AI Consent Check Removed ---
 
-            # Disable chat input when no user is logged in
+        else:
+            logger.info("PetWidget user set to None (logged out).")
+            # Clear pet state and hide UI elements
+            self.pet_animation_label.clear()
+            self.dialogue_label.setText("")
+            self.dialogue_label.setVisible(False)
+            self.pet_status_label.setText("请先登录")
+            self.message_input.clear()
             self.message_input.setEnabled(False)
             self.send_button.setEnabled(False)
+            self.pet_container.setVisible(False) # Hide the container when logged out

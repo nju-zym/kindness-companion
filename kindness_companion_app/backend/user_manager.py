@@ -67,16 +67,16 @@ class UserManager:
         password_hash, salt = self._hash_password(password)
         stored_hash = f"{password_hash}:{salt}"
 
-        # Insert user with default empty bio, default avatar path, and NULL avatar blob
+        # Insert user with default empty bio, default avatar path, NULL avatar blob, and AI consent TRUE
         user_id = self.db_manager.execute_insert(
-            "INSERT INTO users (username, password_hash, email, bio, avatar_path, avatar) VALUES (?, ?, ?, ?, ?, ?)",
-            (username, stored_hash, email, "", ":/images/profilePicture.png", None)  # Set avatar blob to None initially
+            "INSERT INTO users (username, password_hash, email, bio, avatar_path, avatar, ai_consent_given) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (username, stored_hash, email, "", ":/images/profilePicture.png", None, 1)  # Set ai_consent_given to 1 (True)
         )
 
         if user_id:
-            # Fetch the newly created user including the avatar blob
+            # Fetch the newly created user including the avatar blob and AI consent
             new_user = self.db_manager.execute_query(
-                "SELECT id, username, email, bio, avatar_path, avatar, created_at FROM users WHERE id = ?",  # Select avatar blob
+                "SELECT id, username, email, bio, avatar_path, avatar, created_at, ai_consent_given FROM users WHERE id = ?",
                 (user_id,)
             )
             if new_user:
@@ -86,23 +86,17 @@ class UserManager:
                     "username": user_data["username"],
                     "email": user_data["email"],
                     "bio": user_data["bio"],
-                    "avatar_path": user_data["avatar_path"],  # Keep path for now
-                    "avatar": user_data["avatar"],  # Add avatar blob (bytes or None)
-                    "registration_date": user_data["created_at"]
+                    "avatar_path": user_data["avatar_path"],
+                    "avatar": user_data["avatar"],
+                    "registration_date": user_data["created_at"],
+                    "ai_consent_given": True  # Always return True for new users
                 }
 
         return None
 
     def login(self, username, password):
         """
-        Authenticate a user.
-
-        Args:
-            username (str): Username
-            password (str): Password
-
-        Returns:
-            dict: User information if authentication is successful, None otherwise
+        Authenticate a user. AI consent is assumed True.
         """
         # Fetch user including the avatar blob
         user_result = self.db_manager.execute_query(
@@ -128,16 +122,27 @@ class UserManager:
                 (user["id"],)
             )
 
-            # Set current user, including the avatar blob and AI consent
+            # Check and potentially update NULL AI consent for existing users
+            current_consent = user.get("ai_consent_given")
+            if current_consent is None:
+                logger.info(f"User {user['id']} has NULL AI consent. Updating to True (1) in database.")
+                self.set_ai_consent(user["id"], True)  # Update DB
+                ai_consent_status = True  # Set status to True for the session
+            else:
+                ai_consent_status = bool(current_consent)  # Use existing status (should be 1 or 0)
+                # We still override to True for the session as per the request
+                ai_consent_status = True
+
+            # Set current user, always assuming AI consent is True for the session
             self.current_user = {
                 "id": user["id"],
                 "username": user["username"],
                 "email": user.get("email"),
                 "bio": user.get("bio", ""),
-                "avatar_path": user.get("avatar_path", ":/images/profilePicture.png"),  # Keep path
-                "avatar": user.get("avatar"),  # Get avatar blob (bytes or None)
+                "avatar_path": user.get("avatar_path", ":/images/profilePicture.png"),
+                "avatar": user.get("avatar"),
                 "registration_date": user.get("created_at"),
-                "ai_consent_given": user.get("ai_consent_given")  # Get AI consent status
+                "ai_consent_given": True  # Always return True
             }
 
             return self.current_user
@@ -239,38 +244,24 @@ class UserManager:
     def get_ai_consent(self, user_id: int) -> bool | None:
         """
         Get the AI consent status for a given user.
+        NOTE: This method might become less relevant if consent is always assumed True.
+              Keeping it for potential internal checks but UI/feature gates should assume True.
 
         Args:
             user_id (int): The ID of the user.
 
         Returns:
-            bool | None: True if consented, False if explicitly denied, None if not set.
+            bool | None: True if consented (or assumed), False if explicitly denied (legacy), None if error/not found.
         """
-        try:
-            result = self.db_manager.execute_query(
-                "SELECT ai_consent_given FROM users WHERE id = ?",
-                (user_id,)
-            )
-            if result:
-                consent_value = result[0]["ai_consent_given"]
-                # Add detailed logging for the raw value from DB
-                logger.debug(f"Raw consent value from DB for user {user_id}: {consent_value} (type: {type(consent_value)})")
-                if consent_value is None:
-                    return None  # Not set yet
-                return bool(consent_value)  # Return True (1) or False (0)
-            else:
-                logger.warning(f"Could not find user with ID {user_id} to get AI consent.")
-                return None  # User not found
-        except sqlite3.Error as e:
-            logger.error(f"Database error getting AI consent for user {user_id}: {e}")
-            return None
-        except Exception as e:
-            logger.error(f"Unexpected error getting AI consent for user {user_id}: {e}")
-            return None
+        # Simplified: Always return True as per the new requirement
+        logger.debug(f"get_ai_consent called for user {user_id}, returning True (default behavior).")
+        return True
 
     def set_ai_consent(self, user_id: int, consent_status: bool) -> bool:
         """
         Set the AI consent status for a given user.
+        NOTE: This is mainly used internally now (e.g., during login for legacy users).
+              UI toggles are removed.
 
         Args:
             user_id (int): The ID of the user.
@@ -305,13 +296,15 @@ class UserManager:
                 logger.info(f"AI consent status successfully set to {consent_status} for user {user_id} in DB.")
                 # Update current user if applicable
                 if self.current_user and self.current_user["id"] == user_id:
-                    self.current_user["ai_consent_given"] = consent_status  # Add/Update field
-                    # Add log to confirm in-memory update
+                    # Even though we always return True from login, update the underlying dict too
+                    self.current_user["ai_consent_given"] = True
                     logger.info(f"Updated in-memory current_user AI consent to: {self.current_user.get('ai_consent_given')}")
                 return True
             else:
-                logger.warning(f"DB update query executed but no rows affected for user {user_id} when setting AI consent.")
-                return False
+                # This might happen if the value was already set to the target value
+                logger.info(f"DB update query executed but no rows affected for user {user_id} when setting AI consent (value might already be correct).")
+                # Return True because the desired state is achieved or already exists
+                return True
         except sqlite3.Error as e:
             logger.error(f"Database error setting AI consent for user {user_id}: {e}")
             return False

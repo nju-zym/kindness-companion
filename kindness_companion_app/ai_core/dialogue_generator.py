@@ -9,41 +9,45 @@ DEFAULT_MODEL = "glm-4-flash" # Or another suitable model
 def generate_pet_dialogue(user_id: int, event_type: str, event_data: dict) -> str:
     """Generates pet dialogue based on user events using an AI API."""
     # 1. Construct a prompt based on the event
-    #    (This needs more sophisticated logic based on event_type and event_data)
     #    Improved prompt construction:
-    prompt_parts = [f"You are a friendly and encouraging virtual pet in the Kindness Companion app."]
-    prompt_parts.append(f"A user (ID: {user_id}) just triggered an event: '{event_type}'.")
+    prompt_parts = [
+        "You are 'Kai', a friendly, optimistic, and slightly curious virtual pet in the Kindness Companion app.",
+        "Your goal is to encourage the user and make them feel supported.",
+        "Keep your responses concise (1-2 sentences), warm, and natural, like a real companion.",
+        "Avoid generic platitudes. Try to connect with the specific event.",
+        f"A user (ID: {user_id}) just triggered an event: '{event_type}'."
+    ]
 
     if event_type == 'check_in' and 'challenge_title' in event_data:
-        prompt_parts.append(f"They checked in for the challenge: '{event_data['challenge_title']}'.")
+        prompt_parts.append(f"They checked in for the challenge: '{event_data['challenge_title']}'. Congratulate them warmly!")
     elif event_type == 'reflection_added':
         if 'text' in event_data and event_data['text']:
-            prompt_parts.append(f"They added a reflection: \"{event_data['text']}\".")
-        if 'analyzed_emotion' in event_data:
-             prompt_parts.append(f"The reflection seems '{event_data['analyzed_emotion']}'.")
+            prompt_parts.append(f"They added a reflection: \"{event_data['text']}\". Respond thoughtfully to their reflection.")
+            if 'analyzed_emotion' in event_data:
+                prompt_parts.append(f"The reflection seems to have a '{event_data['analyzed_emotion']}' tone. Adjust your response accordingly (e.g., offer comfort if negative, celebrate if positive).")
+            else:
+                 prompt_parts.append("Acknowledge their effort in reflecting.")
+            prompt_parts.append("You could ask a gentle, open-ended question about their experience if appropriate, but don't force it.")
+        else:
+            prompt_parts.append("They added a reflection (content not shown). Acknowledge their effort.")
+    elif event_type == 'app_opened':
+         prompt_parts.append("The user just opened the app. Greet them warmly and perhaps offer a gentle encouragement for the day.")
     elif event_type == 'user_message':
-        if 'message' in event_data and event_data['message']:
-            prompt_parts.append(f"They sent you a direct message: \"{event_data['message']}\".")
-            prompt_parts.append("Please respond to their message in a friendly, helpful way.")
-        if 'analyzed_emotion' in event_data:
-            prompt_parts.append(f"The message seems '{event_data['analyzed_emotion']}'.")
-    # Add more context based on other event types if needed
+         if 'message' in event_data and event_data['message']:
+             prompt_parts.append(f"The user sent you a message: \"{event_data['message']}\". Respond directly and engagingly to their message.")
+             if 'analyzed_emotion' in event_data:
+                 prompt_parts.append(f"Their message seems to have a '{event_data['analyzed_emotion']}' tone. Tailor your response.")
+         else:
+             prompt_parts.append("The user sent you an empty message. Maybe ask if everything is okay?")
+    # Add more event types and specific instructions as needed
 
-    prompt_parts.append("Generate a short, warm, and encouraging response (in Chinese) suitable for a virtual pet.")
-    prompt = " ".join(prompt_parts)
+    prompt_parts.append("Generate your response now:")
+    prompt = "\n".join(prompt_parts)
+    logger.debug(f"Generated dialogue prompt:\n{prompt}")
 
-    logger.info(f"Generating dialogue for user {user_id}, event: {event_type}")
-
-    # 2. Call the dialogue API
-    try:
-        response_text = _call_dialogue_api(prompt)
-        if not response_text:
-            logger.warning("Dialogue API returned empty response.")
-            return "... (宠物似乎正在安静地思考)" # More user-friendly default
-        return response_text
-    except Exception as e:
-        logger.error(f"Error generating dialogue: {e}")
-        return "... (宠物好像在想些什么)" # More user-friendly error
+    # 2. Call the API
+    dialogue = _call_dialogue_api(prompt)
+    return dialogue if dialogue else "..." # Return ellipsis if API fails
 
 def _call_dialogue_api(prompt: str) -> str | None:
     """

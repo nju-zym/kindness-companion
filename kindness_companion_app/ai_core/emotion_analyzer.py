@@ -28,65 +28,56 @@ def analyze_emotion_for_pet(user_id: int, reflection_text: str) -> Optional[str]
         logger.error(f"Error analyzing emotion: {e}")
         return None # Indicate failure
 
-def _call_emotion_api(text: str) -> Optional[str]:
+def _call_emotion_api(text: str) -> str | None:
     """
-    Private helper function to call the configured emotion analysis API (using ZhipuAI Chat).
-    Requires API key management.
+    Calls the ZhipuAI API to analyze emotion.
     """
-    api_key = get_api_key('ZHIPUAI')
+    api_key = get_api_key()
     if not api_key:
-        logger.error("ZhipuAI API key not found. Cannot call emotion analysis API.")
+        logger.error("ZhipuAI API key not configured.")
         return None
 
     headers = {
-        'Authorization': f'Bearer {api_key}',
-        'Content-Type': 'application/json'
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
     }
+    # Simple, direct prompt for classification
+    prompt = f"""Analyze the predominant emotion of the following text. Classify it strictly as one of: 'positive', 'negative', or 'neutral'.
 
-    # Craft a prompt specifically for emotion classification
-    prompt = f"Analyze the emotion of the following text and return only one word: 'positive', 'negative', or 'neutral'. Text: \"{text}\""
+Text: "{text}"
+
+Classification:""" # Added a label to guide the model
 
     payload = {
         "model": DEFAULT_MODEL,
         "messages": [
-            {"role": "system", "content": "You are an emotion analysis assistant. Respond with only one word: positive, negative, or neutral."},
             {"role": "user", "content": prompt}
         ],
-        "max_tokens": 5, # Very short response expected
-        "temperature": 0.1 # Low temperature for classification task
+        "max_tokens": 10, # Allow a bit more room just in case, but expect short response
+        "temperature": 0.1 # Low temperature for deterministic classification
     }
 
     try:
-        logger.debug(f"Calling ZhipuAI Emotion Analysis (Chat) API. Model: {DEFAULT_MODEL}")
-        response_data = make_api_request(
-            method='POST',
-            url=ZHIPUAI_API_ENDPOINT,
-            headers=headers,
-            json_data=payload
-        )
-
-        # Extract the response text
-        if response_data and 'choices' in response_data and response_data['choices']:
-            message = response_data['choices'][0].get('message')
-            if message and 'content' in message:
-                emotion_result = message['content'].strip().lower()
-                # Validate the result
-                if emotion_result in ['positive', 'negative', 'neutral']:
-                    logger.info(f"Received emotion analysis result: {emotion_result}")
-                    return emotion_result
-                else:
-                    logger.warning(f"Unexpected emotion analysis result from API: '{emotion_result}'. Response: {response_data}")
-                    return None # Or maybe default to neutral?
+        response_json = make_api_request(ZHIPUAI_API_ENDPOINT, headers=headers, json_payload=payload)
+        if response_json:
+            # Extract the classification, expecting it directly
+            classification = response_json.get("choices", [{}])[0].get("message", {}).get("content", "").strip().lower()
+            # Validate the output
+            if classification in ['positive', 'negative', 'neutral']:
+                logger.info(f"Emotion analysis result: {classification}")
+                return classification
             else:
-                logger.warning(f"Unexpected response structure from ZhipuAI API (Emotion): No message content. Response: {response_data}")
-                return None
+                logger.warning(f"Unexpected emotion analysis result format: {classification}")
+                # Attempt to find the keyword if the model added extra text
+                if 'positive' in classification: return 'positive'
+                if 'negative' in classification: return 'negative'
+                if 'neutral' in classification: return 'neutral'
+                return None # Could not reliably parse
         else:
-            logger.warning(f"Unexpected response structure or empty choices from ZhipuAI API (Emotion): {response_data}")
             return None
-
     except RequestException as e:
-        logger.error(f"ZhipuAI API request failed (Emotion): {e}")
+        logger.error(f"API request failed during emotion analysis: {e}")
         return None
-    except Exception as e:
-        logger.error(f"An unexpected error occurred calling ZhipuAI API (Emotion): {e}")
+    except (KeyError, IndexError, AttributeError) as e:
+        logger.error(f"Error parsing emotion analysis API response: {e}")
         return None

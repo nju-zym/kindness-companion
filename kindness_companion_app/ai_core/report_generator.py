@@ -58,17 +58,7 @@ def generate_weekly_report(user_id: int) -> str:
         return "生成报告时与 AI 连接出现问题。请检查网络连接或稍后再试。"
 
 def _build_report_prompt(user_id: int, user_data: Dict[str, Any], additional_context: Dict[str, Any]) -> str:
-    """
-    Builds a detailed prompt for the AI to generate a personalized report.
-
-    Args:
-        user_id: The ID of the user.
-        user_data: Basic user data for the report period.
-        additional_context: Additional context for personalization.
-
-    Returns:
-        A string containing the prompt for the AI.
-    """
+    """Builds a detailed prompt for the AI to generate a weekly report."""
     # Format achievements for better readability
     achievements_text = ', '.join(user_data.get('new_achievements', [])) or '无'
 
@@ -82,47 +72,46 @@ def _build_report_prompt(user_id: int, user_data: Dict[str, Any], additional_con
 
     # Build the prompt with enhanced personalization
     prompt = f"""
-为善行伴侣（Kindness Companion）应用的用户生成一份个性化的周报总结。
+You are a data analyst and motivational coach for the Kindness Companion app.
+Your task is to generate a personalized weekly progress report for user ID {user_id}.
 
-用户信息:
-- 用户 ID: {user_id}
-- 当前时间: {time_greeting}，{today_chinese}
+User Data for the Past Week:
+{{
+    "完成打卡次数": {user_data.get('check_ins', 0)},
+    "当前连胜天数": {user_data.get('streak', 0)},
+    "撰写反思次数": {user_data.get('reflections', 0)},
+    "主要参与的挑战类别": {user_data.get('top_category', '无')},
+    "解锁成就": {achievements_text}
+}}
+Trends Compared to the Previous Week:
+{{
+    "与上周相比": "增加" if additional_context.get('previous_week_check_ins', 0) < user_data.get('check_ins', 0) else "减少",
+    "本周完成率": f"{additional_context.get('completion_rate', 0) * 100:.1f}%"
+}}
+Additional Context:
+{{
+    "参与的总挑战数": {additional_context.get('total_challenges', 0)}
+}}
 
-本周数据:
-- 完成打卡次数: {user_data.get('check_ins', 0)}
-- 当前连胜天数: {user_data.get('streak', 0)}
-- 撰写反思次数: {user_data.get('reflections', 0)}
-- 主要参与的挑战类别: {user_data.get('top_category', '无')}
-- 解锁成就: {achievements_text}
-"""
+Instructions for Generating the Report:
+1.  **Tone:** Warm, encouraging, supportive, and insightful, like a friendly coach celebrating progress and offering gentle guidance.
+2.  **Length:** Concise, around 3-5 sentences.
+3.  **Content:**
+    *   Start with a friendly, personalized greeting.
+    *   Acknowledge the user's effort and consistency (or lack thereof, gently).
+    *   Highlight 1-2 key achievements or positive trends using specific data (e.g., "Great job completing the '{user_data.get('top_category', '无')}' challenge 5 times!" or "Your streak is growing!").
+    *   If specific challenge titles are available in the data, try to mention one.
+    *   Briefly mention a trend (e.g., "You focused more on {user_data.get('top_category', '无')} this week.").
+    *   If the user unlocked achievements, congratulate them specifically.
+    *   If data is sparse or shows a decline, focus on encouragement for the upcoming week ("Every small step counts!", "Let's make next week even better!"). Avoid sounding critical.
+    *   End with a positive and forward-looking statement.
+4.  **Style:**
+    *   Use clear and simple language.
+    *   Vary sentence structure and vocabulary to avoid repetition.
+    *   Directly address the user (use "you", "your").
+5.  **Output Format:** Respond *only* with the report text itself. Do not include any preamble, explanation, or labels like "Report:".
 
-    # Add additional context if available
-    if additional_context:
-        if 'total_challenges' in additional_context:
-            prompt += f"- 参与的总挑战数: {additional_context.get('total_challenges', 0)}\n"
-
-        if 'completion_rate' in additional_context:
-            rate = additional_context.get('completion_rate', 0) * 100
-            prompt += f"- 本周完成率: {rate:.1f}%\n"
-
-        if 'previous_week_check_ins' in additional_context:
-            prev = additional_context.get('previous_week_check_ins', 0)
-            curr = user_data.get('check_ins', 0)
-            if prev > 0:
-                change = ((curr - prev) / prev) * 100 if prev > 0 else 0
-                trend = "增加" if change >= 0 else "减少"
-                prompt += f"- 与上周相比: {trend} {abs(change):.1f}%\n"
-
-    prompt += f"""
-请根据以上数据，生成一份温暖、鼓励且个性化的周报（3-4句话）。报告应该：
-1. 以友好的问候开始
-2. 肯定用户的善行成就
-3. 提及具体数据（如打卡次数、连胜）
-4. 鼓励用户继续坚持善行
-5. 如果用户解锁了成就，特别祝贺他们
-6. 如果用户本周表现不佳，给予温和的鼓励而非批评
-
-语调应保持积极、温暖，像一位支持性的朋友。请直接给出报告内容，不要包含额外的解释或前缀。
+Generate the report now based *only* on the provided data and instructions.
 """
 
     return prompt

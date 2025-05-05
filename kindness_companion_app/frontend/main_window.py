@@ -40,6 +40,9 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
 
+        # 设置日志记录器
+        self.logger = logging.getLogger("kindness_challenge.main_window")
+
         # Store backend managers
         self.user_manager = user_manager
         self.challenge_manager = challenge_manager
@@ -223,6 +226,9 @@ class MainWindow(QMainWindow):
         theme_manager = None
         if hasattr(QApplication.instance(), 'theme_manager'):
             theme_manager = QApplication.instance().theme_manager
+            self.logger.info("成功获取应用程序实例中的主题管理器")
+        else:
+            self.logger.warning("无法获取应用程序实例中的主题管理器，主题设置功能将不可用")
 
         self.reminder_widget = ReminderWidget(self.reminder_scheduler, self.challenge_manager, theme_manager)
         self.community_widget = CommunityWidget()

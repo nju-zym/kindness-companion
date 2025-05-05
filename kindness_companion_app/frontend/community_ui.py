@@ -39,6 +39,7 @@ class CommunityWidget(QWidget):
         self.post_input = QTextEdit() # Example input
         self.post_input.setPlaceholderText("分享你的匿名善意...")
         self.submit_button = QPushButton("发布")
+        self.submit_button.setMinimumHeight(28)  # 设置最小高度
         self.posts_display_area = QScrollArea() # Example display area
         self.posts_widget = QWidget()
         self.posts_layout = QVBoxLayout(self.posts_widget)

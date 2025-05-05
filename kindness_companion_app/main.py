@@ -2,18 +2,22 @@ import sys
 import os
 import platform
 import logging
-from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QIcon, QFont, QFontDatabase, QScreen
-from PySide6.QtCore import QFile, QTextStream, QDir, QOperatingSystemVersion, Qt, QEvent, QPoint
 
-from frontend.main_window import MainWindow
-from backend.database_manager import DatabaseManager
-from backend.user_manager import UserManager
-from backend.challenge_manager import ChallengeManager
-from backend.progress_tracker import ProgressTracker
-from backend.reminder_scheduler import ReminderScheduler
-from backend.utils import setup_logging
-import resources_rc  # Import the compiled resources
+# Add the parent directory to the Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QIcon, QFont, QFontDatabase, QScreen, QStyleHints  # Add QStyleHints
+from PySide6.QtCore import QFile, QTextStream, QDir, QOperatingSystemVersion, Qt, QEvent, QPoint, QObject
+
+from kindness_companion_app.frontend.main_window import MainWindow
+from kindness_companion_app.backend.database_manager import DatabaseManager
+from kindness_companion_app.backend.user_manager import UserManager
+from kindness_companion_app.backend.challenge_manager import ChallengeManager
+from kindness_companion_app.backend.progress_tracker import ProgressTracker
+from kindness_companion_app.backend.reminder_scheduler import ReminderScheduler
+from kindness_companion_app.backend.utils import setup_logging
+import kindness_companion_app.resources.resources_rc  # Import the compiled resources
 
 
 def load_fonts():
@@ -73,18 +77,87 @@ def load_fonts():
     return list(set(fonts_loaded))  # Return unique list
 
 
-class ThemeManager:
+class ThemeManager(QObject):
     """管理应用主题的类，支持系统主题变化的检测和自动切换"""
 
     def __init__(self, app, logger):
+        super().__init__()
         self.app = app
         self.logger = logger
-        self.current_theme = "dark"   # 默认为深色主题，根据用户偏好
-        self.theme_style = "sourcio"  # 默认使用Sourcio主题样式, 可选: "warm", "standard", "sourcio"
-        self.follow_system = False    # 默认不跟随系统主题，固定使用深色主题
+        self.current_theme = "light"   # 默认为浅色主题，根据用户偏好
+        self.theme_style = "standard"  # 默认使用Standard主题样式, 可选: "warm", "standard", "sourcio"
+        self.follow_system = True    # 默认跟随系统主题
+
+        # 创建系统主题变化监听器
+        self.app.installEventFilter(self)
+
+        # 初始检测系统主题
+        self.system_theme = self.detect_system_theme()
+        self.logger.info(f"初始系统主题检测: {self.system_theme}")
+
+    def eventFilter(self, obj, event):
+        """事件过滤器，用于捕获系统主题变化事件"""
+        if event.type() == QEvent.ApplicationPaletteChange:
+            self.logger.info("检测到系统主题变化")
+            # 重新检测系统主题
+            new_system_theme = self.detect_system_theme()
+            if new_system_theme != self.system_theme:
+                self.system_theme = new_system_theme
+                self.logger.info(f"系统主题已变更为: {self.system_theme}")
+                # 如果设置为跟随系统主题，则应用新主题
+                if self.follow_system:
+                    self.current_theme = self.system_theme
+                    self.apply_theme()
+
+        # 继续传递事件
+        return super().eventFilter(obj, event)
+
+    def detect_system_theme(self):
+        """检测系统主题，返回 'light' 或 'dark'"""
+        # Preferred method: Use QStyleHints for Qt 6.5+
+        try:
+            hints = self.app.styleHints()
+            color_scheme = hints.colorScheme()
+            if color_scheme == Qt.ColorScheme.Light:
+                self.logger.info("检测到系统使用浅色主题 (QStyleHints)")
+                return "light"
+            elif color_scheme == Qt.ColorScheme.Dark:
+                self.logger.info("检测到系统使用深色主题 (QStyleHints)")
+                return "dark"
+            else:  # Qt.ColorScheme.Unknown or other values
+                self.logger.warning(f"QStyleHints 返回未知颜色方案: {color_scheme}. 回退到亮度检测.")
+        except AttributeError:
+            # colorScheme might not be available in older Qt versions
+            self.logger.warning("QStyleHints.colorScheme() 不可用. 回退到亮度检测.")
+        except Exception as e:
+            self.logger.error(f"检测 QStyleHints 时出错: {e}. 回退到亮度检测.")
+
+        # Fallback method: Use palette brightness
+        self.logger.info("使用调色板亮度检测系统主题...")
+        app_palette = self.app.palette()
+        # 获取窗口背景色
+        window_color = app_palette.color(app_palette.ColorRole.Window)
+        # 计算亮度 (0.0-1.0)，使用标准RGB亮度公式 (浮点数版本)
+        brightness = (0.299 * window_color.redF() +
+                      0.587 * window_color.greenF() +
+                      0.114 * window_color.blueF())
+
+        # 使用 0.5 作为阈值
+        threshold = 0.5
+        if brightness >= threshold:
+            self.logger.info(f"检测到系统使用浅色主题 (亮度: {brightness:.3f})")
+            return "light"
+        else:
+            self.logger.info(f"检测到系统使用深色主题 (亮度: {brightness:.3f})")
+            return "dark"
 
     def apply_theme(self):
         """应用当前主题，根据 theme_style 选择样式"""
+        # 如果设置为跟随系统主题，则使用系统主题
+        if self.follow_system:
+            self.current_theme = self.system_theme
+            self.logger.info(f"跟随系统主题: {self.current_theme}")
+
         style_file_name = ""
         theme_description = ""
 
@@ -103,7 +176,6 @@ class ThemeManager:
         else: # standard
             style_file_name = f"morandi_{self.current_theme}.qss"
             theme_description = f"Morandi Standard {self.current_theme}"
-
 
         # Use the resource path prefix for loading QSS files
         style_file_path = f":/styles/{style_file_name}"
@@ -126,12 +198,12 @@ class ThemeManager:
                 self.logger.info(f"Attempting fallback load from direct path: {fallback_style_path}")
                 style_file_fallback = QFile(fallback_style_path)
                 if style_file_fallback.open(QFile.ReadOnly | QFile.Text):
-                     stream_fallback = QTextStream(style_file_fallback)
-                     self.app.setStyleSheet(stream_fallback.readAll())
-                     style_file_fallback.close()
-                     self.logger.info(f"已通过后备路径应用 {theme_description} 主题: {fallback_style_path}")
+                    stream_fallback = QTextStream(style_file_fallback)
+                    self.app.setStyleSheet(stream_fallback.readAll())
+                    style_file_fallback.close()
+                    self.logger.info(f"已通过后备路径应用 {theme_description} 主题: {fallback_style_path}")
                 else:
-                     self.logger.error(f"无法通过后备路径打开样式表文件: {fallback_style_path}. Error: {style_file_fallback.errorString()}")
+                    self.logger.error(f"无法通过后备路径打开样式表文件: {fallback_style_path}. Error: {style_file_fallback.errorString()}")
 
         except Exception as e:
             self.logger.warning(f"加载样式表时出错: {e}")
@@ -153,8 +225,12 @@ def main():
     print("DEBUG: Creating ThemeManager...")
     theme_manager = ThemeManager(app, logger)
     print("DEBUG: ThemeManager created.")
-    # 设置 theme_style 为 "sourcio" 以使用我们的增强主题
-    theme_manager.theme_style = "sourcio"
+    # 设置 theme_style 为 "standard" 作为默认启动主题
+    theme_manager.theme_style = "standard"
+
+    # 将主题管理器存储在应用程序实例中，使其可以被其他组件访问
+    app.theme_manager = theme_manager
+
     print("DEBUG: Applying theme...")
     theme_manager.apply_theme() # Re-apply after changing style if needed for testing
     print("DEBUG: Theme applied.")

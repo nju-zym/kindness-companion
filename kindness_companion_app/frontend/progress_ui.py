@@ -1,10 +1,13 @@
+import datetime
+import logging
+
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QFrame, QCalendarWidget, QComboBox, QGridLayout,
     QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QMessageBox,
     QGroupBox, QSpacerItem, QProgressBar, QScrollArea, QTextEdit # Add QTextEdit
 )
-from PySide6.QtCore import Qt, Signal, Slot, QDate, QSize, QTimer
+from PySide6.QtCore import Qt, Signal, Slot, QDate, QSize, QTimer, QThread
 from PySide6.QtGui import QFont, QColor, QIcon, QTextCharFormat, QBrush
 
 # Import the custom message box
@@ -12,13 +15,40 @@ from .widgets.animated_message_box import AnimatedMessageBox
 
 # Import AI report generator
 try:
-    from ai_core.report_generator import generate_weekly_report
+    from kindness_companion_app.ai_core.report_generator import generate_weekly_report
 except ImportError:
     logging.error("Could not import generate_weekly_report. AI report features will be disabled.")
     generate_weekly_report = None  # type: ignore
 
-import datetime
-import logging
+
+class AIReportThread(QThread):
+    """Thread for generating AI reports without blocking the UI."""
+    report_ready = Signal(str)
+    report_error = Signal(str)
+
+    def __init__(self, generator_func, report_input):
+        """
+        Initialize the thread with the generator function and input data.
+
+        Args:
+            generator_func: Function to call for report generation
+            report_input: Dictionary of input data for the generator
+        """
+        super().__init__()
+        self.generator_func = generator_func
+        self.report_input = report_input
+
+    def run(self):
+        """Run the report generation in a separate thread."""
+        try:
+            if self.generator_func:
+                report = self.generator_func(self.report_input)
+                self.report_ready.emit(report)
+            else:
+                self.report_error.emit("报告生成功能不可用")
+        except Exception as e:
+            logging.error(f"Error in AI report thread: {e}", exc_info=True)
+            self.report_error.emit(f"生成报告时出错: {e}")
 
 
 class ProgressWidget(QWidget):
@@ -77,25 +107,31 @@ class ProgressWidget(QWidget):
         """Set up the user interface with a left panel and right panel layout.""" # Removed invalid character
         # Main layout
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(20, 20, 20, 20)
-        self.main_layout.setSpacing(15)
+        self.main_layout.setContentsMargins(15, 15, 15, 15)  # Reduced margins
+        self.main_layout.setSpacing(10)  # Reduced spacing
 
         # Header layout (Title and Filters)
         self.header_layout = QHBoxLayout()
+        self.header_layout.setContentsMargins(0, 0, 0, 5)  # Add bottom margin
         self.title_label = QLabel("打卡记录")
         self.title_label.setObjectName("title_label")
         self.header_layout.addWidget(self.title_label)
 
         self.filter_layout = QHBoxLayout()
         self.filter_layout.setAlignment(Qt.AlignRight)
+        self.filter_layout.setSpacing(8)  # Reduced spacing
+
         self.challenge_label = QLabel("挑战:")
         self.challenge_combo = QComboBox()
+        self.challenge_combo.setFixedWidth(150)  # Fixed width for better scaling
         self.challenge_combo.addItem("全部挑战", None)
         self.challenge_combo.currentIndexChanged.connect(self.load_progress)
         self.filter_layout.addWidget(self.challenge_label)
         self.filter_layout.addWidget(self.challenge_combo)
+
         self.range_label = QLabel("时间范围:")
         self.range_combo = QComboBox()
+        self.range_combo.setFixedWidth(100)  # Fixed width for better scaling
         self.range_combo.addItem("最近7天", 7)
         self.range_combo.addItem("最近30天", 30)
         self.range_combo.addItem("最近90天", 90)
@@ -103,6 +139,7 @@ class ProgressWidget(QWidget):
         self.range_combo.currentIndexChanged.connect(self.load_progress)
         self.filter_layout.addWidget(self.range_label)
         self.filter_layout.addWidget(self.range_combo)
+
         self.header_layout.addLayout(self.filter_layout)
         self.main_layout.addLayout(self.header_layout)
 
@@ -110,66 +147,81 @@ class ProgressWidget(QWidget):
         self.main_content_layout = QHBoxLayout()
         self.main_content_layout.setSpacing(15)
 
-        # --- Left Panel ---\n        self.left_panel_widget = QWidget()
+        # --- Left Panel ---
         self.left_panel_widget = QWidget()
-        logging.debug(f"Value of self.left_panel_widget before setObjectName: {self.left_panel_widget}") # Add logging here
         self.left_panel_widget.setObjectName("left_panel")
         self.left_panel_layout = QVBoxLayout(self.left_panel_widget)
         self.left_panel_layout.setContentsMargins(0, 0, 0, 0)
-        self.left_panel_layout.setSpacing(15)
-        self.left_panel_widget.setMaximumWidth(350)
+        self.left_panel_layout.setSpacing(10)  # Reduced spacing
+        # Set fixed width instead of maximum width for better scaling
+        self.left_panel_widget.setFixedWidth(320)
 
         # Calendar widget
         self.calendar_widget = QCalendarWidget()
-        self.calendar_widget.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        self.calendar_widget.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         self.calendar_widget.setVerticalHeaderFormat(QCalendarWidget.NoVerticalHeader)
         self.calendar_widget.setSelectionMode(QCalendarWidget.SingleSelection)
+        self.calendar_widget.setFixedHeight(220)  # Fixed height for better scaling
+        self.calendar_widget.setObjectName("calendar_widget")  # Set object name for styling
         self.calendar_widget.clicked.connect(self.calendar_date_clicked)
         self.left_panel_layout.addWidget(self.calendar_widget)
 
         # Stats GroupBox
         self.stats_group = QGroupBox("统计数据")
         self.stats_group.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        self.stats_group.setObjectName("stats_group")  # Set object name for styling
         self.stats_layout = QVBoxLayout(self.stats_group)
+        self.stats_layout.setContentsMargins(10, 15, 10, 10)  # Add padding
+        self.stats_layout.setSpacing(8)  # Reduced spacing
         self.stats_layout.setAlignment(Qt.AlignTop)
+
+        # Add stats with consistent styling
         self.total_label = QLabel("总打卡次数: 0")
+        self.total_label.setObjectName("stat_label")  # Set object name for styling
         self.stats_layout.addWidget(self.total_label)
+
         self.streak_label = QLabel("当前连续打卡: 0 天")
+        self.streak_label.setObjectName("stat_label")  # Set object name for styling
         self.stats_layout.addWidget(self.streak_label)
+
         self.rate_label = QLabel("完成率: 0%")
+        self.rate_label.setObjectName("stat_label")  # Set object name for styling
         self.stats_layout.addWidget(self.rate_label)
+
         self.stats_layout.addStretch()
         self.left_panel_layout.addWidget(self.stats_group)
 
         # Weekly Report GroupBox
         self.weekly_report_group = QGroupBox("AI 周报")
         self.weekly_report_group.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        self.weekly_report_group.setObjectName("weekly_report_group")  # Set object name for styling
         weekly_report_layout = QVBoxLayout(self.weekly_report_group)
+        weekly_report_layout.setContentsMargins(10, 15, 10, 10)  # Add padding
+        weekly_report_layout.setSpacing(8)  # Reduced spacing
 
         # Report text area
         self.weekly_report_text_edit = QTextEdit()
         self.weekly_report_text_edit.setReadOnly(True)
         self.weekly_report_text_edit.setPlaceholderText("点击下方按钮生成本周善行报告...")
-        self.weekly_report_text_edit.setMinimumHeight(100)
-        self.weekly_report_text_edit.setMaximumHeight(150)
-        self.weekly_report_text_edit.setStyleSheet("""
-            QTextEdit {
-                background-color: #f8f9fa;
-                border: 1px solid #e0e0e0;
-                border-radius: 5px;
-                padding: 8px;
-                font-size: 13px;
-            }
-        """)
+        self.weekly_report_text_edit.setMinimumHeight(80)  # Reduced minimum height
+        self.weekly_report_text_edit.setMaximumHeight(120)  # Reduced maximum height
+        # Use object name for theme-compatible styling
+        self.weekly_report_text_edit.setObjectName("weekly_report_text_edit")
         weekly_report_layout.addWidget(self.weekly_report_text_edit)
 
         # Generate report button
         button_layout = QHBoxLayout()
         button_layout.setAlignment(Qt.AlignCenter)
+        button_layout.setContentsMargins(0, 0, 0, 0)  # No margins
+        button_layout.setSpacing(5)  # Reduced spacing
+
         self.generate_report_button = QPushButton("生成周报")
+        self.generate_report_button.setObjectName("generate_report_button")  # Set object name for styling
         self.generate_report_button.setIcon(QIcon(":/icons/refresh-cw.svg"))
+        self.generate_report_button.setFixedSize(100, 28)  # Fixed size for better scaling
         self.generate_report_button.clicked.connect(self.generate_weekly_report)
         button_layout.addWidget(self.generate_report_button)
+
         weekly_report_layout.addLayout(button_layout)
 
         self.left_panel_layout.addWidget(self.weekly_report_group)
@@ -177,25 +229,31 @@ class ProgressWidget(QWidget):
         # Achievements GroupBox - Now contains the ScrollArea
         self.achievements_group = QGroupBox("我的成就")
         self.achievements_group.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding) # Allow groupbox to expand
+        self.achievements_group.setObjectName("achievements_group")  # Set object name for styling
         achievements_group_layout = QVBoxLayout(self.achievements_group) # Layout for the groupbox itself
-        achievements_group_layout.setContentsMargins(5, 5, 5, 5) # Add some padding inside the groupbox
+        achievements_group_layout.setContentsMargins(10, 15, 10, 10) # Add padding inside the groupbox
+        achievements_group_layout.setSpacing(5) # Reduced spacing
 
         # Create Scroll Area for achievements
         self.achievements_scroll_area = QScrollArea()
         self.achievements_scroll_area.setWidgetResizable(True) # Important! Allows inner widget to resize
         self.achievements_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff) # No horizontal scroll
         self.achievements_scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded) # Show vertical scroll when needed
-        self.achievements_scroll_area.setFrameShape(QFrame.NoFrame) # Remove scroll area border if desired
+        self.achievements_scroll_area.setFrameShape(QFrame.NoFrame) # Remove scroll area border
+        self.achievements_scroll_area.setObjectName("achievements_scroll_area")  # Set object name for styling
 
         # Create a container widget for the achievements layout
         self.achievements_container = QWidget()
+        self.achievements_container.setObjectName("achievements_container")  # Set object name for styling
         self.achievements_layout = QVBoxLayout(self.achievements_container) # The actual layout for achievements
         self.achievements_layout.setAlignment(Qt.AlignTop) # Align items to the top
-        self.achievements_layout.setSpacing(8) # Spacing between achievements
+        self.achievements_layout.setSpacing(6) # Reduced spacing between achievements
+        self.achievements_layout.setContentsMargins(2, 2, 2, 2) # Minimal margins
 
         # Add placeholder to the achievements layout
         self.achievements_placeholder = QLabel("暂无成就，继续努力吧！")
         self.achievements_placeholder.setAlignment(Qt.AlignCenter)
+        self.achievements_placeholder.setObjectName("achievements_placeholder")  # Set object name for styling
         self.achievements_layout.addWidget(self.achievements_placeholder)
 
         # Add a spacer item at the end of the achievements layout to push content up
@@ -209,7 +267,7 @@ class ProgressWidget(QWidget):
         achievements_group_layout.addWidget(self.achievements_scroll_area)
 
         # Add Achievements GroupBox to Left Panel Layout
-        self.left_panel_layout.addWidget(self.achievements_group)
+        self.left_panel_layout.addWidget(self.achievements_group, 1)  # Give stretch factor for better space distribution
 
         # Add Left Panel to Main Content Layout
         self.main_content_layout.addWidget(self.left_panel_widget, 1)
@@ -217,22 +275,39 @@ class ProgressWidget(QWidget):
         # --- Right Panel (Table) ---
         # No need for an extra container widget, add table directly to the layout
         self.progress_table = QTableWidget()
+        self.progress_table.setObjectName("progress_table")  # Set object name for styling
         self.progress_table.setColumnCount(4)
         self.progress_table.setHorizontalHeaderLabels(["日期", "挑战", "分类", "操作"])
+
+        # Style the header
+        self.progress_table.horizontalHeader().setObjectName("progress_table_header")
+        self.progress_table.horizontalHeader().setDefaultAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.progress_table.horizontalHeader().setHighlightSections(False)
+        self.progress_table.horizontalHeader().setMinimumHeight(30)
+
         header = self.progress_table.horizontalHeader()
         # Adjust resize modes for better column sizing
-        header.setSectionResizeMode(0, QHeaderView.ResizeToContents) # Date
-        header.setSectionResizeMode(1, QHeaderView.Stretch) # Challenge
-        header.setSectionResizeMode(2, QHeaderView.Stretch) # Category
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents) # Action
+        header.setSectionResizeMode(0, QHeaderView.Fixed) # Date - fixed width
+        header.setSectionResizeMode(1, QHeaderView.Stretch) # Challenge - stretch
+        header.setSectionResizeMode(2, QHeaderView.Fixed) # Category - fixed width
+        header.setSectionResizeMode(3, QHeaderView.Fixed) # Action - fixed width
+
+        # Set specific column widths for better proportions
+        self.progress_table.setColumnWidth(0, 120)  # Date column
+        self.progress_table.setColumnWidth(2, 100)  # Category column
+        self.progress_table.setColumnWidth(3, 90)   # Action column
+
+        # Configure vertical header and other properties
+        self.progress_table.verticalHeader().setVisible(False)  # Hide row numbers
         self.progress_table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.progress_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.progress_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.progress_table.setAlternatingRowColors(True)
         self.progress_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.progress_table.setShowGrid(False)  # Hide grid lines for cleaner look
 
         # Add Table directly to Main Content Layout
-        self.main_content_layout.addWidget(self.progress_table, 3) # Stretch factor 3
+        self.main_content_layout.addWidget(self.progress_table, 2) # Reduced stretch factor for better balance
 
         # Add Main Content Layout to Main Layout
         self.main_layout.addLayout(self.main_content_layout)
@@ -636,7 +711,7 @@ class ProgressWidget(QWidget):
         # --- End AI Consent Check Removed ---
 
         # Show loading state
-        self.report_text_edit.setPlainText("正在生成报告，请稍候...")
+        self.weekly_report_text_edit.setPlainText("正在生成报告，请稍候...")
         self.generate_report_button.setEnabled(False)
 
         # Call the AI report generator in a separate thread
@@ -666,6 +741,18 @@ class ProgressWidget(QWidget):
         except Exception as e:
             logging.error(f"Error preparing data for weekly report: {e}", exc_info=True)
             self.display_report_error(f"准备报告数据时出错: {e}")
+
+    def display_report(self, report_text):
+        """Display the generated AI report."""
+        self.weekly_report_text = report_text
+        self.weekly_report_text_edit.setPlainText(report_text)
+        self.report_last_generated = datetime.datetime.now()
+        self.generate_report_button.setEnabled(True)
+
+    def display_report_error(self, error_message):
+        """Display an error message in the report area."""
+        self.weekly_report_text_edit.setPlainText(f"生成报告失败: {error_message}")
+        self.generate_report_button.setEnabled(True)
 
     def clear_achievements(self):
         """Safely clear the achievements display area, preserving placeholder and spacer."""

@@ -391,7 +391,7 @@ class CheckinWidget(QWidget):
         # Check-in Button
         self.checkin_button = QPushButton(" 确认打卡")
         self.checkin_button.setObjectName("checkin_button")
-        self.checkin_button.setMinimumHeight(45)
+        self.checkin_button.setMinimumHeight(28)
         checkin_icon = QIcon(":/icons/check-circle.svg")
         if not checkin_icon.isNull():
             self.checkin_button.setIcon(checkin_icon)

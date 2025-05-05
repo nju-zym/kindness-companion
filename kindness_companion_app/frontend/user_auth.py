@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal, QSize, QTimer, Slot
 from PySide6.QtGui import QIcon, QPixmap, QPainter, QBitmap, QPainterPath
 
-from backend.user_manager import UserManager
+from kindness_companion_app.backend.user_manager import UserManager
 from .widgets.animated_message_box import AnimatedMessageBox
 from .widgets.base_dialog import BaseDialog
 from .pet_ui import PetWidget

@@ -43,7 +43,7 @@ except ImportError as e:
             handle_pet_event = None  # type: ignore
 
 # Import UserManager
-from backend.user_manager import UserManager
+from kindness_companion_app.backend.user_manager import UserManager
 
 logger = logging.getLogger(__name__)
 
@@ -114,11 +114,11 @@ class PetWidget(QWidget):
         # Send button
         self.send_button = QPushButton()
         self.send_button.setIcon(QIcon(":/icons/send.png"))  # Assuming you have a send icon in resources
-        self.send_button.setFixedSize(36, 36)
+        self.send_button.setFixedSize(28, 28)
         self.send_button.setStyleSheet("""
             QPushButton {
                 border: none;
-                border-radius: 18px;
+                border-radius: 14px;
                 background-color: #4dd0e1;
                 padding: 5px;
             }

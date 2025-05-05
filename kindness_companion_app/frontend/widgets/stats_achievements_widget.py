@@ -1,7 +1,6 @@
-\
 import logging
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QGridLayout, QLabel, QFrame,
-                             QGroupBox, QScrollArea, QSpacerItem, QSizePolicy, QHBoxLayout) # Import QHBoxLayout
+                             QGroupBox, QScrollArea, QSpacerItem, QSizePolicy, QHBoxLayout)
 from PySide6.QtCore import Qt, Slot, QSize
 from PySide6.QtGui import QIcon, QPixmap
 
@@ -39,78 +38,49 @@ class StatsAchievementsWidget(QWidget):
         self.stats_group.setObjectName("stats_group")
         self.stats_group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.stats_group.setMinimumWidth(400)
-        self.stats_group.setStyleSheet("""
-            QGroupBox#stats_group {
-                font-weight: 600;
-                font-size: 22px;
-                border-radius: 16px;
-                background-color: #202020;
-                border: 1px solid #333333;
-                padding-top: 35px;
-                color: #E67E22;
-            }
-        """)
 
         stats_layout = QVBoxLayout(self.stats_group)
-        stats_layout.setContentsMargins(25, 30, 25, 25)
-        stats_layout.setSpacing(25)
+        stats_layout.setContentsMargins(15, 20, 15, 15)
+        stats_layout.setSpacing(15)
 
         # --- Summary Section ---
         summary_group = QGroupBox("概览")
         summary_group.setObjectName("summary_group")
         summary_group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        summary_group.setStyleSheet("""
-            QGroupBox#summary_group {
-                font-weight: 600;
-                font-size: 16px;
-                border-radius: 12px;
-                background-color: #252525;
-                border: 1px solid #333333;
-                padding-top: 25px;
-                color: #E67E22;
-                margin: 5px;
-            }
-        """)
+
         summary_layout = QGridLayout(summary_group)
-        summary_layout.setSpacing(20)
-        summary_layout.setContentsMargins(15, 20, 15, 20)
+        summary_layout.setSpacing(10)
+        summary_layout.setContentsMargins(10, 15, 10, 15)
 
         # Create styled stat displays (Helper function)
         def create_stat_display(value, title, icon_path):
             frame = QFrame()
             frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
             frame.setObjectName("stat_frame")
-            frame.setStyleSheet("""
-                QFrame#stat_frame {
-                    background-color: #2A2A2A;
-                    border-radius: 12px;
-                    padding: 15px;
-                    border: 1px solid #3A3A3A;
-                    margin: 5px;
-                }
-            """)
+
             stat_layout = QVBoxLayout(frame)
             stat_layout.setAlignment(Qt.AlignCenter)
-            stat_layout.setContentsMargins(10, 10, 10, 10)
-            stat_layout.setSpacing(12)
+            stat_layout.setContentsMargins(5, 5, 5, 5)
+            stat_layout.setSpacing(6)
 
             if icon_path:
                 icon_label = QLabel()
+                icon_label.setObjectName("stat_icon_label")
                 icon = QIcon(icon_path)
                 if not icon.isNull():
-                    pixmap = icon.pixmap(QSize(24, 24))
+                    pixmap = icon.pixmap(QSize(20, 20))
                     icon_label.setPixmap(pixmap)
                     icon_label.setAlignment(Qt.AlignCenter)
                     stat_layout.addWidget(icon_label)
 
             value_label = QLabel(value)
+            value_label.setObjectName("stat_value_label")
             value_label.setAlignment(Qt.AlignCenter)
-            value_label.setStyleSheet("font-size: 38px; font-weight: bold; color: #E67E22; margin-top: 8px;")
             stat_layout.addWidget(value_label)
 
             title_label = QLabel(title)
+            title_label.setObjectName("stat_title_label")
             title_label.setAlignment(Qt.AlignCenter)
-            title_label.setStyleSheet("color: #F5F5F5; font-size: 16px; margin-top: 10px; font-weight: 600;")
             stat_layout.addWidget(title_label)
 
             return frame, value_label
@@ -137,41 +107,35 @@ class StatsAchievementsWidget(QWidget):
         self.achievements_group = QGroupBox("我的成就")
         self.achievements_group.setObjectName("achievements_group")
         self.achievements_group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.achievements_group.setStyleSheet("""
-            QGroupBox#achievements_group {
-                font-weight: 600;
-                font-size: 20px;
-                border-radius: 12px;
-                background-color: #252525;
-                border: 1px solid #333333;
-                padding-top: 30px;
-                color: #E67E22;
-                margin: 8px;
-            }
-        """)
+        self.achievements_group.setMinimumHeight(300)
+
         achievements_group_layout = QVBoxLayout(self.achievements_group)
-        achievements_group_layout.setContentsMargins(20, 25, 20, 20)
+        achievements_group_layout.setContentsMargins(8, 15, 8, 8)
+        achievements_group_layout.setSpacing(8)
 
         self.achievements_scroll_area = QScrollArea()
         self.achievements_scroll_area.setWidgetResizable(True)
         self.achievements_scroll_area.setObjectName("achievements_scroll_area")
         self.achievements_scroll_area.setFrameShape(QFrame.NoFrame)
+        self.achievements_scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         self.achievements_container = QWidget()
+        self.achievements_container.setObjectName("achievements_container")
         self.achievements_scroll_area.setWidget(self.achievements_container)
 
-        self.achievements_layout = QVBoxLayout(self.achievements_container)
+        self.achievements_layout = QGridLayout(self.achievements_container)
         self.achievements_layout.setAlignment(Qt.AlignTop)
-        self.achievements_layout.setSpacing(8)
-        self.achievements_layout.setContentsMargins(5, 5, 5, 5)
+        self.achievements_layout.setSpacing(4)
+        self.achievements_layout.setContentsMargins(2, 2, 2, 2)
 
         self.achievements_placeholder = QLabel("暂无成就，继续努力吧！")
+        self.achievements_placeholder.setObjectName("achievements_placeholder")
         self.achievements_placeholder.setAlignment(Qt.AlignCenter)
-        self.achievements_placeholder.setStyleSheet("font-size: 14pt; color: #BBBBBB; padding: 25px; font-style: italic;")
-        self.achievements_layout.addWidget(self.achievements_placeholder)
+        self.achievements_layout.addWidget(self.achievements_placeholder, 0, 0, 1, 3)
 
+        # Add spacer at the end of the grid layout
         self.achievements_spacer = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        self.achievements_layout.addSpacerItem(self.achievements_spacer)
+        self.achievements_layout.addItem(self.achievements_spacer, 100, 0, 1, 3)
 
         achievements_group_layout.addWidget(self.achievements_scroll_area)
         stats_layout.addWidget(self.achievements_group)
@@ -262,6 +226,7 @@ class StatsAchievementsWidget(QWidget):
             self.clear_achievements() # Clear previous items
 
             achievements_added = False
+            achievements_added_list = []  # List to track added achievements for grid layout
             for ach in achievements_data:
                 if ach["target"] > 0:
                     achievements_added = True
@@ -270,53 +235,54 @@ class StatsAchievementsWidget(QWidget):
                     ach_frame.setFrameShape(QFrame.StyledPanel)
                     ach_frame.setFrameShadow(QFrame.Raised)
                     ach_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-                    ach_frame.setStyleSheet("""
-                        QFrame#achievement_frame {
-                            border-radius: 10px;
-                            background-color: #2A2A2A;
-                            padding: 10px;
-                            border: 1px solid #3A3A3A;
-                            margin: 3px;
-                        }
-                    """)
 
                     frame_layout = QHBoxLayout(ach_frame)
-                    frame_layout.setContentsMargins(12, 10, 12, 10)
-                    frame_layout.setSpacing(15)
+                    frame_layout.setContentsMargins(5, 4, 5, 4)
+                    frame_layout.setSpacing(6)
 
                     # Icon Label
                     icon_label = QLabel()
+                    icon_label.setObjectName("achievement_icon_label")
                     icon_path = ach.get("icon")
                     if icon_path:
                         icon = QIcon(icon_path)
                         if not icon.isNull():
-                            pixmap = icon.pixmap(QSize(32, 32)) # Slightly larger icon
+                            pixmap = icon.pixmap(QSize(20, 20))
                             icon_label.setPixmap(pixmap)
-                            icon_label.setFixedSize(QSize(36, 36)) # Fixed size for alignment
+                        else:
+                            logging.warning(f"Failed to load achievement icon: {icon_path}")
+                            icon_label.setText("?") # Placeholder if icon fails
                             icon_label.setAlignment(Qt.AlignCenter)
-                            frame_layout.addWidget(icon_label)
+                    else:
+                        icon_label.setText("") # Empty label if no icon
+
+                    icon_label.setFixedSize(QSize(24, 24))
+                    icon_label.setAlignment(Qt.AlignCenter)
+                    frame_layout.addWidget(icon_label)
 
                     # Text content layout
                     text_layout = QVBoxLayout()
-                    text_layout.setSpacing(4)
+                    text_layout.setSpacing(2)
 
-                    # Achievement Name
+                    # Achievement Name - slightly smaller font
                     name_label = QLabel(ach["name"])
-                    name_label.setStyleSheet("font-weight: 600; font-size: 13pt; color: #F5F5F5;")
+                    name_label.setObjectName("achievement_name_label")
                     text_layout.addWidget(name_label)
 
-                    # Progress Text
+                    # Progress Text - slightly smaller font
                     progress_text = f"{ach['current']} / {ach['target']} {ach['unit']}"
                     progress_label = QLabel(progress_text)
-                    progress_label.setStyleSheet("font-size: 11pt; color: #BBBBBB;")
+                    progress_label.setObjectName("achievement_progress_label")
                     text_layout.addWidget(progress_label)
 
                     frame_layout.addLayout(text_layout)
-                    frame_layout.addStretch() # Push content to the left
+                    frame_layout.addStretch()
 
-                    # Add the frame to the achievements layout
-                    # Insert at the top (index 0) instead of adding to the end
-                    self.achievements_layout.insertWidget(0, ach_frame)
+                    # Add the frame to the achievements layout in a grid
+                    row = len(achievements_added_list) // 3
+                    col = len(achievements_added_list) % 3
+                    self.achievements_layout.addWidget(ach_frame, row, col)
+                    achievements_added_list.append(ach_frame)
 
             # Show/hide placeholder
             self.achievements_placeholder.setVisible(not achievements_added)
@@ -327,11 +293,16 @@ class StatsAchievementsWidget(QWidget):
 
     def clear_achievements(self):
         """Clears all achievement items from the layout."""
-        # Remove all widgets except the placeholder and spacer
-        while self.achievements_layout.count() > 2: # Keep placeholder and spacer
-            item = self.achievements_layout.takeAt(0) # Take from the top
-            if item and item.widget():
+        # Remove all widgets from the grid layout
+        for i in reversed(range(self.achievements_layout.count())):
+            item = self.achievements_layout.itemAt(i)
+            if item and item.widget() and item.widget() != self.achievements_placeholder:
                 item.widget().deleteLater()
+
+        # Re-add the placeholder to the grid layout
+        if self.achievements_layout.indexOf(self.achievements_placeholder) == -1:
+            self.achievements_layout.addWidget(self.achievements_placeholder, 0, 0, 1, 3)
+
         # Ensure placeholder is visible after clearing
         self.achievements_placeholder.setVisible(True)
 

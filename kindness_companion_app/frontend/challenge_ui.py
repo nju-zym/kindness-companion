@@ -138,11 +138,9 @@ class ChallengeCard(QFrame):
         self.subscribe_button.setObjectName("subscribe_button")
         self.subscribe_button.setIcon(QIcon(":/icons/plus-circle.svg"))
         self.subscribe_button.setIconSize(self.icon_size)
-        # 使用相对尺寸，基于字体大小
-        font_metrics = QFontMetrics(self.subscribe_button.font())
-        text_width = font_metrics.horizontalAdvance("订阅挑战") + 40  # 文本宽度加上一些额外空间
-        self.subscribe_button.setMinimumWidth(max(120, text_width))  # 确保最小宽度足够
-        self.subscribe_button.setMinimumHeight(font_metrics.height() * 2)  # 高度为字体高度的2倍
+        # 使用固定尺寸，与其他按钮保持一致
+        self.subscribe_button.setMinimumWidth(100)  # 设置最小宽度
+        self.subscribe_button.setMinimumHeight(28)  # 设置最小高度
         self.subscribe_button.clicked.connect(
             lambda: self.subscribe_clicked.emit(self.challenge["id"])
         )
@@ -151,11 +149,9 @@ class ChallengeCard(QFrame):
         self.unsubscribe_button.setObjectName("unsubscribe_button")
         self.unsubscribe_button.setIcon(QIcon(":/icons/x-circle.svg"))
         self.unsubscribe_button.setIconSize(self.icon_size)
-        # 使用相对尺寸，基于字体大小
-        font_metrics = QFontMetrics(self.unsubscribe_button.font())
-        text_width = font_metrics.horizontalAdvance("取消订阅") + 40  # 文本宽度加上一些额外空间
-        self.unsubscribe_button.setMinimumWidth(max(120, text_width))  # 确保最小宽度足够
-        self.unsubscribe_button.setMinimumHeight(font_metrics.height() * 2)  # 高度为字体高度的2倍
+        # 使用固定尺寸，与其他按钮保持一致
+        self.unsubscribe_button.setMinimumWidth(100)  # 设置最小宽度
+        self.unsubscribe_button.setMinimumHeight(28)  # 设置最小高度
         self.unsubscribe_button.clicked.connect(
             lambda: self.unsubscribe_clicked.emit(self.challenge["id"])
         )
@@ -164,11 +160,9 @@ class ChallengeCard(QFrame):
         self.check_in_button.setObjectName("check_in_button")
         self.check_in_button.setIcon(QIcon(":/icons/check-square.svg"))
         self.check_in_button.setIconSize(self.icon_size)
-        # 使用相对尺寸，基于字体大小
-        font_metrics = QFontMetrics(self.check_in_button.font())
-        text_width = font_metrics.horizontalAdvance("今日打卡") + 40  # 文本宽度加上一些额外空间
-        self.check_in_button.setMinimumWidth(max(120, text_width))  # 确保最小宽度足够
-        self.check_in_button.setMinimumHeight(font_metrics.height() * 2)  # 高度为字体高度的2倍
+        # 使用固定尺寸，与其他按钮保持一致
+        self.check_in_button.setMinimumWidth(100)  # 设置最小宽度
+        self.check_in_button.setMinimumHeight(28)  # 设置最小高度
         # 设置打卡按钮为主要按钮样式
         self.check_in_button.setProperty("class", "primaryButton")
         self.check_in_button.clicked.connect(

@@ -25,7 +25,7 @@ def generate_weekly_report(user_id: int) -> str:
         user_data = _get_user_data_for_report(user_id)
         if not user_data or (user_data.get('check_ins', 0) == 0 and user_data.get('streak', 0) == 0):
             logger.warning("No user data found to generate report.")
-            return "无法生成报告，似乎还没有足够的活动数据。请先完成一些善行挑战后再尝试生成报告。"
+            return "无法生成报告，似乎还没有足够的活动数据。请先完成一些善行伴侣后再尝试生成报告。"
     except Exception as e:
         logger.error(f"Error fetching user data for report: {e}")
         return "生成报告时出错（获取数据失败）。请稍后再试或联系支持团队。"

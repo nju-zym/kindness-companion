@@ -58,7 +58,7 @@ class MainWindow(QMainWindow):
         self.reminder_scheduler.set_callback(self.show_reminder)
 
         # Set window properties
-        self.setWindowTitle("善行挑战 (Kindness Challenge)")
+        self.setWindowTitle("善行伴侣 (Kindness Companion)")
 
         # 获取屏幕尺寸，设置窗口为屏幕的一定比例
         screen = QApplication.primaryScreen().availableGeometry()
@@ -122,7 +122,7 @@ class MainWindow(QMainWindow):
         self.title_layout.setAlignment(Qt.AlignCenter)
 
         # App title
-        self.title_label = QLabel("善行挑战")
+        self.title_label = QLabel("善行伴侣")
         self.title_label.setObjectName("title_label")  # Set object name
         self.title_label.setAlignment(Qt.AlignCenter)
 
@@ -353,7 +353,7 @@ class MainWindow(QMainWindow):
         # Show success message non-modally using AnimatedMessageBox
         reg_success_msg = AnimatedMessageBox(self) # Use AnimatedMessageBox
         reg_success_msg.setWindowTitle("注册成功")
-        reg_success_msg.setText(f"欢迎加入善行挑战，{user['username']}！\n请使用您的新账号登录。")
+        reg_success_msg.setText(f"欢迎加入善行伴侣，{user['username']}！\n请使用您的新账号登录。")
         reg_success_msg.setIcon(QMessageBox.Information)
         reg_success_msg.showNonModal() # Use custom non-modal method
 
@@ -424,7 +424,7 @@ class MainWindow(QMainWindow):
         """
         reminder_msg = AnimatedMessageBox(self) # Use AnimatedMessageBox
         reminder_msg.setWindowTitle("善行提醒")
-        reminder_msg.setText(f"别忘了今天的善行挑战：\n{reminder['challenge_title']}")
+        reminder_msg.setText(f"别忘了今天的善行伴侣：\n{reminder['challenge_title']}")
         reminder_msg.setIcon(QMessageBox.Information)
         reminder_msg.showNonModal() # Use custom non-modal method
 

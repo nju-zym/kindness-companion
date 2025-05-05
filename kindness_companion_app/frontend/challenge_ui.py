@@ -245,7 +245,7 @@ class ChallengeListWidget(QWidget):
         self.header_layout.setContentsMargins(0, 0, 0, 15)  # 添加底部边距
 
         # Title
-        self.title_label = QLabel("善行挑战列表")
+        self.title_label = QLabel("善行伴侣列表")
         self.title_label.setObjectName("title_label")  # Set object name for styling
 
         # 设置标题字体

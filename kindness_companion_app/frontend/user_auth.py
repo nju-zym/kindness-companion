@@ -56,7 +56,7 @@ class LoginWidget(QWidget):
         content_layout.addWidget(self.title_label)
 
         # Subtitle
-        self.subtitle_label = QLabel("请登录您的善行挑战账号")
+        self.subtitle_label = QLabel("请登录您的善行伴侣账号")
         self.subtitle_label.setObjectName("subtitle_label")
         self.subtitle_label.setAlignment(Qt.AlignCenter)
         content_layout.addWidget(self.subtitle_label)
@@ -208,7 +208,7 @@ class RegisterWidget(QWidget):
         content_layout.addWidget(self.title_label)
 
         # Subtitle
-        self.subtitle_label = QLabel("加入善行挑战，开始您的善行之旅")
+        self.subtitle_label = QLabel("加入善行伴侣，开始您的善行之旅")
         self.subtitle_label.setObjectName("subtitle_label")
         self.subtitle_label.setAlignment(Qt.AlignCenter) # Center align subtitle
         content_layout.addWidget(self.subtitle_label)
@@ -351,7 +351,7 @@ class RegisterWidget(QWidget):
         AnimatedMessageBox.showInformation( # Use AnimatedMessageBox
             self,
             "用户协议",
-            "善行挑战应用用户协议\n\n"
+            "善行伴侣应用用户协议\n\n"
             "1. 本应用旨在鼓励用户进行善行，提升社会正能量。\n"
             "2. 用户需对自己的行为负责，不得利用本应用进行违法或不道德活动。\n"
             "3. 用户提供的个人信息将被安全保存，不会泄露给第三方。\n"

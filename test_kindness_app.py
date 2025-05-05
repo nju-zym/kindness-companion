@@ -18,10 +18,10 @@ class ThemeManager(QObject):
         self.current_theme = "dark"   # 默认为深色主题，根据用户偏好
         self.theme_style = "sourcio"  # 默认使用Sourcio主题样式, 可选: "warm", "standard", "sourcio"
         self.follow_system = False    # 默认不跟随系统主题，固定使用深色主题
-        
+
         # 创建系统主题变化监听器
         self.app.installEventFilter(self)
-        
+
         # 初始检测系统主题
         self.system_theme = self.detect_system_theme()
         self.logger.info(f"初始系统主题检测: {self.system_theme}")
@@ -39,7 +39,7 @@ class ThemeManager(QObject):
                 if self.follow_system:
                     self.current_theme = self.system_theme
                     self.apply_theme()
-        
+
         # 继续传递事件
         return super().eventFilter(obj, event)
 
@@ -50,10 +50,10 @@ class ThemeManager(QObject):
         # 获取窗口背景色
         window_color = app_palette.color(app_palette.ColorRole.Window)
         # 计算亮度 (0-255)，使用标准RGB亮度公式
-        brightness = (0.299 * window_color.red() + 
-                     0.587 * window_color.green() + 
+        brightness = (0.299 * window_color.red() +
+                     0.587 * window_color.green() +
                      0.114 * window_color.blue())
-        
+
         # 如果亮度大于127.5（中间值），则认为是浅色主题
         if brightness > 127.5:
             self.logger.info(f"检测到系统使用浅色主题 (亮度: {brightness})")
@@ -68,10 +68,10 @@ class ThemeManager(QObject):
         if self.follow_system:
             self.current_theme = self.system_theme
             self.logger.info(f"跟随系统主题: {self.current_theme}")
-            
+
         # 在这里应用主题样式表
         self.logger.info(f"应用主题: {self.current_theme}, 样式: {self.theme_style}")
-        
+
         # 简单的样式表示例
         if self.current_theme == "dark":
             if self.theme_style == "sourcio":
@@ -135,22 +135,22 @@ class ThemeSettingsWidget(QWidget):
         super().__init__()
         self.theme_manager = theme_manager
         self.setup_ui()
-        
+
     def setup_ui(self):
         layout = QVBoxLayout(self)
-        
+
         # 主题信息标签
         self.info_label = QLabel(f"当前主题: {self.theme_manager.current_theme}, 样式: {self.theme_manager.theme_style}")
         layout.addWidget(self.info_label)
-        
+
         # 主题模式设置
         self.theme_mode_group = QGroupBox("主题模式")
         theme_mode_layout = QHBoxLayout(self.theme_mode_group)
-        
+
         self.system_radio = QRadioButton("跟随系统")
         self.light_radio = QRadioButton("浅色模式")
         self.dark_radio = QRadioButton("深色模式")
-        
+
         # 根据当前设置选中相应的单选按钮
         if self.theme_manager.follow_system:
             self.system_radio.setChecked(True)
@@ -158,21 +158,21 @@ class ThemeSettingsWidget(QWidget):
             self.light_radio.setChecked(True)
         else:
             self.dark_radio.setChecked(True)
-            
+
         theme_mode_layout.addWidget(self.system_radio)
         theme_mode_layout.addWidget(self.light_radio)
         theme_mode_layout.addWidget(self.dark_radio)
-        
+
         layout.addWidget(self.theme_mode_group)
-        
+
         # 主题样式设置
         self.theme_style_group = QGroupBox("主题风格")
         theme_style_layout = QHBoxLayout(self.theme_style_group)
-        
+
         self.standard_radio = QRadioButton("标准风格")
         self.warm_radio = QRadioButton("温馨风格")
         self.sourcio_radio = QRadioButton("Sourcio风格")
-        
+
         # 根据当前设置选中相应的单选按钮
         if self.theme_manager.theme_style == "standard":
             self.standard_radio.setChecked(True)
@@ -180,18 +180,18 @@ class ThemeSettingsWidget(QWidget):
             self.warm_radio.setChecked(True)
         else:
             self.sourcio_radio.setChecked(True)
-            
+
         theme_style_layout.addWidget(self.standard_radio)
         theme_style_layout.addWidget(self.warm_radio)
         theme_style_layout.addWidget(self.sourcio_radio)
-        
+
         layout.addWidget(self.theme_style_group)
-        
+
         # 应用按钮
         self.apply_button = QPushButton("应用主题设置")
         self.apply_button.clicked.connect(self.apply_theme_settings)
         layout.addWidget(self.apply_button)
-        
+
     def apply_theme_settings(self):
         # 获取主题模式设置
         if self.system_radio.isChecked():
@@ -204,7 +204,7 @@ class ThemeSettingsWidget(QWidget):
                 self.theme_manager.current_theme = "light"
             else:
                 self.theme_manager.current_theme = "dark"
-                
+
         # 获取主题样式设置
         if self.standard_radio.isChecked():
             self.theme_manager.theme_style = "standard"
@@ -212,10 +212,10 @@ class ThemeSettingsWidget(QWidget):
             self.theme_manager.theme_style = "warm"
         else:
             self.theme_manager.theme_style = "sourcio"
-            
+
         # 应用主题
         self.theme_manager.apply_theme()
-        
+
         # 更新信息标签
         self.info_label.setText(f"当前主题: {self.theme_manager.current_theme}, 样式: {self.theme_manager.theme_style}")
 
@@ -223,29 +223,29 @@ class MainWindow(QMainWindow):
     def __init__(self, theme_manager):
         super().__init__()
         self.theme_manager = theme_manager
-        self.setWindowTitle("善行挑战 - 主题设置测试")
+        self.setWindowTitle("善行伴侣 - 主题设置测试")
         self.setGeometry(100, 100, 600, 400)
-        
+
         # 创建主题设置部件
         self.theme_settings = ThemeSettingsWidget(self.theme_manager)
         self.setCentralWidget(self.theme_settings)
 
 def main():
     app = QApplication(sys.argv)
-    
+
     # 创建主题管理器
     theme_manager = ThemeManager(app, logger)
-    
+
     # 将主题管理器存储在应用程序实例中
     app.theme_manager = theme_manager
-    
+
     # 应用初始主题
     theme_manager.apply_theme()
-    
+
     # 创建并显示窗口
     window = MainWindow(theme_manager)
     window.show()
-    
+
     sys.exit(app.exec())
 
 if __name__ == "__main__":

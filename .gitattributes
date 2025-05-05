@@ -1,6 +1,5 @@
 # 将所有的 .ttc 字体文件交给 Git LFS 管理
 *.ttc filter=lfs diff=lfs merge=lfs -text
-
 # 管理 resources_rc.py (如果它不是自动生成的)
 kindness_companion_app/resources_rc.py filter=lfs diff=lfs merge=lfs -text
 # 管理 resources 目录下的常见资源文件

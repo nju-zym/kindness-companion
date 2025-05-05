@@ -252,6 +252,20 @@ def main():
     reminder_scheduler = ReminderScheduler(db_manager)
     print("DEBUG: ReminderScheduler initialized.")
 
+    # Initialize enhanced dialogue generator
+    try:
+        print("DEBUG: Initializing Enhanced Dialogue Generator...")
+        from kindness_companion_app.ai_core.pet_handler import initialize_enhanced_dialogue
+        if initialize_enhanced_dialogue:
+            initialize_enhanced_dialogue(db_manager)
+            print("DEBUG: Enhanced Dialogue Generator initialized.")
+        else:
+            print("DEBUG: initialize_enhanced_dialogue function not available.")
+    except ImportError as e:
+        print(f"DEBUG: Could not import initialize_enhanced_dialogue: {e}")
+    except Exception as e:
+        print(f"DEBUG: Error initializing Enhanced Dialogue Generator: {e}")
+
     # 创建主窗口，并传入管理器实例
     print("DEBUG: Creating MainWindow...")
     main_window = MainWindow(

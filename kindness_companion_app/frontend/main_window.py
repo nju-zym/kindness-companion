@@ -417,16 +417,28 @@ class MainWindow(QMainWindow):
 
     def show_reminder(self, reminder):
         """
-        Show a reminder notification non-modally using AnimatedMessageBox.
+        Show a reminder notification with options to dismiss or disable.
 
         Args:
             reminder (dict): Reminder information
         """
-        reminder_msg = AnimatedMessageBox(self) # Use AnimatedMessageBox
+        reminder_msg = AnimatedMessageBox(self)
         reminder_msg.setWindowTitle("善行提醒")
         reminder_msg.setText(f"别忘了今天的善行伴侣：\n{reminder['challenge_title']}")
         reminder_msg.setIcon(QMessageBox.Information)
-        reminder_msg.showNonModal() # Use custom non-modal method
+
+        # Add custom buttons
+        dismiss_button = reminder_msg.addButton("知道了", QMessageBox.AcceptRole)
+        dont_show_button = reminder_msg.addButton("不再提醒", QMessageBox.ActionRole)
+
+        # Show non-modally but don't auto-close
+        reminder_msg.setModal(False)
+        reminder_msg.show()
+
+        # Connect to clicked button signal to handle user choice
+        reminder_msg.buttonClicked.connect(
+            lambda button: self._handle_reminder_response(button, reminder_msg, reminder, dont_show_button)
+        )
 
     def update_button_style(self, clicked_button=None):
         """Updates the style of navigation buttons based on the checked state."""
@@ -468,6 +480,39 @@ class MainWindow(QMainWindow):
         theme_msg.setText(f"已切换到{theme_style_text}{theme_type_text}主题")
         theme_msg.setIcon(QMessageBox.Information)
         theme_msg.showNonModal()
+
+    def _handle_reminder_response(self, clicked_button, message_box, reminder, dont_show_button):
+        """
+        Handle user response to a reminder notification.
+
+        Args:
+            clicked_button: The button that was clicked
+            message_box: The message box instance
+            reminder (dict): The reminder information
+            dont_show_button: The "Don't show again" button reference
+        """
+        # If user clicked "Don't show again"
+        if clicked_button == dont_show_button:
+            # Disable the reminder in the database
+            success = self.reminder_scheduler.update_reminder(
+                reminder["id"],
+                enabled=False
+            )
+
+            if success:
+                # Show confirmation message
+                confirm_msg = AnimatedMessageBox(self)
+                confirm_msg.setWindowTitle("提醒已禁用")
+                confirm_msg.setText(f"已禁用\"{reminder['challenge_title']}\"的提醒。\n您可以在提醒设置中重新启用。")
+                confirm_msg.setIcon(QMessageBox.Information)
+                confirm_msg.showNonModal()
+            else:
+                # Show error message
+                error_msg = AnimatedMessageBox(self)
+                error_msg.setWindowTitle("操作失败")
+                error_msg.setText("禁用提醒失败，请稍后重试。")
+                error_msg.setIcon(QMessageBox.Warning)
+                error_msg.showNonModal()
 
     def resizeEvent(self, event):
         """处理窗口大小变化事件"""

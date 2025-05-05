@@ -16,15 +16,15 @@ logger.info(f"sys.path: {sys.path}")
 # Try to import the AI handler function with better error handling
 try:
     # First try relative import
-    from ai_core.pet_handler import handle_pet_event
-    logger.info("Successfully imported handle_pet_event using relative import")
+    from ai_core.pet_handler import handle_pet_event, initialize_enhanced_dialogue
+    logger.info("Successfully imported handle_pet_event and initialize_enhanced_dialogue using relative import")
 except ImportError as e:
     logger.error(f"Failed to import handle_pet_event using relative import: {e}")
 
     # Try absolute import
     try:
-        from kindness_companion_app.ai_core.pet_handler import handle_pet_event
-        logger.info("Successfully imported handle_pet_event using absolute import")
+        from kindness_companion_app.ai_core.pet_handler import handle_pet_event, initialize_enhanced_dialogue
+        logger.info("Successfully imported handle_pet_event and initialize_enhanced_dialogue using absolute import")
     except ImportError as e:
         logger.error(f"Failed to import handle_pet_event using absolute import: {e}")
 
@@ -35,12 +35,13 @@ except ImportError as e:
                 sys.path.insert(0, parent_dir)
                 logger.info(f"Added {parent_dir} to sys.path")
 
-            from ai_core.pet_handler import handle_pet_event
-            logger.info("Successfully imported handle_pet_event after path adjustment")
+            from ai_core.pet_handler import handle_pet_event, initialize_enhanced_dialogue
+            logger.info("Successfully imported handle_pet_event and initialize_enhanced_dialogue after path adjustment")
         except ImportError as e:
             logger.error(f"All import attempts failed: {e}")
             logger.error("AI pet features will be disabled.")
             handle_pet_event = None  # type: ignore
+            initialize_enhanced_dialogue = None  # type: ignore
 
 # Import UserManager
 from kindness_companion_app.backend.user_manager import UserManager
@@ -54,6 +55,21 @@ class PetWidget(QWidget):
         self.current_user = None
         self._pending_event = None
         self.movie = None  # Initialize movie attribute
+        self.db_manager = None  # Will be set when database_manager is available
+
+        # Initialize enhanced dialogue generator if possible
+        try:
+            from kindness_companion_app.backend.database_manager import DatabaseManager
+            self.db_manager = DatabaseManager()
+            if initialize_enhanced_dialogue is not None:
+                logger.info("Initializing enhanced dialogue generator")
+                initialize_enhanced_dialogue(self.db_manager)
+                logger.info("Enhanced dialogue generator initialized successfully")
+            else:
+                logger.warning("initialize_enhanced_dialogue is None, cannot initialize enhanced dialogue generator")
+        except Exception as e:
+            logger.error(f"Error initializing enhanced dialogue generator: {e}", exc_info=True)
+
         self.setup_ui()
 
     def setup_ui(self):
@@ -215,9 +231,32 @@ class PetWidget(QWidget):
             "excited": "好兴奋呀！",
             "concerned": "有点担心...",
             "confused": "嗯？怎么了？",
-            # Add other mappings as needed
+            # Add emotion-specific status texts
+            "sad": "看起来有点难过...",
+            "anxious": "似乎有些焦虑...",
+            "worried": "好像在担心什么...",
+            "frustrated": "看起来有点沮丧...",
+            "angry": "似乎有些生气...",
+            "disappointed": "看起来有点失望...",
+            "stressed": "好像压力有点大...",
+            "calm": "看起来很平静...",
+            "reflective": "正在思考...",
+            "curious": "好奇地看着你...",
+            "surprised": "看起来很惊讶！",
+            "uncertain": "似乎有些犹豫...",
         }
-        self.pet_status_label.setText(status_text_map.get(suggested_animation, "正在休息..."))
+
+        # Get emotion from response if available
+        emotion = response.get('emotion_detected', '')
+
+        # First try to get status text based on emotion
+        if emotion and emotion in status_text_map:
+            status_text = status_text_map[emotion]
+        # Otherwise use animation
+        else:
+            status_text = status_text_map.get(suggested_animation, "正在休息...")
+
+        self.pet_status_label.setText(status_text)
 
         # --- Update Animation GIF ---
         gif_path = f":/animations/{suggested_animation}.gif"

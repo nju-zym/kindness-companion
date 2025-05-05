@@ -255,14 +255,20 @@ class ReminderWidget(QWidget):
         if not self.current_user:
             return
 
+        print(f"Loading reminders for user ID: {self.current_user['id']}")
+
         # Get user's reminders
         reminders = self.reminder_scheduler.get_user_reminders(self.current_user["id"])
+        print(f"Found {len(reminders)} reminders")
 
-        # Clear table
+        # Clear table completely
+        self.reminder_table.clearContents()
         self.reminder_table.setRowCount(0)
+        print("Cleared reminder table")
 
         # Add reminders to table
         for i, reminder in enumerate(reminders):
+            print(f"Adding reminder to table: {reminder}")
             self.reminder_table.insertRow(i)
 
             # Challenge
@@ -294,11 +300,12 @@ class ReminderWidget(QWidget):
             delete_button.setIconSize(QSize(16, 16))
             delete_button.setMinimumHeight(32)  # 增加按钮高度
 
-            # 使用部分函数应用来避免lambda中的checked参数
             reminder_id = reminder["id"]
             delete_button.clicked.connect(lambda _, rid=reminder_id: self.delete_reminder(rid))
 
             self.reminder_table.setCellWidget(i, 4, delete_button)
+
+        print("Reminder table population complete")
 
     def clear_reminders(self):
         """Clear reminders display."""
@@ -419,16 +426,47 @@ class ReminderWidget(QWidget):
         )
 
         if reply == QMessageBox.Yes:
+            print(f"User confirmed deletion of reminder ID: {reminder_id}")
+
+            # Get reminder info before deletion for debugging
+            reminder_info = self.reminder_scheduler.get_user_reminders(self.current_user["id"])
+            reminder_to_delete = None
+            for reminder in reminder_info:
+                if reminder["id"] == reminder_id:
+                    reminder_to_delete = reminder
+                    break
+
+            if reminder_to_delete:
+                print(f"Found reminder to delete: {reminder_to_delete}")
+            else:
+                print(f"Warning: Reminder ID {reminder_id} not found in user's reminders")
+
+            # Attempt to delete the reminder
+            print(f"Calling reminder_scheduler.delete_reminder({reminder_id})")
             success = self.reminder_scheduler.delete_reminder(reminder_id)
+            print(f"Delete operation returned: {success}")
+
+            # Force reload reminders regardless of success
+            print("Reloading reminders list")
+            self.load_reminders()
 
             if success:
-                # Reload reminders
-                self.load_reminders()
+                # Show success message
+                AnimatedMessageBox.showInformation(
+                    self,
+                    "删除成功",
+                    f"已成功删除提醒。"
+                )
             else:
-                AnimatedMessageBox.showWarning( # Use AnimatedMessageBox.showWarning
+                # Show detailed error message with debugging info
+                error_message = "删除提醒失败，请稍后重试。"
+                if reminder_to_delete:
+                    error_message += f"\n\n调试信息：\n提醒ID: {reminder_id}\n挑战: {reminder_to_delete['challenge_title']}"
+
+                AnimatedMessageBox.showWarning(
                     self,
                     "删除失败",
-                    "删除提醒失败，请稍后重试。"
+                    error_message
                 )
 
     def setup_theme_settings(self):

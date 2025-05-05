@@ -251,13 +251,30 @@ class DatabaseManager:
         """
         try:
             self.connect()
-            if params:
-                self.cursor.execute(query, params)
-            else:
-                self.cursor.execute(query)
+            print(f"Executing SQL update: {query}")
+            print(f"With parameters: {params}")
 
-            affected_rows = self.cursor.rowcount
-            self.connection.commit()
-            return affected_rows
+            try:
+                if params:
+                    self.cursor.execute(query, params)
+                else:
+                    self.cursor.execute(query)
+
+                affected_rows = self.cursor.rowcount
+                print(f"SQL update affected {affected_rows} rows")
+
+                # Make sure to commit the changes
+                self.connection.commit()
+                print("Changes committed to database")
+
+                return affected_rows
+            except Exception as e:
+                print(f"SQL error: {e}")
+                # Rollback in case of error
+                if self.connection:
+                    self.connection.rollback()
+                    print("Transaction rolled back due to error")
+                return 0
         finally:
             self.disconnect()
+            print("Database connection closed")

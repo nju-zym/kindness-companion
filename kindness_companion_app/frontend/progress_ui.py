@@ -719,7 +719,8 @@ class ProgressWidget(QWidget):
             # Fetch recent progress data
             end_date = datetime.date.today()
             start_date = end_date - datetime.timedelta(days=7)
-            progress_data = self.progress_tracker.get_check_ins_between_dates(
+            # Corrected method name
+            progress_data = self.progress_tracker.get_all_user_check_ins(
                 user_id, start_date.isoformat(), end_date.isoformat()
             )
 

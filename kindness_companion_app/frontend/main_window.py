@@ -1,11 +1,22 @@
 import logging
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QStackedWidget, QPushButton, QLabel, QMessageBox, QButtonGroup, QSizePolicy,
-    QApplication
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QStackedWidget,
+    QPushButton,
+    QLabel,
+    QMessageBox,
+    QButtonGroup,
+    QSizePolicy,
+    QApplication,
+    QLineEdit,
+    QTextEdit,
 )
 from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer
 from PySide6.QtGui import QIcon, QFont, QFontMetrics
+from typing import Optional, Any
 
 # Import the custom message box
 from .widgets.animated_message_box import AnimatedMessageBox
@@ -19,6 +30,30 @@ from .profile_ui import ProfileWidget
 from .community_ui import CommunityWidget
 from .pet_ui import PetWidget  # Import PetWidget
 
+# 定义主题颜色
+THEME_COLORS = {
+    "light": {
+        "background": "#F5F5DC",
+        "surface": "#FFFFFF",
+        "primary": "#98FF98",
+        "primary_hover": "#7FFF7F",
+        "text": "#333333",
+        "text_secondary": "#666666",
+        "border": "#E6E6E6",
+        "accent": "#E67E22",
+    },
+    "dark": {
+        "background": "#1A1A1A",
+        "surface": "#2D2D2D",
+        "primary": "#4CAF50",
+        "primary_hover": "#45A049",
+        "text": "#FFFFFF",
+        "text_secondary": "#B3B3B3",
+        "border": "#404040",
+        "accent": "#FF9800",
+    },
+}
+
 
 class MainWindow(QMainWindow):
     """
@@ -28,7 +63,9 @@ class MainWindow(QMainWindow):
     # Signal to notify when user logs in or out
     user_changed = Signal(dict)
 
-    def __init__(self, user_manager, challenge_manager, progress_tracker, reminder_scheduler):
+    def __init__(
+        self, user_manager, challenge_manager, progress_tracker, reminder_scheduler
+    ):
         """
         Initialize the main window.
 
@@ -39,6 +76,9 @@ class MainWindow(QMainWindow):
             reminder_scheduler: Reminder scheduler instance
         """
         super().__init__()
+
+        # 设置当前主题
+        self.current_theme = "light"  # 默认使用浅色主题
 
         # 设置日志记录器
         self.logger = logging.getLogger("kindness_challenge.main_window")
@@ -60,6 +100,9 @@ class MainWindow(QMainWindow):
         # Set window properties
         self.setWindowTitle("善行伴侣 (Kindness Companion)")
 
+        # 设置全局样式表
+        # self.setStyleSheet(...)  # 移除
+
         # 获取屏幕尺寸，设置窗口为屏幕的一定比例
         screen = QApplication.primaryScreen().availableGeometry()
         width = int(screen.width() * 0.75)  # 窗口宽度为屏幕宽度的75%
@@ -74,12 +117,16 @@ class MainWindow(QMainWindow):
         # Create central widget and layout
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
-        self.central_widget.setObjectName("main_central_widget")  # 为中央部件设置对象名，便于样式表定制
+        self.central_widget.setObjectName(
+            "main_central_widget"
+        )  # 为中央部件设置对象名，便于样式表定制
 
         # 创建主布局
         self.main_layout = QHBoxLayout(self.central_widget)
         self.main_layout.setSpacing(15)  # 增加间距，使各区域有更明显的分隔
-        self.main_layout.setContentsMargins(20, 20, 20, 20)  # 添加更大的边距，使布局更加宽松
+        self.main_layout.setContentsMargins(
+            20, 20, 20, 20
+        )  # 添加更大的边距，使布局更加宽松
 
         # Create navigation sidebar
         self.setup_navigation()
@@ -103,8 +150,12 @@ class MainWindow(QMainWindow):
 
         # 获取屏幕宽度，设置侧边栏为屏幕宽度的一定比例
         screen_width = QApplication.primaryScreen().availableGeometry().width()
-        nav_min_width = min(int(screen_width * 0.15), 220)  # 最小宽度为屏幕宽度的15%，但不超过220
-        nav_max_width = min(int(screen_width * 0.2), 280)   # 最大宽度为屏幕宽度的20%，但不超过280
+        nav_min_width = min(
+            int(screen_width * 0.15), 220
+        )  # 最小宽度为屏幕宽度的15%，但不超过220
+        nav_max_width = min(
+            int(screen_width * 0.2), 280
+        )  # 最大宽度为屏幕宽度的20%，但不超过280
 
         self.nav_widget.setMinimumWidth(nav_min_width)
         self.nav_widget.setMaximumWidth(nav_max_width)
@@ -119,22 +170,35 @@ class MainWindow(QMainWindow):
         self.title_container.setMinimumHeight(80)  # 增加容器高度，使标题更加突出
         self.title_layout = QVBoxLayout(self.title_container)
         self.title_layout.setContentsMargins(0, 0, 0, 0)  # 移除内边距
-        self.title_layout.setAlignment(Qt.AlignCenter)
+        self.title_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # App title
         self.title_label = QLabel("善行伴侣")
         self.title_label.setObjectName("title_label")  # Set object name
-        self.title_label.setAlignment(Qt.AlignCenter)
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # 设置字体并显式指定大小
-        title_font = QFont("Hiragino Sans GB", 24, QFont.Bold)  # 增加字体大小
+        title_font = QFont("Hiragino Sans GB", 24, QFont.Weight.Bold)  # 增加字体大小
         self.title_label.setFont(title_font)
         self.title_label.setMinimumHeight(60)  # 增加高度
-        self.title_label.setStyleSheet("padding: 8px; margin: 0px; color: #E67E22;")  # 调整内边距和颜色为暖橙色
+        self.title_label.setStyleSheet(
+            "padding: 8px; margin: 0px; color: #E67E22;"
+        )  # 可选：如需完全交给QSS，也可移除
 
         # 添加标题到容器并显式设置大小策略
         self.title_layout.addWidget(self.title_label)
-        self.title_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.title_container.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
+
+        # 添加主题切换按钮
+        self.theme_toggle_btn = QPushButton()
+        self.theme_toggle_btn.setMinimumWidth(90)
+        self.theme_toggle_btn.setMaximumWidth(140)
+        self.theme_toggle_btn.setStyleSheet("font-size: 16px; font-weight: bold;")
+        self.update_theme_toggle_btn()
+        self.theme_toggle_btn.clicked.connect(self.toggle_theme)
+        self.title_layout.addWidget(self.theme_toggle_btn)
 
         # 添加标题容器到导航布局
         self.nav_layout.addWidget(self.title_container)
@@ -142,7 +206,9 @@ class MainWindow(QMainWindow):
 
         # Navigation buttons
         self.nav_buttons = {}
-        self.nav_button_group = QButtonGroup(self)  # Use QButtonGroup for exclusive selection
+        self.nav_button_group = QButtonGroup(
+            self
+        )  # Use QButtonGroup for exclusive selection
         self.nav_button_group.setExclusive(True)
 
         # Define navigation items with icons
@@ -155,17 +221,16 @@ class MainWindow(QMainWindow):
             ("profile", "个人信息", self.show_profile, ":/icons/user.svg"),
         ]
 
-        icon_size = QSize(22, 22)  # 增加图标尺寸，使其更加明显
+        icon_size = QSize(24, 24)  # 增加图标尺寸
 
         for item_id, label, callback, icon_path in nav_items:
             button = QPushButton(label)
-            button.setObjectName(f"nav_button_{item_id}")  # 为每个按钮设置唯一的对象名，便于样式表定制
+            button.setObjectName(f"nav_button_{item_id}")
+            button.setMinimumHeight(56)  # 增加按钮高度
+            button.setCursor(Qt.CursorShape.PointingHandCursor)  # 添加手型光标
 
-            # 设置固定高度，使按钮更加突出
-            button.setMinimumHeight(50)
-
-            # 设置文本对齐方式，使图标和文本有更好的间距
-            button.setStyleSheet("text-align: left; padding-left: 18px;")
+            # 设置按钮样式
+            # button.setStyleSheet(...)  # 移除
 
             if icon_path:
                 try:
@@ -177,16 +242,13 @@ class MainWindow(QMainWindow):
                 except Exception as e:
                     print(f"Error loading icon {icon_path}: {e}")
 
-            button.setCheckable(True)  # Make buttons checkable
+            button.setCheckable(True)
             button.clicked.connect(callback)
-            # 修复 lambda 函数，使用 _ 忽略 checked 参数
             button.clicked.connect(lambda _, b=button: self.update_button_style(b))
             self.nav_buttons[item_id] = button
-            self.nav_button_group.addButton(button)  # Add to group
+            self.nav_button_group.addButton(button)
 
-            # 设置按钮的大小策略，使其在水平方向上填充可用空间
-            button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-
+            button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             self.nav_layout.addWidget(button)
             button.setEnabled(False)  # Disabled until login
 
@@ -196,45 +258,54 @@ class MainWindow(QMainWindow):
         # Add navigation to main layout
         self.main_layout.addWidget(self.nav_widget, 1)
 
+    def apply_theme(self, theme="light"):
+        """移除，全部交由全局QSS管理"""
+        pass
+
     def setup_content_area(self):
         """Set up the content area with stacked widget."""
-        # 创建一个容器来包裹内容区域，便于添加边距和样式
-        self.content_container = QWidget()
-        self.content_container.setObjectName("content_container")
-
-        # 为容器创建布局
-        self.content_container_layout = QVBoxLayout(self.content_container)
-        self.content_container_layout.setContentsMargins(30, 30, 30, 30)  # 增加内边距，使内容更加宽松
-        self.content_container_layout.setSpacing(20)  # 增加内部间距，改善布局
-        self.content_container_layout.setAlignment(Qt.AlignmentFlag.AlignTop)  # 内容顶部对齐
-
-        # 创建堆叠部件
         self.content_widget = QStackedWidget()
-        self.content_widget.setObjectName("content_widget")  # For styling if needed
+        self.content_widget.setObjectName("content_widget")
 
-        # 将堆叠部件添加到容器布局中
-        self.content_container_layout.addWidget(self.content_widget)
+        # 应用当前主题
+        self.apply_theme(self.current_theme)
 
-        # Create pages
+        # Create and add widgets to stacked widget
         self.login_widget = LoginWidget(self.user_manager)
         self.register_widget = RegisterWidget(self.user_manager)
-        self.challenge_widget = ChallengeListWidget(self.challenge_manager, self.progress_tracker)
-        self.checkin_widget = CheckinWidget(self.progress_tracker, self.challenge_manager)
-        self.progress_widget = ProgressWidget(self.progress_tracker, self.challenge_manager)
+        self.challenge_widget = ChallengeListWidget(
+            self.challenge_manager, self.progress_tracker
+        )
+        self.checkin_widget = CheckinWidget(
+            self.progress_tracker, self.challenge_manager
+        )
+        self.progress_widget = ProgressWidget(
+            self.progress_tracker, self.challenge_manager
+        )
 
         # 获取主题管理器并传递给提醒设置界面
-        theme_manager = None
-        if hasattr(QApplication.instance(), 'theme_manager'):
-            theme_manager = QApplication.instance().theme_manager
-            self.logger.info("成功获取应用程序实例中的主题管理器")
+        theme_manager: Optional[Any] = None
+        app = QApplication.instance()
+        if app and hasattr(app, "theme_manager"):
+            try:
+                theme_manager = getattr(app, "theme_manager")
+                self.logger.info("成功获取应用程序实例中的主题管理器")
+            except AttributeError:
+                self.logger.warning("无法获取主题管理器属性")
         else:
-            self.logger.warning("无法获取应用程序实例中的主题管理器，主题设置功能将不可用")
+            self.logger.warning(
+                "无法获取应用程序实例中的主题管理器，主题设置功能将不可用"
+            )
 
-        self.reminder_widget = ReminderWidget(self.reminder_scheduler, self.challenge_manager, theme_manager)
+        self.reminder_widget = ReminderWidget(
+            self.reminder_scheduler, self.challenge_manager, theme_manager
+        )
         self.community_widget = CommunityWidget()
-        self.profile_widget = ProfileWidget(self.user_manager, self.progress_tracker, self.challenge_manager)
+        self.profile_widget = ProfileWidget(
+            self.user_manager, self.progress_tracker, self.challenge_manager
+        )
 
-        # Add pages to stacked widget
+        # Add widgets to stacked widget
         self.content_widget.addWidget(self.login_widget)
         self.content_widget.addWidget(self.register_widget)
         self.content_widget.addWidget(self.challenge_widget)
@@ -244,8 +315,8 @@ class MainWindow(QMainWindow):
         self.content_widget.addWidget(self.community_widget)
         self.content_widget.addWidget(self.profile_widget)
 
-        # Add content container to main layout
-        self.main_layout.addWidget(self.content_container, 3)  # Give content area more stretch factor
+        # Add content area to main layout
+        self.main_layout.addWidget(self.content_widget, 3)
 
     def setup_pet_area(self):
         """Sets up the area for the PetWidget."""
@@ -255,7 +326,9 @@ class MainWindow(QMainWindow):
 
         # 为容器创建布局
         self.pet_container_layout = QVBoxLayout(self.pet_container)
-        self.pet_container_layout.setContentsMargins(20, 30, 20, 30)  # 增加内边距，使宠物区域更加宽松
+        self.pet_container_layout.setContentsMargins(
+            20, 30, 20, 30
+        )  # 增加内边距，使宠物区域更加宽松
         self.pet_container_layout.setSpacing(20)  # 增加内部间距，改善布局
         self.pet_container_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)  # 居中对齐
 
@@ -268,14 +341,20 @@ class MainWindow(QMainWindow):
 
         # 设置宠物容器的尺寸限制，使用相对尺寸
         screen_width = QApplication.primaryScreen().availableGeometry().width()
-        pet_min_width = min(int(screen_width * 0.18), 260)  # 最小宽度为屏幕宽度的18%，但不超过260
-        pet_max_width = min(int(screen_width * 0.22), 320)  # 最大宽度为屏幕宽度的22%，但不超过320
+        pet_min_width = min(
+            int(screen_width * 0.18), 260
+        )  # 最小宽度为屏幕宽度的18%，但不超过260
+        pet_max_width = min(
+            int(screen_width * 0.22), 320
+        )  # 最大宽度为屏幕宽度的22%，但不超过320
 
         self.pet_container.setMinimumWidth(pet_min_width)
         self.pet_container.setMaximumWidth(pet_max_width)
 
         # 添加宠物容器到主布局
-        self.main_layout.addWidget(self.pet_container, 1)  # Give pet area less stretch factor
+        self.main_layout.addWidget(
+            self.pet_container, 1
+        )  # Give pet area less stretch factor
 
     def connect_signals(self):
         """Connect signals between widgets."""
@@ -294,14 +373,16 @@ class MainWindow(QMainWindow):
         self.user_changed.connect(self.reminder_widget.set_user)
         self.user_changed.connect(self.community_widget.set_user)
         self.user_changed.connect(self.profile_widget.set_user)
-        self.user_changed.connect(self.pet_widget.set_user)  # Connect user_changed to PetWidget
+        self.user_changed.connect(
+            self.pet_widget.set_user
+        )  # Connect user_changed to PetWidget
 
         # Connect profile widget signals
         self.profile_widget.user_updated.connect(self.update_user_info)
         self.profile_widget.user_logged_out.connect(self.handle_logout)
 
         # 连接主题变更信号
-        if hasattr(self.reminder_widget, 'theme_changed'):
+        if hasattr(self.reminder_widget, "theme_changed"):
             self.reminder_widget.theme_changed.connect(self.handle_theme_changed)
 
     @Slot(dict)
@@ -328,14 +409,16 @@ class MainWindow(QMainWindow):
         logging.info("Returned from show_challenges.")
 
         if "challenges" in self.nav_buttons:
-             self.nav_buttons["challenges"].setChecked(True)
-             self.update_button_style(self.nav_buttons["challenges"])
+            self.nav_buttons["challenges"].setChecked(True)
+            self.update_button_style(self.nav_buttons["challenges"])
 
         # Show a non-modal animated welcome message
-        welcome_msg = AnimatedMessageBox(self) # Use AnimatedMessageBox
+        welcome_msg = AnimatedMessageBox(self)  # Use AnimatedMessageBox
         welcome_msg.setWindowTitle("登录成功")
-        welcome_msg.setText(f"欢迎回来，{user['username']}！\n准备好今天的善行挑战了吗？")
-        welcome_msg.setIcon(QMessageBox.Information)
+        welcome_msg.setText(
+            f"欢迎回来，{user['username']}！\n准备好今天的善行挑战了吗？"
+        )
+        welcome_msg.setIcon(QMessageBox.Icon.Information)
         # Use the custom method for non-modal display
         welcome_msg.showNonModal()
         logging.info("Non-modal animated welcome message shown.")
@@ -351,11 +434,13 @@ class MainWindow(QMainWindow):
         self.show_login()
 
         # Show success message non-modally using AnimatedMessageBox
-        reg_success_msg = AnimatedMessageBox(self) # Use AnimatedMessageBox
+        reg_success_msg = AnimatedMessageBox(self)  # Use AnimatedMessageBox
         reg_success_msg.setWindowTitle("注册成功")
-        reg_success_msg.setText(f"欢迎加入善行伴侣，{user['username']}！\n请使用您的新账号登录。")
-        reg_success_msg.setIcon(QMessageBox.Information)
-        reg_success_msg.showNonModal() # Use custom non-modal method
+        reg_success_msg.setText(
+            f"欢迎加入善行伴侣，{user['username']}！\n请使用您的新账号登录。"
+        )
+        reg_success_msg.setIcon(QMessageBox.Icon.Information)
+        reg_success_msg.showNonModal()  # Use custom non-modal method
 
     def logout(self):
         """Log out the current user."""
@@ -391,9 +476,13 @@ class MainWindow(QMainWindow):
 
     def show_challenges(self):
         """Show the challenges page."""
-        logging.info(f"Attempting to switch to challenge_widget. Current widget: {self.content_widget.currentWidget()}")
+        logging.info(
+            f"Attempting to switch to challenge_widget. Current widget: {self.content_widget.currentWidget()}"
+        )
         self.content_widget.setCurrentWidget(self.challenge_widget)
-        logging.info(f"Switched content widget. Current widget is now: {self.content_widget.currentWidget()}")
+        logging.info(
+            f"Switched content widget. Current widget is now: {self.content_widget.currentWidget()}"
+        )
 
     def show_checkin(self):
         """Show the check-in page."""
@@ -425,11 +514,15 @@ class MainWindow(QMainWindow):
         reminder_msg = AnimatedMessageBox(self)
         reminder_msg.setWindowTitle("善行提醒")
         reminder_msg.setText(f"别忘了今天的善行伴侣：\n{reminder['challenge_title']}")
-        reminder_msg.setIcon(QMessageBox.Information)
+        reminder_msg.setIcon(QMessageBox.Icon.Information)
 
         # Add custom buttons
-        dismiss_button = reminder_msg.addButton("知道了", QMessageBox.AcceptRole)
-        dont_show_button = reminder_msg.addButton("不再提醒", QMessageBox.ActionRole)
+        dismiss_button = reminder_msg.addButton(
+            "知道了", QMessageBox.ButtonRole.AcceptRole
+        )
+        dont_show_button = reminder_msg.addButton(
+            "不再提醒", QMessageBox.ButtonRole.ActionRole
+        )
 
         # Show non-modally but don't auto-close
         reminder_msg.setModal(False)
@@ -437,13 +530,17 @@ class MainWindow(QMainWindow):
 
         # Connect to clicked button signal to handle user choice
         reminder_msg.buttonClicked.connect(
-            lambda button: self._handle_reminder_response(button, reminder_msg, reminder, dont_show_button)
+            lambda button: self._handle_reminder_response(
+                button, reminder_msg, reminder, dont_show_button
+            )
         )
 
     def update_button_style(self, clicked_button=None):
         """Updates the style of navigation buttons based on the checked state."""
         for item_id, button in self.nav_buttons.items():
-            is_checked = (button == clicked_button and button.isCheckable() and button.isChecked())
+            is_checked = (
+                button == clicked_button and button.isCheckable() and button.isChecked()
+            )
             button.setProperty("selected", is_checked)
             button.style().unpolish(button)
             button.style().polish(button)
@@ -470,6 +567,9 @@ class MainWindow(QMainWindow):
             theme_type (str): 主题类型（light/dark）
             theme_style (str): 主题样式（standard/warm）
         """
+        # 应用新主题
+        self.apply_theme(theme_type)
+
         # 显示主题变更成功消息
         theme_msg = AnimatedMessageBox(self)
         theme_msg.setWindowTitle("主题已更新")
@@ -478,10 +578,12 @@ class MainWindow(QMainWindow):
         theme_style_text = "温馨" if theme_style == "warm" else "标准"
 
         theme_msg.setText(f"已切换到{theme_style_text}{theme_type_text}主题")
-        theme_msg.setIcon(QMessageBox.Information)
+        theme_msg.setIcon(QMessageBox.Icon.Information)
         theme_msg.showNonModal()
 
-    def _handle_reminder_response(self, clicked_button, message_box, reminder, dont_show_button):
+    def _handle_reminder_response(
+        self, clicked_button, message_box, reminder, dont_show_button
+    ):
         """
         Handle user response to a reminder notification.
 
@@ -495,23 +597,24 @@ class MainWindow(QMainWindow):
         if clicked_button == dont_show_button:
             # Disable the reminder in the database
             success = self.reminder_scheduler.update_reminder(
-                reminder["id"],
-                enabled=False
+                reminder["id"], enabled=False
             )
 
             if success:
                 # Show confirmation message
                 confirm_msg = AnimatedMessageBox(self)
                 confirm_msg.setWindowTitle("提醒已禁用")
-                confirm_msg.setText(f"已禁用\"{reminder['challenge_title']}\"的提醒。\n您可以在提醒设置中重新启用。")
-                confirm_msg.setIcon(QMessageBox.Information)
+                confirm_msg.setText(
+                    f"已禁用\"{reminder['challenge_title']}\"的提醒。\n您可以在提醒设置中重新启用。"
+                )
+                confirm_msg.setIcon(QMessageBox.Icon.Information)
                 confirm_msg.showNonModal()
             else:
                 # Show error message
                 error_msg = AnimatedMessageBox(self)
                 error_msg.setWindowTitle("操作失败")
                 error_msg.setText("禁用提醒失败，请稍后重试。")
-                error_msg.setIcon(QMessageBox.Warning)
+                error_msg.setIcon(QMessageBox.Icon.Warning)
                 error_msg.showNonModal()
 
     def resizeEvent(self, event):
@@ -544,11 +647,11 @@ class MainWindow(QMainWindow):
             self.main_layout.setStretch(2, 1)  # 宠物区域
 
             # 调整内容区域的内边距，使其在小窗口中更紧凑
-            self.content_container_layout.setContentsMargins(
+            self.content_widget.setContentsMargins(
                 int(20 * scale_factor),
                 int(20 * scale_factor),
                 int(20 * scale_factor),
-                int(20 * scale_factor)
+                int(20 * scale_factor),
             )
 
             # 调整导航区域的内边距
@@ -556,7 +659,7 @@ class MainWindow(QMainWindow):
                 int(10 * scale_factor),
                 int(20 * scale_factor),
                 int(10 * scale_factor),
-                int(20 * scale_factor)
+                int(20 * scale_factor),
             )
 
             # 调整宠物区域的内边距
@@ -564,7 +667,7 @@ class MainWindow(QMainWindow):
                 int(10 * scale_factor),
                 int(20 * scale_factor),
                 int(10 * scale_factor),
-                int(20 * scale_factor)
+                int(20 * scale_factor),
             )
 
         elif width < 1400:  # 中等窗口
@@ -574,11 +677,11 @@ class MainWindow(QMainWindow):
             self.main_layout.setStretch(2, 1)  # 宠物区域
 
             # 调整内容区域的内边距
-            self.content_container_layout.setContentsMargins(
+            self.content_widget.setContentsMargins(
                 int(20 * scale_factor),
                 int(20 * scale_factor),
                 int(20 * scale_factor),
-                int(20 * scale_factor)
+                int(20 * scale_factor),
             )
 
             # 调整导航区域的内边距
@@ -586,7 +689,7 @@ class MainWindow(QMainWindow):
                 int(10 * scale_factor),
                 int(20 * scale_factor),
                 int(10 * scale_factor),
-                int(20 * scale_factor)
+                int(20 * scale_factor),
             )
 
             # 调整宠物区域的内边距
@@ -594,7 +697,7 @@ class MainWindow(QMainWindow):
                 int(15 * scale_factor),
                 int(20 * scale_factor),
                 int(15 * scale_factor),
-                int(20 * scale_factor)
+                int(20 * scale_factor),
             )
 
         else:  # 宽窗口
@@ -604,11 +707,11 @@ class MainWindow(QMainWindow):
             self.main_layout.setStretch(2, 1)  # 宠物区域
 
             # 调整内容区域的内边距
-            self.content_container_layout.setContentsMargins(
+            self.content_widget.setContentsMargins(
                 int(30 * scale_factor),
                 int(30 * scale_factor),
                 int(30 * scale_factor),
-                int(30 * scale_factor)
+                int(30 * scale_factor),
             )
 
             # 调整导航区域的内边距
@@ -616,7 +719,7 @@ class MainWindow(QMainWindow):
                 int(15 * scale_factor),
                 int(30 * scale_factor),
                 int(15 * scale_factor),
-                int(30 * scale_factor)
+                int(30 * scale_factor),
             )
 
             # 调整宠物区域的内边距
@@ -624,7 +727,7 @@ class MainWindow(QMainWindow):
                 int(20 * scale_factor),
                 int(30 * scale_factor),
                 int(20 * scale_factor),
-                int(30 * scale_factor)
+                int(30 * scale_factor),
             )
 
         # 调整字体大小 - 基于缩放因子
@@ -649,25 +752,63 @@ class MainWindow(QMainWindow):
             int(10 * scale_factor),
             int(10 * scale_factor),
             int(10 * scale_factor),
-            int(10 * scale_factor)
+            int(10 * scale_factor),
         )
 
         # 更新挑战列表布局
-        if hasattr(self, 'challenge_widget') and self.challenge_widget:
+        if hasattr(self, "challenge_widget") and self.challenge_widget:
             # 根据窗口宽度调整挑战卡片的列数
-            if hasattr(self.challenge_widget, 'challenges_layout') and self.challenge_widget.challenges_layout:
+            if (
+                hasattr(self.challenge_widget, "challenges_layout")
+                and self.challenge_widget.challenges_layout
+            ):
                 if width < 1200:
                     max_cols = 1  # 窄窗口只显示一列
                 else:
                     max_cols = 2  # 宽窗口显示两列
 
                 # 重新布局挑战卡片
-                if hasattr(self.challenge_widget, 'challenge_cards') and self.challenge_widget.challenge_cards:
+                if (
+                    hasattr(self.challenge_widget, "challenge_cards")
+                    and self.challenge_widget.challenge_cards
+                ):
                     row, col = 0, 0
                     for card_id, card in self.challenge_widget.challenge_cards.items():
                         if card.isVisible():
-                            self.challenge_widget.challenges_layout.addWidget(card, row, col)
+                            self.challenge_widget.challenges_layout.addWidget(
+                                card, row, col
+                            )
                             col += 1
                             if col >= max_cols:
                                 col = 0
                                 row += 1
+
+    def update_theme_toggle_btn(self):
+        """根据当前主题更新主题切换按钮的图标、文本和提示"""
+        app = QApplication.instance()
+        theme_manager = None
+        if app:
+            theme_manager = app.property("theme_manager")
+        theme = theme_manager.current_theme if theme_manager else self.current_theme
+        if theme == "light":
+            self.theme_toggle_btn.setIcon(QIcon(":/icons/sun.svg"))
+            self.theme_toggle_btn.setText("浅色")
+            self.theme_toggle_btn.setToolTip("点击切换到深色模式")
+        else:
+            self.theme_toggle_btn.setIcon(QIcon(":/icons/moon.svg"))
+            self.theme_toggle_btn.setText("深色")
+            self.theme_toggle_btn.setToolTip("点击切换到浅色模式")
+        self.theme_toggle_btn.setIconSize(QSize(24, 24))
+
+    def toggle_theme(self):
+        """切换浅色/深色主题"""
+        app = QApplication.instance()
+        theme_manager = None
+        if app:
+            theme_manager = app.property("theme_manager")
+        if theme_manager:
+            new_theme = "dark" if theme_manager.current_theme == "light" else "light"
+            theme_manager.current_theme = new_theme
+            theme_manager.apply_theme()
+            self.update_theme_toggle_btn()
+            self.update()  # 强制刷新界面

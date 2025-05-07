@@ -1,7 +1,15 @@
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QFrame, QComboBox, QMessageBox, QGridLayout,
-    QSizePolicy
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QFrame,
+    QComboBox,
+    QMessageBox,
+    QGridLayout,
+    QSizePolicy,
 )
 from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer
 from PySide6.QtGui import QFont, QIcon, QFontMetrics
@@ -42,15 +50,15 @@ class ChallengeCard(QFrame):
         """Set up the user interface."""
         # Set frame style and object name
         self.setObjectName("challenge_card")  # Set object name for styling
-        self.setFrameShape(QFrame.StyledPanel)
-        self.setFrameShadow(QFrame.Raised)  # Keep shadow for card effect
+        self.setFrameShape(QFrame.Shape.StyledPanel)
+        self.setFrameShadow(QFrame.Shadow.Raised)  # Keep shadow for card effect
         self.setLineWidth(1)
 
         # 设置卡片的最小高度，确保卡片有足够的空间
         self.setMinimumHeight(200)
 
         # 设置卡片的大小策略，使其在垂直方向上可以扩展
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         # Main layout
         self.main_layout = QVBoxLayout(self)
@@ -62,17 +70,16 @@ class ChallengeCard(QFrame):
         self.title_label.setObjectName("challenge_title_label")  # 使用特定的对象名
 
         # 设置标题字体
-        title_font = QFont("Hiragino Sans GB", 18, QFont.Bold)
+        title_font = QFont("Hiragino Sans GB", 18, QFont.Weight.Bold)
         self.title_label.setFont(title_font)
 
         self.main_layout.addWidget(self.title_label)
 
         # 添加分隔线
         separator = QFrame()
-        separator.setFrameShape(QFrame.HLine)
-        separator.setFrameShadow(QFrame.Sunken)
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setFrameShadow(QFrame.Shadow.Sunken)
         separator.setLineWidth(1)
-        separator.setStyleSheet("background-color: #EAEAEA;")
         self.main_layout.addWidget(separator)
 
         # Description
@@ -102,12 +109,12 @@ class ChallengeCard(QFrame):
         self.meta_layout.addWidget(self.difficulty_label)
 
         # --- Add streak label placeholder (always present, visibility toggled) ---
-        self.streak_label = QLabel("") # Create label, initially empty
+        self.streak_label = QLabel("")  # Create label, initially empty
         self.streak_label.setObjectName("streak_label")
-        self.streak_label.setVisible(False) # Initially hidden
+        self.streak_label.setVisible(False)  # Initially hidden
 
         # 设置连续打卡标签的字体
-        streak_font = QFont("Hiragino Sans GB", 16, QFont.Bold)
+        streak_font = QFont("Hiragino Sans GB", 16, QFont.Weight.Bold)
         self.streak_label.setFont(streak_font)
 
         self.meta_layout.addWidget(self.streak_label)
@@ -119,15 +126,14 @@ class ChallengeCard(QFrame):
 
         # 添加分隔线
         separator2 = QFrame()
-        separator2.setFrameShape(QFrame.HLine)
-        separator2.setFrameShadow(QFrame.Sunken)
+        separator2.setFrameShape(QFrame.Shape.HLine)
+        separator2.setFrameShadow(QFrame.Shadow.Sunken)
         separator2.setLineWidth(1)
-        separator2.setStyleSheet("background-color: #EAEAEA;")
         self.main_layout.addWidget(separator2)
 
         # Button layout
         self.button_layout = QHBoxLayout()
-        self.button_layout.setAlignment(Qt.AlignRight)
+        self.button_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.button_layout.setSpacing(10)  # 增加按钮间距
         self.button_layout.setContentsMargins(0, 10, 0, 0)  # 添加上边距
 
@@ -188,7 +194,7 @@ class ChallengeCard(QFrame):
             self.streak_label.setText(f"连续打卡: {self.streak}天")
             self.streak_label.setVisible(True)
         else:
-            self.streak_label.setText("") # Clear text
+            self.streak_label.setText("")  # Clear text
             self.streak_label.setVisible(False)
 
         # --- Update Buttons ---
@@ -196,7 +202,7 @@ class ChallengeCard(QFrame):
         while self.button_layout.count():
             item = self.button_layout.takeAt(0)
             if item.widget():
-                item.widget().setParent(None) # Remove widget from layout
+                item.widget().setParent(None)  # Remove widget from layout
 
         # Add buttons based on subscription status
         if self.is_subscribed:
@@ -249,14 +255,14 @@ class ChallengeListWidget(QWidget):
         self.title_label.setObjectName("title_label")  # Set object name for styling
 
         # 设置标题字体
-        title_font = QFont("Hiragino Sans GB", 22, QFont.Bold)
+        title_font = QFont("Hiragino Sans GB", 22, QFont.Weight.Bold)
         self.title_label.setFont(title_font)
 
         self.header_layout.addWidget(self.title_label)
 
         # Filter layout
         self.filter_layout = QHBoxLayout()
-        self.filter_layout.setAlignment(Qt.AlignRight)
+        self.filter_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.filter_layout.setSpacing(15)  # 增加过滤器间距
 
         # Category filter
@@ -268,43 +274,63 @@ class ChallengeListWidget(QWidget):
         self.category_combo.currentIndexChanged.connect(self.filter_challenges)
         # 使用相对尺寸，基于字体大小
         font_metrics = QFontMetrics(self.category_combo.font())
-        self.category_combo.setMinimumWidth(font_metrics.horizontalAdvance("全部分类XXXXX"))  # 确保足够宽度显示内容
-        self.category_combo.setMinimumHeight(font_metrics.height() * 2.2)  # 高度为字体高度的2.2倍
-        self.category_combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        self.category_combo.setMinimumWidth(
+            font_metrics.horizontalAdvance("全部分类XXXXX")
+        )  # 确保足够宽度显示内容
+        self.category_combo.setSizeAdjustPolicy(
+            QComboBox.SizeAdjustPolicy.AdjustToContents
+        )
+        self.category_combo.setMinimumHeight(int(font_metrics.height() * 2.2))
         self.filter_layout.addWidget(self.category_label)
         self.filter_layout.addWidget(self.category_combo)
 
         # Difficulty filter
         self.difficulty_label = QLabel("难度:")
-        self.difficulty_label.setObjectName("filter_label")  # 设置对象名，便于样式表定制
+        self.difficulty_label.setObjectName(
+            "filter_label"
+        )  # 设置对象名，便于样式表定制
         self.difficulty_combo = QComboBox()
-        self.difficulty_combo.setObjectName("filter_combo")  # 设置对象名，便于样式表定制
+        self.difficulty_combo.setObjectName(
+            "filter_combo"
+        )  # 设置对象名，便于样式表定制
         self.difficulty_combo.addItem("全部难度", None)
         for i in range(1, 6):
             self.difficulty_combo.addItem("★" * i, i)
         self.difficulty_combo.currentIndexChanged.connect(self.filter_challenges)
         # 使用相对尺寸，基于字体大小
         font_metrics = QFontMetrics(self.difficulty_combo.font())
-        self.difficulty_combo.setMinimumWidth(font_metrics.horizontalAdvance("全部难度★★★★★"))  # 确保足够宽度显示内容
-        self.difficulty_combo.setMinimumHeight(font_metrics.height() * 2.2)  # 高度为字体高度的2.2倍
-        self.difficulty_combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        self.difficulty_combo.setMinimumWidth(
+            font_metrics.horizontalAdvance("全部难度★★★★★")
+        )  # 确保足够宽度显示内容
+        self.difficulty_combo.setSizeAdjustPolicy(
+            QComboBox.SizeAdjustPolicy.AdjustToContents
+        )
+        self.difficulty_combo.setMinimumHeight(int(font_metrics.height() * 2.2))
         self.filter_layout.addWidget(self.difficulty_label)
         self.filter_layout.addWidget(self.difficulty_combo)
 
         # Subscription filter
         self.subscription_label = QLabel("订阅:")
-        self.subscription_label.setObjectName("filter_label")  # 设置对象名，便于样式表定制
+        self.subscription_label.setObjectName(
+            "filter_label"
+        )  # 设置对象名，便于样式表定制
         self.subscription_combo = QComboBox()
-        self.subscription_combo.setObjectName("filter_combo")  # 设置对象名，便于样式表定制
+        self.subscription_combo.setObjectName(
+            "filter_combo"
+        )  # 设置对象名，便于样式表定制
         self.subscription_combo.addItem("全部挑战", None)
         self.subscription_combo.addItem("已订阅", True)
         self.subscription_combo.addItem("未订阅", False)
         self.subscription_combo.currentIndexChanged.connect(self.filter_challenges)
         # 使用相对尺寸，基于字体大小
         font_metrics = QFontMetrics(self.subscription_combo.font())
-        self.subscription_combo.setMinimumWidth(font_metrics.horizontalAdvance("全部挑战XXXXX"))  # 确保足够宽度显示内容
-        self.subscription_combo.setMinimumHeight(font_metrics.height() * 2.2)  # 高度为字体高度的2.2倍
-        self.subscription_combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        self.subscription_combo.setMinimumWidth(
+            font_metrics.horizontalAdvance("全部挑战XXXXX")
+        )  # 确保足够宽度显示内容
+        self.subscription_combo.setSizeAdjustPolicy(
+            QComboBox.SizeAdjustPolicy.AdjustToContents
+        )
+        self.subscription_combo.setMinimumHeight(int(font_metrics.height() * 2.2))
         self.filter_layout.addWidget(self.subscription_label)
         self.filter_layout.addWidget(self.subscription_combo)
 
@@ -313,25 +339,30 @@ class ChallengeListWidget(QWidget):
 
         # 添加分隔线
         separator = QFrame()
-        separator.setFrameShape(QFrame.HLine)
-        separator.setFrameShadow(QFrame.Sunken)
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setFrameShadow(QFrame.Shadow.Sunken)
         separator.setLineWidth(1)
-        separator.setStyleSheet("background-color: #EAEAEA;")
         self.main_layout.addWidget(separator)
 
         # Scroll area for challenges
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setFrameShape(QFrame.NoFrame)
-        self.scroll_area.setObjectName("challenges_scroll_area")  # 设置对象名，便于样式表定制
+        self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll_area.setObjectName(
+            "challenges_scroll_area"
+        )  # 设置对象名，便于样式表定制
 
         # Container widget for challenges
         self.challenges_widget = QWidget()
-        self.challenges_widget.setObjectName("challenges_container")  # 设置对象名，便于样式表定制
+        self.challenges_widget.setObjectName(
+            "challenges_container"
+        )  # 设置对象名，便于样式表定制
         self.challenges_layout = QGridLayout(self.challenges_widget)
         self.challenges_layout.setContentsMargins(5, 10, 5, 10)  # 调整内边距
         self.challenges_layout.setSpacing(20)  # 增加卡片间距
-        self.challenges_layout.setAlignment(Qt.AlignTop)  # 确保卡片从顶部开始排列
+        self.challenges_layout.setAlignment(
+            Qt.AlignmentFlag.AlignTop
+        )  # 确保卡片从顶部开始排列
 
         self.scroll_area.setWidget(self.challenges_widget)
         self.main_layout.addWidget(self.scroll_area)
@@ -382,7 +413,9 @@ class ChallengeListWidget(QWidget):
         challenges = self.challenge_manager.get_all_challenges()
 
         # Get user subscriptions
-        user_challenges = self.challenge_manager.get_user_challenges(self.current_user["id"])
+        user_challenges = self.challenge_manager.get_user_challenges(
+            self.current_user["id"]
+        )
         subscribed_ids = {challenge["id"] for challenge in user_challenges}
 
         # Get streaks for subscribed challenges
@@ -423,9 +456,9 @@ class ChallengeListWidget(QWidget):
             # Ensure it's added correctly to the grid
             # Check if widget is already in the layout to avoid issues
             if self.challenges_layout.indexOf(card) == -1:
-                 self.challenges_layout.addWidget(card, row, col)
-            else: # If already in layout, ensure its position is correct (might not be needed if grid handles it)
-                 pass # Assume grid layout handles existing widgets correctly
+                self.challenges_layout.addWidget(card, row, col)
+            else:  # If already in layout, ensure its position is correct (might not be needed if grid handles it)
+                pass  # Assume grid layout handles existing widgets correctly
 
             col += 1
             if col >= max_cols:
@@ -494,15 +527,17 @@ class ChallengeListWidget(QWidget):
             # --- Update the specific challenge card ---
             if challenge_id in self.challenge_cards:
                 card = self.challenge_cards[challenge_id]
-                card.update_ui(is_subscribed=True, streak=0) # Update UI directly
+                card.update_ui(is_subscribed=True, streak=0)  # Update UI directly
 
             # Show success message non-modally using AnimatedMessageBox
             challenge = self.challenge_manager.get_challenge_by_id(challenge_id)
-            subscribe_success_msg = AnimatedMessageBox(self) # Use AnimatedMessageBox
+            subscribe_success_msg = AnimatedMessageBox(self)  # Use AnimatedMessageBox
             subscribe_success_msg.setWindowTitle("订阅成功")
-            subscribe_success_msg.setText(f"您已成功订阅{challenge['title']}挑战！\n记得每天完成挑战并打卡哦。")
-            subscribe_success_msg.setIcon(QMessageBox.Information)
-            subscribe_success_msg.showNonModal() # Use custom non-modal method
+            subscribe_success_msg.setText(
+                f"您已成功订阅{challenge['title']}挑战！\n记得每天完成挑战并打卡哦。"
+            )
+            subscribe_success_msg.setIcon(QMessageBox.Icon.Information)
+            subscribe_success_msg.showNonModal()  # Use custom non-modal method
 
     def unsubscribe_from_challenge(self, challenge_id):
         """
@@ -516,16 +551,14 @@ class ChallengeListWidget(QWidget):
 
         # Ask for confirmation using AnimatedMessageBox
         challenge = self.challenge_manager.get_challenge_by_id(challenge_id)
-        reply = AnimatedMessageBox.showQuestion( # Use AnimatedMessageBox.showQuestion
+        reply = QMessageBox.question(
             self,
-            "取消订阅",
-            f"确定要取消订阅{challenge['title']}挑战吗？\n"
-            f"您的打卡记录将会保留，但连续打卡天数会重置。",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            "确认",
+            "确定要取消订阅该挑战吗？",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             success = self.challenge_manager.unsubscribe_from_challenge(
                 self.current_user["id"], challenge_id
             )
@@ -534,7 +567,7 @@ class ChallengeListWidget(QWidget):
                 # --- Update the specific challenge card ---
                 if challenge_id in self.challenge_cards:
                     card = self.challenge_cards[challenge_id]
-                    card.update_ui(is_subscribed=False, streak=0) # Update UI directly
+                    card.update_ui(is_subscribed=False, streak=0)  # Update UI directly
 
     def resizeEvent(self, event):
         """处理窗口大小变化事件"""
@@ -585,24 +618,25 @@ class ChallengeListWidget(QWidget):
 
         if check_ins:
             # Show already checked-in message non-modally using AnimatedMessageBox
-            already_checked_msg = AnimatedMessageBox(self) # Use AnimatedMessageBox
+            already_checked_msg = AnimatedMessageBox(self)  # Use AnimatedMessageBox
             already_checked_msg.setWindowTitle("已打卡")
-            already_checked_msg.setText("您今天已经完成了这个挑战的打卡！\n明天再来继续保持吧。")
-            already_checked_msg.setIcon(QMessageBox.Information)
-            already_checked_msg.showNonModal() # Use custom non-modal method
+            already_checked_msg.setText(
+                "您今天已经完成了这个挑战的打卡！\n明天再来继续保持吧。"
+            )
+            already_checked_msg.setIcon(QMessageBox.Icon.Information)
+            already_checked_msg.showNonModal()  # Use custom non-modal method
             return
 
         # Ask for confirmation using AnimatedMessageBox
         challenge = self.challenge_manager.get_challenge_by_id(challenge_id)
-        reply = AnimatedMessageBox.showQuestion( # Use AnimatedMessageBox.showQuestion
+        reply = QMessageBox.question(
             self,
-            "打卡确认",
-            f"确认您今天已完成{challenge['title']}挑战吗？",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes
+            "确认",
+            "确定要完成该挑战吗？",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             # Perform check-in and show success message (potentially delayed)
             success = self.progress_tracker.check_in(
                 self.current_user["id"], challenge_id
@@ -621,8 +655,10 @@ class ChallengeListWidget(QWidget):
                     card.update_ui(is_subscribed=True, streak=streak)
 
                 # Show success message non-modally using AnimatedMessageBox
-                checkin_success_msg = AnimatedMessageBox(self) # Use AnimatedMessageBox
+                checkin_success_msg = AnimatedMessageBox(self)  # Use AnimatedMessageBox
                 checkin_success_msg.setWindowTitle("打卡成功")
-                checkin_success_msg.setText(f"恭喜您完成今日{challenge['title']}挑战！\n您已连续打卡 {streak} 天。")
-                checkin_success_msg.setIcon(QMessageBox.Information)
-                checkin_success_msg.showNonModal() # Use custom non-modal method
+                checkin_success_msg.setText(
+                    f"恭喜您完成今日{challenge['title']}挑战！\n您已连续打卡 {streak} 天。"
+                )
+                checkin_success_msg.setIcon(QMessageBox.Icon.Information)
+                checkin_success_msg.showNonModal()  # Use custom non-modal method

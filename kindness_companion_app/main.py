@@ -4,11 +4,27 @@ import platform
 import logging
 
 # Add the parent directory to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QIcon, QFont, QFontDatabase, QScreen, QStyleHints  # Add QStyleHints
-from PySide6.QtCore import QFile, QTextStream, QDir, QOperatingSystemVersion, Qt, QEvent, QPoint, QObject
+from PySide6.QtGui import (
+    QIcon,
+    QFont,
+    QFontDatabase,
+    QScreen,
+    QStyleHints,
+)  # Add QStyleHints
+from PySide6.QtCore import (
+    QFile,
+    QTextStream,
+    QDir,
+    QOperatingSystemVersion,
+    Qt,
+    QEvent,
+    QPoint,
+    QObject,
+    QIODevice,
+)
 
 from kindness_companion_app.frontend.main_window import MainWindow
 from kindness_companion_app.backend.database_manager import DatabaseManager
@@ -28,14 +44,16 @@ def load_fonts():
         "Hiragino Sans GB.ttc",
         "Songti.ttc",
         "STHeiti Light.ttc",
-        "STHeiti Medium.ttc"
+        "STHeiti Medium.ttc",
     ]
 
     logging.info(f"Attempting to load fonts from resource path: {font_dir_path}")
 
     for font_file in font_files:
         # Construct the full resource path for each font using the alias
-        resource_font_path = f"{font_dir_path}{font_file}"  # Path uses the alias directly
+        resource_font_path = (
+            f"{font_dir_path}{font_file}"  # Path uses the alias directly
+        )
         logging.debug(f"Attempting to load font from resource: {resource_font_path}")
 
         font_id = QFontDatabase.addApplicationFont(resource_font_path)
@@ -44,15 +62,25 @@ def load_fonts():
             if families:
                 # Log all families associated with the font file (TTC might have multiple)
                 for family in families:
-                    if family not in fonts_loaded:  # Avoid duplicates if TTC lists variations
+                    if (
+                        family not in fonts_loaded
+                    ):  # Avoid duplicates if TTC lists variations
                         fonts_loaded.append(family)
-                    logging.info(f"Successfully loaded font family: {family} from {resource_font_path}")
+                    logging.info(
+                        f"Successfully loaded font family: {family} from {resource_font_path}"
+                    )
             else:
-                logging.warning(f"Loaded font from {resource_font_path} but could not retrieve family names (ID: {font_id}).")
+                logging.warning(
+                    f"Loaded font from {resource_font_path} but could not retrieve family names (ID: {font_id})."
+                )
         else:
-            logging.warning(f"Failed to load font from resource: {resource_font_path}. Check path and QRC compilation.")
+            logging.warning(
+                f"Failed to load font from resource: {resource_font_path}. Check path and QRC compilation."
+            )
             # Keep the development path check as a fallback if needed, but prioritize resources
-            dev_font_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'resources', 'fonts', font_file))
+            dev_font_path = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "resources", "fonts", font_file)
+            )
             if os.path.exists(dev_font_path):
                 logging.info(f"Attempting fallback load from dev path: {dev_font_path}")
                 font_id_dev = QFontDatabase.addApplicationFont(dev_font_path)
@@ -62,9 +90,13 @@ def load_fonts():
                         for family_dev in families_dev:
                             if family_dev not in fonts_loaded:
                                 fonts_loaded.append(family_dev)
-                            logging.info(f"Successfully loaded font family (dev path): {family_dev} from {dev_font_path}")
+                            logging.info(
+                                f"Successfully loaded font family (dev path): {family_dev} from {dev_font_path}"
+                            )
                     else:
-                        logging.warning(f"Loaded font from dev path {dev_font_path} but could not retrieve family names (ID: {font_id_dev}).")
+                        logging.warning(
+                            f"Loaded font from dev path {dev_font_path} but could not retrieve family names (ID: {font_id_dev})."
+                        )
                 else:
                     logging.warning(f"Failed to load font (dev path): {dev_font_path}")
 
@@ -72,7 +104,9 @@ def load_fonts():
         logging.error("No custom fonts were loaded successfully!")
     else:
         # Log all available families after attempting to load all fonts
-        logging.info(f"Available application font families after loading: {QFontDatabase.families()}")
+        logging.info(
+            f"Available application font families after loading: {QFontDatabase.families()}"
+        )
 
     return list(set(fonts_loaded))  # Return unique list
 
@@ -84,20 +118,23 @@ class ThemeManager(QObject):
         super().__init__()
         self.app = app
         self.logger = logger
-        self.current_theme = "light"   # 默认为浅色主题，根据用户偏好
-        self.theme_style = "standard"  # 默认使用Standard主题样式, 可选: "warm", "standard", "sourcio"
-        self.follow_system = True    # 默认跟随系统主题
+        # 启动时自动检测系统主题
+        self.system_theme = self.detect_system_theme()
+        self.current_theme = self.system_theme  # 启动时跟随系统
+        self.theme_style = (
+            "standard"  # 默认使用Standard主题样式, 可选: "warm", "standard", "sourcio"
+        )
+        self.follow_system = False  # 启动后只允许手动切换
 
         # 创建系统主题变化监听器
         self.app.installEventFilter(self)
 
         # 初始检测系统主题
-        self.system_theme = self.detect_system_theme()
         self.logger.info(f"初始系统主题检测: {self.system_theme}")
 
     def eventFilter(self, obj, event):
         """事件过滤器，用于捕获系统主题变化事件"""
-        if event.type() == QEvent.ApplicationPaletteChange:
+        if event.type() == QEvent.Type.ApplicationPaletteChange:
             self.logger.info("检测到系统主题变化")
             # 重新检测系统主题
             new_system_theme = self.detect_system_theme()
@@ -125,7 +162,9 @@ class ThemeManager(QObject):
                 self.logger.info("检测到系统使用深色主题 (QStyleHints)")
                 return "dark"
             else:  # Qt.ColorScheme.Unknown or other values
-                self.logger.warning(f"QStyleHints 返回未知颜色方案: {color_scheme}. 回退到亮度检测.")
+                self.logger.warning(
+                    f"QStyleHints 返回未知颜色方案: {color_scheme}. 回退到亮度检测."
+                )
         except AttributeError:
             # colorScheme might not be available in older Qt versions
             self.logger.warning("QStyleHints.colorScheme() 不可用. 回退到亮度检测.")
@@ -138,9 +177,11 @@ class ThemeManager(QObject):
         # 获取窗口背景色
         window_color = app_palette.color(app_palette.ColorRole.Window)
         # 计算亮度 (0.0-1.0)，使用标准RGB亮度公式 (浮点数版本)
-        brightness = (0.299 * window_color.redF() +
-                      0.587 * window_color.greenF() +
-                      0.114 * window_color.blueF())
+        brightness = (
+            0.299 * window_color.redF()
+            + 0.587 * window_color.greenF()
+            + 0.114 * window_color.blueF()
+        )
 
         # 使用 0.5 作为阈值
         threshold = 0.5
@@ -152,61 +193,26 @@ class ThemeManager(QObject):
             return "dark"
 
     def apply_theme(self):
-        """应用当前主题，根据 theme_style 选择样式"""
-        # 如果设置为跟随系统主题，则使用系统主题
-        if self.follow_system:
-            self.current_theme = self.system_theme
-            self.logger.info(f"跟随系统主题: {self.current_theme}")
-
-        style_file_name = ""
-        theme_description = ""
-
-        # 根据当前主题和样式选择合适的样式表
-        if self.theme_style == "sourcio":
-            style_file_name = f"sourcio_{self.current_theme}.qss"
-            theme_description = f"Sourcio {self.current_theme}"
-        elif self.theme_style == "warm":
-            # 保持原有的 warm 逻辑
-            if self.current_theme == "dark":
-                style_file_name = "warm_dark_enhanced.qss" # 或者 morandi_warm_dark.qss
-                theme_description = "Warm Dark Enhanced"
-            else:
-                style_file_name = f"morandi_warm_{self.current_theme}.qss"
-                theme_description = f"Morandi Warm {self.current_theme}"
-        else: # standard
-            style_file_name = f"morandi_{self.current_theme}.qss"
-            theme_description = f"Morandi Standard {self.current_theme}"
-
-        # Use the resource path prefix for loading QSS files
+        """应用当前主题，只加载融合后的 sourcio_light.qss 或 sourcio_dark.qss，并刷新顶层窗口（提升切换速度）"""
+        style_file_name = f"sourcio_{self.current_theme}.qss"
         style_file_path = f":/styles/{style_file_name}"
-        self.logger.info(f"Attempting to load stylesheet from resource path: {style_file_path} for theme: {theme_description}")
+        style_file = QFile(style_file_path)
+        if style_file.open(
+            QIODevice.OpenModeFlag.ReadOnly | QIODevice.OpenModeFlag.Text
+        ):
+            stream = QTextStream(style_file)
+            self.app.setStyleSheet(stream.readAll())
+            style_file.close()
+            # 只刷新顶层窗口，提升切换速度
+            for widget in self.app.topLevelWidgets():
+                widget.setStyle(self.app.style())
+                widget.update()
+            # 预留：切换主题相关的图片/图标
+            self.update_theme_icons()
 
-        try:
-            style_file = QFile(style_file_path)
-            if style_file.open(QFile.ReadOnly | QFile.Text):
-                stream = QTextStream(style_file)
-                self.app.setStyleSheet(stream.readAll())
-                style_file.close()
-                self.logger.info(f"已应用 {theme_description} 主题，样式表来源: {style_file_path}")
-            else:
-                # Log error if loading from resources fails
-                self.logger.warning(f"无法从资源打开样式表文件: {style_file_path}. Error: {style_file.errorString()}")
-
-                # Fallback to direct file path (useful during development if resources aren't updated)
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                fallback_style_path = os.path.join(script_dir, 'resources', 'styles', style_file_name)
-                self.logger.info(f"Attempting fallback load from direct path: {fallback_style_path}")
-                style_file_fallback = QFile(fallback_style_path)
-                if style_file_fallback.open(QFile.ReadOnly | QFile.Text):
-                    stream_fallback = QTextStream(style_file_fallback)
-                    self.app.setStyleSheet(stream_fallback.readAll())
-                    style_file_fallback.close()
-                    self.logger.info(f"已通过后备路径应用 {theme_description} 主题: {fallback_style_path}")
-                else:
-                    self.logger.error(f"无法通过后备路径打开样式表文件: {fallback_style_path}. Error: {style_file_fallback.errorString()}")
-
-        except Exception as e:
-            self.logger.warning(f"加载样式表时出错: {e}")
+    def update_theme_icons(self):
+        # 预留：根据 self.current_theme 切换所有需要的图标/图片资源
+        pass
 
 
 def main():
@@ -229,10 +235,10 @@ def main():
     theme_manager.theme_style = "standard"
 
     # 将主题管理器存储在应用程序实例中，使其可以被其他组件访问
-    app.theme_manager = theme_manager
+    app.setProperty("theme_manager", theme_manager)
 
     print("DEBUG: Applying theme...")
-    theme_manager.apply_theme() # Re-apply after changing style if needed for testing
+    theme_manager.apply_theme()  # Re-apply after changing style if needed for testing
     print("DEBUG: Theme applied.")
 
     # Initialize backend managers
@@ -255,7 +261,10 @@ def main():
     # Initialize enhanced dialogue generator
     try:
         print("DEBUG: Initializing Enhanced Dialogue Generator...")
-        from kindness_companion_app.ai_core.pet_handler import initialize_enhanced_dialogue
+        from kindness_companion_app.ai_core.pet_handler import (
+            initialize_enhanced_dialogue,
+        )
+
         if initialize_enhanced_dialogue:
             initialize_enhanced_dialogue(db_manager)
             print("DEBUG: Enhanced Dialogue Generator initialized.")
@@ -272,7 +281,7 @@ def main():
         user_manager=user_manager,
         challenge_manager=challenge_manager,
         progress_tracker=progress_tracker,
-        reminder_scheduler=reminder_scheduler
+        reminder_scheduler=reminder_scheduler,
     )
     print("DEBUG: MainWindow created.")
     print("DEBUG: Showing MainWindow...")
@@ -284,6 +293,7 @@ def main():
     exit_code = app.exec()
     print(f"DEBUG: Application event loop finished with exit code: {exit_code}")
     sys.exit(exit_code)
+
 
 if __name__ == "__main__":
     main()

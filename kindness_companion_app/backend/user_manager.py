@@ -56,8 +56,7 @@ class UserManager:
         """
         # Check if username already exists
         existing_user = self.db_manager.execute_query(
-            "SELECT * FROM users WHERE username = ?",
-            (username,)
+            "SELECT * FROM users WHERE username = ?", (username,)
         )
 
         if existing_user:
@@ -70,14 +69,22 @@ class UserManager:
         # Insert user with default empty bio, default avatar path, NULL avatar blob, and AI consent TRUE
         user_id = self.db_manager.execute_insert(
             "INSERT INTO users (username, password_hash, email, bio, avatar_path, avatar, ai_consent_given) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (username, stored_hash, email, "", ":/images/profilePicture.png", None, 1)  # Set ai_consent_given to 1 (True)
+            (
+                username,
+                stored_hash,
+                email,
+                "",
+                ":/images/profilePicture.png",
+                None,
+                1,
+            ),  # Set ai_consent_given to 1 (True)
         )
 
         if user_id:
             # Fetch the newly created user including the avatar blob and AI consent
             new_user = self.db_manager.execute_query(
                 "SELECT id, username, email, bio, avatar_path, avatar, created_at, ai_consent_given FROM users WHERE id = ?",
-                (user_id,)
+                (user_id,),
             )
             if new_user:
                 user_data = new_user[0]
@@ -89,7 +96,7 @@ class UserManager:
                     "avatar_path": user_data["avatar_path"],
                     "avatar": user_data["avatar"],
                     "registration_date": user_data["created_at"],
-                    "ai_consent_given": True  # Always return True for new users
+                    "ai_consent_given": True,  # Always return True for new users
                 }
 
         return None
@@ -100,8 +107,7 @@ class UserManager:
         """
         # Fetch user including the avatar blob
         user_result = self.db_manager.execute_query(
-            "SELECT * FROM users WHERE username = ?",
-            (username,)
+            "SELECT * FROM users WHERE username = ?", (username,)
         )
 
         if not user_result:
@@ -119,17 +125,21 @@ class UserManager:
             # Update last login time
             self.db_manager.execute_update(
                 "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
-                (user["id"],)
+                (user["id"],),
             )
 
             # Check and potentially update NULL AI consent for existing users
             current_consent = user.get("ai_consent_given")
             if current_consent is None:
-                logger.info(f"User {user['id']} has NULL AI consent. Updating to True (1) in database.")
+                logger.info(
+                    f"User {user['id']} has NULL AI consent. Updating to True (1) in database."
+                )
                 self.set_ai_consent(user["id"], True)  # Update DB
                 ai_consent_status = True  # Set status to True for the session
             else:
-                ai_consent_status = bool(current_consent)  # Use existing status (should be 1 or 0)
+                ai_consent_status = bool(
+                    current_consent
+                )  # Use existing status (should be 1 or 0)
                 # We still override to True for the session as per the request
                 ai_consent_status = True
 
@@ -142,7 +152,7 @@ class UserManager:
                 "avatar_path": user.get("avatar_path", ":/images/profilePicture.png"),
                 "avatar": user.get("avatar"),
                 "registration_date": user.get("created_at"),
-                "ai_consent_given": True  # Always return True
+                "ai_consent_given": True,  # Always return True
             }
 
             return self.current_user
@@ -162,7 +172,9 @@ class UserManager:
         """
         return self.current_user
 
-    def update_profile(self, user_id, new_password=None, bio=None, avatar_path=None, avatar_data=None):  # Add avatar_data parameter
+    def update_profile(
+        self, user_id, new_password=None, bio=None, avatar_path=None, avatar_data=None
+    ):  # Add avatar_data parameter
         """
         Update user profile information. Now accepts avatar_data (bytes).
         avatar_path is kept for potential future use but not actively updated here.
@@ -229,8 +241,7 @@ class UserManager:
     def get_user_by_id(self, user_id):
         """Fetch user details by ID, including avatar blob."""
         user_result = self.db_manager.execute_query(
-            "SELECT * FROM users WHERE id = ?",
-            (user_id,)
+            "SELECT * FROM users WHERE id = ?", (user_id,)
         )
         if user_result:
             # Convert Row object to a standard dictionary if needed,
@@ -254,7 +265,9 @@ class UserManager:
             bool | None: True if consented (or assumed), False if explicitly denied (legacy), None if error/not found.
         """
         # Simplified: Always return True as per the new requirement
-        logger.debug(f"get_ai_consent called for user {user_id}, returning True (default behavior).")
+        logger.debug(
+            f"get_ai_consent called for user {user_id}, returning True (default behavior)."
+        )
         return True
 
     def set_ai_consent(self, user_id: int, consent_status: bool) -> bool:
@@ -273,36 +286,45 @@ class UserManager:
         try:
             # First, check if the user exists and log the current consent status
             user_check = self.db_manager.execute_query(
-                "SELECT id, ai_consent_given FROM users WHERE id = ?",
-                (user_id,)
+                "SELECT id, ai_consent_given FROM users WHERE id = ?", (user_id,)
             )
 
             if not user_check:
-                logger.warning(f"User with ID {user_id} not found when trying to set AI consent.")
+                logger.warning(
+                    f"User with ID {user_id} not found when trying to set AI consent."
+                )
                 return False
 
             current_consent = user_check[0].get("ai_consent_given")
-            logger.info(f"Current AI consent for user {user_id}: {current_consent}, attempting to set to: {consent_status}")
+            logger.info(
+                f"Current AI consent for user {user_id}: {current_consent}, attempting to set to: {consent_status}"
+            )
 
             # Convert boolean to integer for storage
             consent_int = 1 if consent_status else 0
 
             affected_rows = self.db_manager.execute_update(
                 "UPDATE users SET ai_consent_given = ? WHERE id = ?",
-                (consent_int, user_id)  # Store as 1 or 0
+                (consent_int, user_id),  # Store as 1 or 0
             )
 
             if affected_rows > 0:
-                logger.info(f"AI consent status successfully set to {consent_status} for user {user_id} in DB.")
+                logger.info(
+                    f"AI consent status successfully set to {consent_status} for user {user_id} in DB."
+                )
                 # Update current user if applicable
                 if self.current_user and self.current_user["id"] == user_id:
                     # Even though we always return True from login, update the underlying dict too
                     self.current_user["ai_consent_given"] = True
-                    logger.info(f"Updated in-memory current_user AI consent to: {self.current_user.get('ai_consent_given')}")
+                    logger.info(
+                        f"Updated in-memory current_user AI consent to: {self.current_user.get('ai_consent_given')}"
+                    )
                 return True
             else:
                 # This might happen if the value was already set to the target value
-                logger.info(f"DB update query executed but no rows affected for user {user_id} when setting AI consent (value might already be correct).")
+                logger.info(
+                    f"DB update query executed but no rows affected for user {user_id} when setting AI consent (value might already be correct)."
+                )
                 # Return True because the desired state is achieved or already exists
                 return True
         except sqlite3.Error as e:
@@ -327,8 +349,7 @@ class UserManager:
         """
         # Step 1: Verify the password
         user_result = self.db_manager.execute_query(
-            "SELECT password_hash FROM users WHERE id = ?",
-            (user_id,)
+            "SELECT password_hash FROM users WHERE id = ?", (user_id,)
         )
 
         if not user_result:
@@ -352,25 +373,28 @@ class UserManager:
 
         # Step 2: Delete associated data (use transaction for atomicity)
         try:
-            self.db_manager.connect()  # Start transaction
-
             # Delete reminders
-            self.db_manager.cursor.execute("DELETE FROM reminders WHERE user_id = ?", (user_id,))
+            self.db_manager.execute_update(
+                "DELETE FROM reminders WHERE user_id = ?", (user_id,)
+            )
             print(f"Deleted reminders for user {user_id}.")
 
             # Delete progress
-            self.db_manager.cursor.execute("DELETE FROM progress WHERE user_id = ?", (user_id,))
+            self.db_manager.execute_update(
+                "DELETE FROM progress WHERE user_id = ?", (user_id,)
+            )
             print(f"Deleted progress records for user {user_id}.")
 
             # Delete challenge subscriptions
-            self.db_manager.cursor.execute("DELETE FROM user_challenges WHERE user_id = ?", (user_id,))
+            self.db_manager.execute_update(
+                "DELETE FROM user_challenges WHERE user_id = ?", (user_id,)
+            )
             print(f"Deleted challenge subscriptions for user {user_id}.")
 
             # Step 3: Delete the user record
-            self.db_manager.cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+            self.db_manager.execute_update("DELETE FROM users WHERE id = ?", (user_id,))
             print(f"Deleted user record for user {user_id}.")
 
-            self.db_manager.connection.commit()  # Commit all changes
             print(f"Account deletion successful for user {user_id}.")
 
             # If the deleted user is the currently logged-in user, log them out
@@ -381,8 +405,4 @@ class UserManager:
 
         except sqlite3.Error as e:
             print(f"Error during account deletion transaction for user {user_id}: {e}")
-            if self.db_manager.connection:
-                self.db_manager.connection.rollback()  # Rollback on error
             return False
-        finally:
-            self.db_manager.disconnect()  # Ensure connection is closed

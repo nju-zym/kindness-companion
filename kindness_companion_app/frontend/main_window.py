@@ -13,6 +13,8 @@ from PySide6.QtWidgets import (
     QApplication,
     QLineEdit,
     QTextEdit,
+    QScrollArea,
+    QFrame,
 )
 from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer
 from PySide6.QtGui import QIcon, QFont, QFontMetrics
@@ -279,9 +281,21 @@ class MainWindow(QMainWindow):
         self.checkin_widget = CheckinWidget(
             self.progress_tracker, self.challenge_manager
         )
+
+        # 创建进度页面并放入滚动区域
         self.progress_widget = ProgressWidget(
             self.progress_tracker, self.challenge_manager
         )
+        self.progress_scroll_area = QScrollArea()
+        self.progress_scroll_area.setWidgetResizable(True)
+        self.progress_scroll_area.setFrameShape(QFrame.Shape.NoFrame)  # 移除边框
+        self.progress_scroll_area.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )  # 禁用水平滚动
+        self.progress_scroll_area.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )  # 需要时显示垂直滚动条
+        self.progress_scroll_area.setWidget(self.progress_widget)
 
         # 获取主题管理器并传递给提醒设置界面
         theme_manager: Optional[Any] = None
@@ -310,7 +324,9 @@ class MainWindow(QMainWindow):
         self.content_widget.addWidget(self.register_widget)
         self.content_widget.addWidget(self.challenge_widget)
         self.content_widget.addWidget(self.checkin_widget)
-        self.content_widget.addWidget(self.progress_widget)
+        self.content_widget.addWidget(
+            self.progress_scroll_area
+        )  # 使用滚动区域替代直接添加progress_widget
         self.content_widget.addWidget(self.reminder_widget)
         self.content_widget.addWidget(self.community_widget)
         self.content_widget.addWidget(self.profile_widget)
@@ -384,6 +400,13 @@ class MainWindow(QMainWindow):
         # 连接主题变更信号
         if hasattr(self.reminder_widget, "theme_changed"):
             self.reminder_widget.theme_changed.connect(self.handle_theme_changed)
+
+        # Connect challenge subscription changed to checkin refresh
+        self.challenge_widget.challenge_subscription_changed.connect(
+            self.checkin_widget.load_checkable_challenges
+        )
+        # 新增：打卡成功后自动刷新进度并跳转到进度页
+        self.checkin_widget.check_in_successful.connect(self.on_checkin_successful)
 
     @Slot(dict)
     def on_login_successful(self, user):
@@ -490,7 +513,8 @@ class MainWindow(QMainWindow):
 
     def show_progress(self):
         """Show the progress page."""
-        self.content_widget.setCurrentWidget(self.progress_widget)
+        self.progress_widget.load_progress()  # 每次切换都刷新
+        self.content_widget.setCurrentWidget(self.progress_scroll_area)
 
     def show_reminders(self):
         """Show the reminders page."""
@@ -812,3 +836,8 @@ class MainWindow(QMainWindow):
             theme_manager.apply_theme()
             self.update_theme_toggle_btn()
             self.update()  # 强制刷新界面
+
+    @Slot(int)
+    def on_checkin_successful(self, challenge_id):
+        self.progress_widget.load_progress()
+        self.show_progress()

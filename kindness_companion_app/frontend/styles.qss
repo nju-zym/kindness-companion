@@ -1,0 +1,135 @@
+/* 成就卡片样式 */
+#achievement_card {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    min-width: 150px;
+}
+
+#achievement_card QLabel {
+    color: #333333;
+}
+
+#achievement_value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2196F3;
+}
+
+/* 成就列表样式 */
+#achievements_list {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+#achievements_list::item {
+    background-color: #f5f5f5;
+    border-radius: 6px;
+    margin: 5px;
+    padding: 10px;
+}
+
+#achievements_list::item:selected {
+    background-color: #e3f2fd;
+}
+
+#achievement_title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #1976D2;
+}
+
+#achievement_description {
+    font-size: 14px;
+    color: #666666;
+    margin-top: 5px;
+}
+
+#achievement_date {
+    font-size: 12px;
+    color: #999999;
+    margin-top: 5px;
+}
+
+/* 分组框样式 */
+QGroupBox {
+    font-size: 14px;
+    font-weight: bold;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-top: 15px;
+    padding-top: 15px;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top center;
+    padding: 0 5px;
+    color: #1976D2;
+}
+
+/* 周报样式 */
+#date_range {
+    font-size: 14px;
+    color: #666666;
+    margin-bottom: 10px;
+}
+
+#report_text {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333333;
+}
+
+#report_text QTextEdit {
+    background-color: transparent;
+    border: none;
+}
+
+/* 周报分组框样式 */
+QGroupBox#report_group {
+    font-size: 14px;
+    font-weight: bold;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #f8f9fa;
+}
+
+QGroupBox#report_group::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 0 5px;
+    color: #1976D2;
+}
+
+/* 周报内容样式 */
+#achievements_text, #progress_text, #suggestions_text {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 15px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333333;
+}
+
+#achievements_text {
+    color: #2E7D32;
+}
+
+#progress_text {
+    color: #1976D2;
+}
+
+#suggestions_text {
+    color: #7B1FA2;
+} 

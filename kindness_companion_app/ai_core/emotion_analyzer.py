@@ -4,44 +4,46 @@ from .api_client import get_api_key, make_api_request
 from requests.exceptions import RequestException
 
 logger = logging.getLogger(__name__)
-ZHIPUAI_API_ENDPOINT = "https://open.bigmodel.cn/api/paas/v4/chat/completions" # Reusing the chat endpoint
-DEFAULT_MODEL = "glm-4-flash" # Or a model suitable for classification
+ZHIPUAI_API_ENDPOINT = (
+    "https://open.bigmodel.cn/api/paas/v4/chat/completions"  # Reusing the chat endpoint
+)
+DEFAULT_MODEL = "glm-4-flash"  # Or a model suitable for classification
 
 # Define emotion categories and corresponding animations
 EMOTION_CATEGORIES = {
     # Basic emotions
-    'happy': 'happy',
-    'excited': 'excited',
-    'joyful': 'excited',
-    'content': 'happy',
-    'proud': 'excited',
-    'grateful': 'happy',
-    'optimistic': 'happy',
-
+    "happy": "happy",
+    "excited": "excited",
+    "joyful": "excited",
+    "content": "happy",
+    "proud": "excited",
+    "grateful": "happy",
+    "optimistic": "happy",
     # Negative emotions
-    'sad': 'concerned',
-    'anxious': 'concerned',
-    'worried': 'concerned',
-    'frustrated': 'concerned',
-    'angry': 'concerned',
-    'disappointed': 'concerned',
-    'stressed': 'concerned',
-
+    "sad": "concerned",
+    "anxious": "concerned",
+    "worried": "concerned",
+    "frustrated": "concerned",
+    "angry": "concerned",
+    "disappointed": "concerned",
+    "stressed": "concerned",
     # Neutral emotions
-    'neutral': 'idle',
-    'calm': 'idle',
-    'reflective': 'idle',
-    'curious': 'idle',
-    'surprised': 'confused',
-    'confused': 'confused',
-    'uncertain': 'confused',
-
+    "neutral": "idle",
+    "calm": "idle",
+    "reflective": "idle",
+    "curious": "idle",
+    "surprised": "confused",
+    "confused": "confused",
+    "uncertain": "confused",
     # Fallback categories
-    'positive': 'happy',
-    'negative': 'concerned',
+    "positive": "happy",
+    "negative": "concerned",
 }
 
-def analyze_emotion_for_pet(user_id: int, reflection_text: str) -> Tuple[Optional[str], Optional[str]]:
+
+def analyze_emotion_for_pet(
+    user_id: int, reflection_text: str
+) -> Tuple[Optional[str], Optional[str]]:
     """
     Analyzes the emotion of the user's reflection text using an AI API.
     Returns a tuple of (emotion_category, suggested_animation).
@@ -65,7 +67,7 @@ def analyze_emotion_for_pet(user_id: int, reflection_text: str) -> Tuple[Optiona
         if emotion:
             logger.info(f"Detected detailed emotion: {emotion}")
             # Get corresponding animation
-            animation = EMOTION_CATEGORIES.get(emotion.lower(), 'idle')
+            animation = EMOTION_CATEGORIES.get(emotion.lower(), "idle")
             return emotion, animation
         else:
             logger.warning("Emotion analysis API returned no result.")
@@ -73,19 +75,24 @@ def analyze_emotion_for_pet(user_id: int, reflection_text: str) -> Tuple[Optiona
             basic_emotion = _call_basic_emotion_api(reflection_text)
             if basic_emotion:
                 logger.info(f"Detected basic emotion: {basic_emotion}")
-                animation = 'happy' if basic_emotion == 'positive' else 'concerned' if basic_emotion == 'negative' else 'idle'
+                animation = (
+                    "happy"
+                    if basic_emotion == "positive"
+                    else "concerned" if basic_emotion == "negative" else "idle"
+                )
                 return basic_emotion, animation
             return None, None
     except Exception as e:
         logger.error(f"Error during emotion analysis: {e}")
-        return None, None # Indicate failure
+        return None, None  # Indicate failure
+
 
 def _call_detailed_emotion_api(text: str) -> Optional[str]:
     """
     Calls the ZhipuAI API to analyze detailed emotion.
     Returns a specific emotion category.
     """
-    api_key = get_api_key('ZHIPUAI')
+    api_key = get_api_key("ZHIPUAI")
     if not api_key:
         logger.error("ZhipuAI API key not configured.")
         return None
@@ -125,18 +132,24 @@ def _call_detailed_emotion_api(text: str) -> Optional[str]:
 
     payload = {
         "model": DEFAULT_MODEL,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens": 10, # Allow a bit more room just in case, but expect short response
-        "temperature": 0.1 # Low temperature for deterministic classification
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 10,  # Allow a bit more room just in case, but expect short response
+        "temperature": 0.1,  # Low temperature for deterministic classification
     }
 
     try:
-        response_json = make_api_request(ZHIPUAI_API_ENDPOINT, headers=headers, json_payload=payload)
+        response_json = make_api_request(
+            ZHIPUAI_API_ENDPOINT, headers=headers, data=payload
+        )
         if response_json:
             # Extract the classification, expecting it directly
-            classification = response_json.get("choices", [{}])[0].get("message", {}).get("content", "").strip().lower()
+            classification = (
+                response_json.get("choices", [{}])[0]
+                .get("message", {})
+                .get("content", "")
+                .strip()
+                .lower()
+            )
 
             # Clean up the response - extract just the emotion word
             for emotion in EMOTION_CATEGORIES.keys():
@@ -155,12 +168,13 @@ def _call_detailed_emotion_api(text: str) -> Optional[str]:
         logger.error(f"Error parsing detailed emotion analysis API response: {e}")
         return None
 
+
 def _call_basic_emotion_api(text: str) -> Optional[str]:
     """
     Calls the ZhipuAI API to analyze basic emotion.
     Returns a simple emotion category (e.g., 'positive', 'negative', 'neutral').
     """
-    api_key = get_api_key('ZHIPUAI')
+    api_key = get_api_key("ZHIPUAI")
     if not api_key:
         logger.error("ZhipuAI API key not configured.")
         return None
@@ -174,33 +188,44 @@ def _call_basic_emotion_api(text: str) -> Optional[str]:
 
 Text: "{text}"
 
-Classification:""" # Added a label to guide the model
+Classification:"""  # Added a label to guide the model
 
     payload = {
         "model": DEFAULT_MODEL,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens": 10, # Allow a bit more room just in case, but expect short response
-        "temperature": 0.1 # Low temperature for deterministic classification
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 10,  # Allow a bit more room just in case, but expect short response
+        "temperature": 0.1,  # Low temperature for deterministic classification
     }
 
     try:
-        response_json = make_api_request(ZHIPUAI_API_ENDPOINT, headers=headers, json_payload=payload)
+        response_json = make_api_request(
+            ZHIPUAI_API_ENDPOINT, headers=headers, data=payload
+        )
         if response_json:
             # Extract the classification, expecting it directly
-            classification = response_json.get("choices", [{}])[0].get("message", {}).get("content", "").strip().lower()
+            classification = (
+                response_json.get("choices", [{}])[0]
+                .get("message", {})
+                .get("content", "")
+                .strip()
+                .lower()
+            )
             # Validate the output
-            if classification in ['positive', 'negative', 'neutral']:
+            if classification in ["positive", "negative", "neutral"]:
                 logger.info(f"Basic emotion analysis result: {classification}")
                 return classification
             else:
-                logger.warning(f"Unexpected basic emotion analysis result format: {classification}")
+                logger.warning(
+                    f"Unexpected basic emotion analysis result format: {classification}"
+                )
                 # Attempt to find the keyword if the model added extra text
-                if 'positive' in classification: return 'positive'
-                if 'negative' in classification: return 'negative'
-                if 'neutral' in classification: return 'neutral'
-                return None # Could not reliably parse
+                if "positive" in classification:
+                    return "positive"
+                if "negative" in classification:
+                    return "negative"
+                if "neutral" in classification:
+                    return "neutral"
+                return None  # Could not reliably parse
         else:
             return None
     except RequestException as e:
@@ -208,4 +233,68 @@ Classification:""" # Added a label to guide the model
         return None
     except (KeyError, IndexError, AttributeError) as e:
         logger.error(f"Error parsing basic emotion analysis API response: {e}")
+        return None
+
+
+def analyze_emotion(text: str) -> Optional[str]:
+    """
+    Analyze the emotion in the given text using the AI API.
+
+    Args:
+        text: The text to analyze
+
+    Returns:
+        Detected emotion or None if analysis fails
+    """
+    try:
+        api_key = get_api_key("ZHIPUAI")
+        if not api_key:
+            logger.error("ZhipuAI API key not found. Cannot analyze emotion.")
+            return None
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+
+        payload = {
+            "model": "glm-4",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "你是一个情感分析专家。请分析用户消息的情感倾向，并返回以下情感之一：happy（开心）, sad（悲伤）, angry（愤怒）, anxious（焦虑）, calm（平静）, excited（兴奋）, neutral（中性）。只返回情感词，不要其他内容。",
+                },
+                {"role": "user", "content": text},
+            ],
+            "temperature": 0.3,
+        }
+
+        response_data = make_api_request(
+            url=ZHIPUAI_API_ENDPOINT, headers=headers, data=payload
+        )
+
+        if response_data and "choices" in response_data and response_data["choices"]:
+            emotion = (
+                response_data["choices"][0]
+                .get("message", {})
+                .get("content", "")
+                .strip()
+                .lower()
+            )
+            if emotion in [
+                "happy",
+                "sad",
+                "angry",
+                "anxious",
+                "calm",
+                "excited",
+                "neutral",
+            ]:
+                return emotion
+
+        logger.warning("Invalid or empty response from emotion analysis API")
+        return None
+
+    except Exception as e:
+        logger.error(f"Error during emotion analysis: {str(e)}")
         return None

@@ -31,9 +31,10 @@ class DatabaseManager:
 
     def connect(self):
         """Establish a connection to the database."""
-        self.connection = sqlite3.connect(self.db_path)
-        self.connection.row_factory = sqlite3.Row  # Return rows as dictionaries
-        self.cursor = self.connection.cursor()
+        if not self.connection:
+            self.connection = sqlite3.connect(self.db_path)
+            self.connection.row_factory = sqlite3.Row  # Return rows as dictionaries
+            self.cursor = self.connection.cursor()
         return self.connection
 
     def disconnect(self):
@@ -43,154 +44,247 @@ class DatabaseManager:
             self.connection = None
             self.cursor = None
 
+    def ensure_connected(self):
+        """确保数据库连接已建立"""
+        if not self.connection or not self.cursor:
+            self.connect()
+
     def _initialize_db(self):
         """Create database tables if they don't exist."""
-        self.connect()
-
-        # Create users table
-        self.cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            email TEXT UNIQUE,
-            avatar_path TEXT,  -- Keep for potential fallback or future use
-            bio TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            last_login TIMESTAMP,
-            avatar BLOB,       -- Add avatar blob column
-            ai_consent_given INTEGER  -- Add AI consent column (1=true, 0=false, NULL=not set)
-        )
-        ''')
-
-        # --- Check and add the avatar column if it doesn't exist ---
         try:
-            self.cursor.execute("PRAGMA table_info(users)")
-            columns = [column[1] for column in self.cursor.fetchall()]
-            if 'avatar' not in columns:
-                self.cursor.execute("ALTER TABLE users ADD COLUMN avatar BLOB")
-                self.connection.commit()
-                print("Added 'avatar' BLOB column to 'users' table.")
-            # --- Add check for avatar_path column --- Start
-            if 'avatar_path' not in columns:
-                self.cursor.execute("ALTER TABLE users ADD COLUMN avatar_path TEXT")
-                self.connection.commit()
-                print("Added 'avatar_path' TEXT column to 'users' table.")
-            # --- Add check for avatar_path column --- End
-            # --- Add check for bio column --- Start
-            if 'bio' not in columns:
-                self.cursor.execute("ALTER TABLE users ADD COLUMN bio TEXT")
-                self.connection.commit()
-                print("Added 'bio' TEXT column to 'users' table.")
-            # --- Add check for bio column --- End
-            # --- Add check for ai_consent_given column --- Start
-            if 'ai_consent_given' not in columns:
-                self.cursor.execute("ALTER TABLE users ADD COLUMN ai_consent_given INTEGER")
-                self.connection.commit()
-                print("Added 'ai_consent_given' INTEGER column to 'users' table.")
-            # --- Add check for ai_consent_given column --- End
+            self.ensure_connected()
+            if not self.cursor or not self.connection:
+                print("Failed to establish database connection")
+                return
+
+            # Create users table
+            self.cursor.execute(
+                """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                email TEXT UNIQUE,
+                avatar_path TEXT,
+                bio TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_login TIMESTAMP,
+                avatar BLOB,
+                ai_consent_given INTEGER
+            )
+            """
+            )
+
+            # Create conversation_history table
+            self.cursor.execute(
+                """
+            CREATE TABLE IF NOT EXISTS conversation_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                message TEXT NOT NULL,
+                is_user BOOLEAN NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                context_id TEXT,
+                topic TEXT,
+                emotion_score FLOAT,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+            """
+            )
+
+            # Check and add columns if they don't exist
+            try:
+                self.cursor.execute("PRAGMA table_info(users)")
+                columns = [column[1] for column in self.cursor.fetchall()]
+
+                columns_to_add = {
+                    "avatar": "BLOB",
+                    "avatar_path": "TEXT",
+                    "bio": "TEXT",
+                    "ai_consent_given": "INTEGER",
+                }
+
+                for col_name, col_type in columns_to_add.items():
+                    if col_name not in columns:
+                        self.cursor.execute(
+                            f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"
+                        )
+                        self.connection.commit()
+                        print(f"Added '{col_name}' {col_type} column to 'users' table.")
+
+            except sqlite3.Error as e:
+                print(f"Error checking/adding columns: {e}")
+
+            # Create other tables and insert default data
+            tables = [
+                (
+                    """
+                CREATE TABLE IF NOT EXISTS challenges (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    category TEXT,
+                    difficulty INTEGER,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """,
+                    "challenges",
+                ),
+                (
+                    """
+                CREATE TABLE IF NOT EXISTS user_challenges (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    challenge_id INTEGER,
+                    subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id),
+                    FOREIGN KEY (challenge_id) REFERENCES challenges (id),
+                    UNIQUE (user_id, challenge_id)
+                )
+                """,
+                    "user_challenges",
+                ),
+                (
+                    """
+                CREATE TABLE IF NOT EXISTS progress (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    challenge_id INTEGER,
+                    check_in_date DATE,
+                    notes TEXT,
+                    FOREIGN KEY (user_id) REFERENCES users (id),
+                    FOREIGN KEY (challenge_id) REFERENCES challenges (id),
+                    UNIQUE (user_id, challenge_id, check_in_date)
+                )
+                """,
+                    "progress",
+                ),
+                (
+                    """
+                CREATE TABLE IF NOT EXISTS reminders (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    challenge_id INTEGER,
+                    time TEXT,
+                    days TEXT,
+                    enabled BOOLEAN DEFAULT 1,
+                    FOREIGN KEY (user_id) REFERENCES users (id),
+                    FOREIGN KEY (challenge_id) REFERENCES challenges (id)
+                )
+                """,
+                    "reminders",
+                ),
+            ]
+
+            for create_sql, table_name in tables:
+                try:
+                    self.cursor.execute(create_sql)
+                    print(f"Created or verified table: {table_name}")
+                except sqlite3.Error as e:
+                    print(f"Error creating table {table_name}: {e}")
+
+            # Insert default challenges
+            try:
+                self.cursor.execute(
+                    """
+                INSERT OR IGNORE INTO challenges (id, title, description, category, difficulty)
+                VALUES
+                    -- 日常行为类
+                    (1, '每日微笑', '对遇到的每个人微笑，传递善意', '日常行为', 1),
+                    (2, '主动问候', '主动向身边的人问好，传递温暖', '日常行为', 1),
+                    (3, '让座行动', '在公共交通上主动为需要的人让座', '日常行为', 1),
+                    (4, '随手关门', '进出公共场所时，注意为后面的人扶门', '日常行为', 1),
+                    (25, '电梯礼仪', '在电梯里主动为他人按楼层，让行', '日常行为', 1),
+                    (26, '礼貌用语', '使用"请"、"谢谢"等礼貌用语', '日常行为', 1),
+                    (27, '轻声细语', '在公共场合保持适当的音量', '日常行为', 1),
+                    (28, '排队守序', '遵守排队秩序，不插队', '日常行为', 1),
+                    
+                    -- 社区服务类
+                    (5, '扶老助残', '帮助老人或残障人士完成一项任务', '社区服务', 2),
+                    (6, '社区清洁', '参与社区环境清洁活动', '社区服务', 2),
+                    (7, '义务教学', '为社区儿童提供免费辅导', '社区服务', 3),
+                    (8, '爱心捐赠', '整理并捐赠闲置物品给需要的人', '社区服务', 2),
+                    (29, '社区巡逻', '参与社区安全巡逻活动', '社区服务', 2),
+                    (30, '邻里互助', '帮助邻居解决生活困难', '社区服务', 2),
+                    (31, '志愿服务', '参与社区志愿服务活动', '社区服务', 2),
+                    (32, '文化传承', '参与传统文化传承活动', '社区服务', 3),
+                    
+                    -- 环保类
+                    (9, '垃圾分类', '坚持正确进行垃圾分类', '环保', 1),
+                    (10, '节约用水', '注意节约用水，及时关闭水龙头', '环保', 1),
+                    (11, '绿色出行', '选择步行、骑行或公共交通出行', '环保', 2),
+                    (12, '减少塑料', '减少使用一次性塑料制品', '环保', 2),
+                    (33, '节约用电', '及时关闭不需要的电器', '环保', 1),
+                    (34, '植树护绿', '参与植树或绿化活动', '环保', 2),
+                    (35, '旧物改造', '将废旧物品改造成有用物品', '环保', 3),
+                    (36, '环保宣传', '向他人宣传环保知识', '环保', 2),
+                    
+                    -- 精神成长类
+                    (13, '每日感恩', '记录三件值得感恩的事', '精神成长', 1),
+                    (14, '正念冥想', '每天进行10分钟的正念冥想', '精神成长', 2),
+                    (15, '阅读分享', '阅读一本好书并分享感悟', '精神成长', 2),
+                    (16, '情绪觉察', '觉察并记录自己的情绪变化', '精神成长', 2),
+                    (37, '自我反思', '每天进行自我反思和总结', '精神成长', 2),
+                    (38, '目标设定', '设定并执行个人成长目标', '精神成长', 2),
+                    (39, '心灵对话', '与信任的人分享内心想法', '精神成长', 2),
+                    (40, '静心时刻', '每天留出独处的时间', '精神成长', 1),
+                    
+                    -- 自我提升类
+                    (17, '早起锻炼', '坚持早起进行适度运动', '自我提升', 2),
+                    (18, '学习新技能', '学习一项新的技能或知识', '自我提升', 3),
+                    (19, '时间管理', '制定并执行每日计划', '自我提升', 2),
+                    (20, '健康饮食', '注意均衡饮食，减少垃圾食品', '自我提升', 2),
+                    (41, '作息规律', '保持规律的作息时间', '自我提升', 2),
+                    (42, '专注力训练', '进行专注力训练活动', '自我提升', 2),
+                    (43, '压力管理', '学习并实践压力管理技巧', '自我提升', 2),
+                    (44, '习惯养成', '培养一个积极的新习惯', '自我提升', 3),
+                    
+                    -- 人际关系类
+                    (21, '倾听他人', '认真倾听他人的想法和感受', '人际关系', 2),
+                    (22, '表达感谢', '向帮助过你的人表达感谢', '人际关系', 1),
+                    (23, '化解矛盾', '主动化解与他人的小矛盾', '人际关系', 3),
+                    (24, '分享快乐', '与他人分享你的快乐时刻', '人际关系', 1),
+                    (45, '主动关心', '主动关心身边的人', '人际关系', 1),
+                    (46, '真诚道歉', '为自己的错误真诚道歉', '人际关系', 2),
+                    (47, '赞美他人', '真诚地赞美他人的优点', '人际关系', 1),
+                    (48, '团队合作', '积极参与团队活动', '人际关系', 2),
+                    
+                    -- 家庭关系类
+                    (49, '陪伴家人', '每天抽出时间陪伴家人', '家庭关系', 1),
+                    (50, '分担家务', '主动分担家务劳动', '家庭关系', 1),
+                    (51, '家庭活动', '组织一次家庭活动', '家庭关系', 2),
+                    (52, '表达爱意', '向家人表达爱意和关心', '家庭关系', 1),
+                    (53, '倾听父母', '认真倾听父母的想法', '家庭关系', 2),
+                    (54, '照顾长辈', '关心照顾家中长辈', '家庭关系', 2),
+                    (55, '教育子女', '耐心教育引导子女', '家庭关系', 3),
+                    (56, '家庭沟通', '促进家庭成员间的沟通', '家庭关系', 2),
+                    
+                    -- 职场发展类
+                    (57, '工作创新', '提出工作改进建议', '职场发展', 2),
+                    (58, '团队协作', '主动帮助同事', '职场发展', 2),
+                    (59, '学习成长', '参加职业培训或学习', '职场发展', 2),
+                    (60, '时间效率', '提高工作效率', '职场发展', 2),
+                    (61, '领导力', '培养领导能力', '职场发展', 3),
+                    (62, '沟通技巧', '提升职场沟通能力', '职场发展', 2),
+                    (63, '压力管理', '学会处理工作压力', '职场发展', 2),
+                    (64, '职业规划', '制定职业发展规划', '职场发展', 3)
+                """
+                )
+                print("Inserted default challenges")
+            except sqlite3.Error as e:
+                print(f"Error inserting default challenges: {e}")
+
+            self.connection.commit()
+            print("Database initialization completed successfully")
+
         except sqlite3.Error as e:
-            print(f"Error checking/adding columns: {e}")
-        # --- End check ---
+            print(f"Database initialization error: {e}")
+            if self.connection:
+                self.connection.rollback()
+        finally:
+            self.disconnect()
 
-        # Create challenges table
-        self.cursor.execute('''
-        CREATE TABLE IF NOT EXISTS challenges (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            description TEXT,
-            category TEXT,
-            difficulty INTEGER,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        ''')
-
-        # Create user_challenges table (for subscriptions)
-        self.cursor.execute('''
-        CREATE TABLE IF NOT EXISTS user_challenges (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            challenge_id INTEGER,
-            subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id),
-            FOREIGN KEY (challenge_id) REFERENCES challenges (id),
-            UNIQUE (user_id, challenge_id)
-        )
-        ''')
-
-        # Create progress table (for check-ins)
-        self.cursor.execute('''
-        CREATE TABLE IF NOT EXISTS progress (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            challenge_id INTEGER,
-            check_in_date DATE,
-            notes TEXT,
-            FOREIGN KEY (user_id) REFERENCES users (id),
-            FOREIGN KEY (challenge_id) REFERENCES challenges (id),
-            UNIQUE (user_id, challenge_id, check_in_date)
-        )
-        ''')
-
-        # Create reminders table
-        self.cursor.execute('''
-        CREATE TABLE IF NOT EXISTS reminders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            challenge_id INTEGER,
-            time TEXT,
-            days TEXT,  -- Comma-separated days of week (0-6, where 0 is Monday)
-            enabled BOOLEAN DEFAULT 1,
-            FOREIGN KEY (user_id) REFERENCES users (id),
-            FOREIGN KEY (challenge_id) REFERENCES challenges (id)
-        )
-        ''')
-
-        # Insert some default challenges
-        self.cursor.execute('''
-        INSERT OR IGNORE INTO challenges (id, title, description, category, difficulty)
-        VALUES
-            (1, '每日微笑', '对遇到的每个人微笑，传递善意', '日常行为', 1),
-            (2, '扶老助残', '帮助老人或残障人士完成一项任务', '社区服务', 2),
-            (3, '环保行动', '捡起路边垃圾并正确分类处理', '环保', 2),
-            (4, '匿名善举', '做一件好事但不求回报或认可', '精神成长', 3),
-            (5, '感恩日记', '每天写下3件你感恩的事情', '自我提升', 1),
-            (6, '赞美他人', '真诚地赞美一位同事或朋友', '人际关系', 1),
-            (7, '节约用水', '有意识地减少洗漱或淋浴时的用水量', '环保', 1),
-            (8, '主动问候', '主动向邻居或保安问好', '社区互动', 1),
-            (9, '分享知识', '向他人分享一个有用的知识或技巧', '自我提升', 2),
-            (10, '倾听烦恼', '耐心倾听朋友或家人的烦恼', '人际关系', 2),
-            (11, '公共交通', '选择乘坐公共交通工具代替私家车', '环保', 2),
-            (12, '志愿服务', '参与一次社区或组织的志愿服务活动', '社区服务', 4),
-            (13, '学习新技能', '花30分钟学习一项新技能或知识', '自我提升', 3),
-            (14, '整理旧物', '整理不再需要的物品并捐赠或回收', '环保', 3),
-            (15, '表达感谢', '向服务人员（如快递员、服务员）表达感谢', '日常行为', 1),
-            (16, '给陌生人一个微笑', '在街上或商店里给一个陌生人一个真诚的微笑', '日常行为', 1),
-            (17, '写感谢信', '写一封感谢信给曾经帮助过你的人', '人际关系', 2),
-            (18, '捐赠物品', '为慈善机构或需要帮助的人捐赠衣物、书籍或食物', '社区服务', 3),
-            (19, '学习手语', '学习一句简单的手语，如“谢谢”或“你好”', '自我提升', 2),
-            (20, '关爱植物', '给家里的或办公室的植物浇水', '日常行为', 1),
-            (21, '分享正能量', '在社交媒体上分享一条积极的新闻或引语', '精神成长', 1),
-            (22, '支持本地商家', '光顾一家本地小商店或餐馆', '社区互动', 2),
-            (23, '无抱怨日', '尝试一整天不抱怨任何事情', '自我提升', 3),
-            (24, '留下鼓励便条', '在公共场所（如图书馆的书里）留下一张鼓励的小便条', '精神成长', 2),
-            (25, '旧物改造', '将一件旧物品改造成有用的新东西', '环保', 3),
-            (26, '保持耐心', '在排队或遇到延误时保持耐心和礼貌', '日常行为', 2),
-            (27, '提供帮助', '主动询问身边的人是否需要帮助', '人际关系', 2),
-            (28, '减少塑料使用', '购物时自带购物袋，拒绝一次性塑料制品', '环保', 2),
-            (29, '参与社区清洁', '参加或组织一次社区清洁活动', '社区服务', 3),
-            (30, '冥想或正念练习', '进行10分钟的冥想或正念呼吸练习', '自我提升', 1),
-            (31, '鼓励他人', '给正在经历困难的朋友或家人发送鼓励信息', '人际关系', 2),
-            (32, '节约用电', '离开房间时随手关灯，拔掉不用的电器插头', '环保', 1),
-            (33, '阅读有益书籍', '阅读至少15分钟关于个人成长或积极心理学的书籍', '自我提升', 2),
-            (34, '帮助邻居', '帮助邻居做一些小事，如取快递、照看宠物', '社区互动', 2),
-            (35, '反思与记录', '花5分钟反思今天的善行和感受', '精神成长', 1)
-        ''')
-
-        self.connection.commit() # Commit changes if ALTER TABLE was executed
-        self.disconnect()
-
-    def execute_query(self, query, params=None):
+    def execute_query(self, query: str, params=None) -> list:
         """
         Execute a query and return the results.
 
@@ -202,43 +296,58 @@ class DatabaseManager:
             list: Query results as a list of dictionaries
         """
         try:
-            self.connect()
+            self.ensure_connected()
+            if not self.cursor:
+                return []
+
             if params:
                 self.cursor.execute(query, params)
             else:
                 self.cursor.execute(query)
 
             results = self.cursor.fetchall()
-            self.connection.commit()
+            if self.connection:
+                self.connection.commit()
             return [dict(row) for row in results]
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+            return []
         finally:
             self.disconnect()
 
-    def execute_insert(self, query, params=None):
+    def execute_insert(self, query: str, params=None) -> int:
         """
         Execute an insert query and return the ID of the inserted row.
+        If the operation fails, returns 0.
 
         Args:
             query (str): SQL query to execute
             params (tuple, optional): Parameters for the query
 
         Returns:
-            int: ID of the last inserted row
+            int: ID of the last inserted row, or 0 if operation fails
         """
         try:
-            self.connect()
+            self.ensure_connected()
+            if not self.cursor:
+                return 0
+
             if params:
                 self.cursor.execute(query, params)
             else:
                 self.cursor.execute(query)
 
-            last_id = self.cursor.lastrowid
-            self.connection.commit()
-            return last_id
+            last_id = self.cursor.lastrowid if self.cursor else 0
+            if self.connection:
+                self.connection.commit()
+            return last_id or 0  # 确保返回整数
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+            return 0
         finally:
             self.disconnect()
 
-    def execute_update(self, query, params=None):
+    def execute_update(self, query: str, params=None) -> int:
         """
         Execute an update query and return the number of affected rows.
 
@@ -250,7 +359,10 @@ class DatabaseManager:
             int: Number of affected rows
         """
         try:
-            self.connect()
+            self.ensure_connected()
+            if not self.cursor:
+                return 0
+
             print(f"Executing SQL update: {query}")
             print(f"With parameters: {params}")
 
@@ -260,17 +372,16 @@ class DatabaseManager:
                 else:
                     self.cursor.execute(query)
 
-                affected_rows = self.cursor.rowcount
+                affected_rows = self.cursor.rowcount if self.cursor else 0
                 print(f"SQL update affected {affected_rows} rows")
 
-                # Make sure to commit the changes
-                self.connection.commit()
-                print("Changes committed to database")
+                if self.connection:
+                    self.connection.commit()
+                    print("Changes committed to database")
 
                 return affected_rows
             except Exception as e:
                 print(f"SQL error: {e}")
-                # Rollback in case of error
                 if self.connection:
                     self.connection.rollback()
                     print("Transaction rolled back due to error")

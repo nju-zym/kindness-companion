@@ -1,6 +1,20 @@
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QTextEdit, QPushButton, QFormLayout, QMessageBox,
-    QListWidget, QListWidgetItem, QFrame, QGridLayout, QCalendarWidget, QSizePolicy, QScrollArea
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QComboBox,
+    QTextEdit,
+    QPushButton,
+    QFormLayout,
+    QMessageBox,
+    QListWidget,
+    QListWidgetItem,
+    QFrame,
+    QGridLayout,
+    QCalendarWidget,
+    QSizePolicy,
+    QScrollArea,
 )
 from PySide6.QtCore import Qt, Slot, QSize, QDate, QTimer, Signal
 from PySide6.QtGui import QIcon, QFont, QColor, QPalette
@@ -15,6 +29,7 @@ class StreakCalendar(QWidget):
     """
     Widget for displaying a calendar with check-in streaks highlighted.
     """
+
     def __init__(self, progress_tracker, user_id=None, challenge_id=None):
         super().__init__()
         self.progress_tracker = progress_tracker
@@ -37,7 +52,7 @@ class StreakCalendar(QWidget):
         # Calendar grid (simplified version without using QCalendarWidget)
         self.calendar_frame = QFrame()
         self.calendar_frame.setObjectName("calendar_frame")
-        self.calendar_frame.setFrameShape(QFrame.StyledPanel)
+        self.calendar_frame.setFrameShape(QFrame.Shape.StyledPanel)
 
         self.calendar_layout = QGridLayout(self.calendar_frame)
         self.calendar_layout.setSpacing(2)
@@ -46,7 +61,7 @@ class StreakCalendar(QWidget):
         days = ["一", "二", "三", "四", "五", "六", "日"]
         for i, day in enumerate(days):
             label = QLabel(day)
-            label.setAlignment(Qt.AlignCenter)
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             label.setObjectName("calendar_header")
             self.calendar_layout.addWidget(label, 0, i)
 
@@ -56,7 +71,7 @@ class StreakCalendar(QWidget):
             row_cells = []
             for col in range(7):
                 cell = QLabel()
-                cell.setAlignment(Qt.AlignCenter)
+                cell.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 cell.setObjectName("calendar_day")
                 cell.setFixedSize(30, 30)
                 self.calendar_layout.addWidget(cell, row, col)
@@ -115,7 +130,9 @@ class StreakCalendar(QWidget):
         check_ins = self.progress_tracker.get_check_ins(
             self.user_id, self.challenge_id, month_start, month_end
         )
-        self.check_in_dates = [datetime.date.fromisoformat(ci["check_in_date"]).day for ci in check_ins]
+        self.check_in_dates = [
+            datetime.date.fromisoformat(ci["check_in_date"]).day for ci in check_ins
+        ]
 
         # Update calendar cells
         for row in range(5):
@@ -165,7 +182,7 @@ class MotivationalQuotes:
         "善良是最简单却最有力量的行为。 —— 佚名",
         "善良是心灵的阳光。 —— 佚名",
         "善良是一种能量，它能传递并感染他人。 —— 佚名",
-        "善良不是一时的情绪，而是持久的品格。 —— 佚名"
+        "善良不是一时的情绪，而是持久的品格。 —— 佚名",
     ]
 
     @staticmethod
@@ -178,6 +195,7 @@ class ChallengeDetailPanel(QFrame):
     """
     Widget for displaying detailed information about a challenge.
     """
+
     def __init__(self, challenge=None):
         super().__init__()
         self.challenge = challenge
@@ -198,8 +216,8 @@ class ChallengeDetailPanel(QFrame):
 
         # Separator
         separator = QFrame()
-        separator.setFrameShape(QFrame.HLine)
-        separator.setFrameShadow(QFrame.Sunken)
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setFrameShadow(QFrame.Shadow.Sunken)
         separator.setObjectName("detail_separator")
         layout.addWidget(separator)
 
@@ -248,7 +266,7 @@ class ChallengeDetailPanel(QFrame):
         self.quote_label = QLabel()
         self.quote_label.setObjectName("motivational_quote")
         self.quote_label.setWordWrap(True)
-        self.quote_label.setAlignment(Qt.AlignCenter)
+        self.quote_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.quote_label)
 
         layout.addStretch()
@@ -274,7 +292,9 @@ class ChallengeDetailPanel(QFrame):
         self.category_value.setText(challenge["category"])
 
         # Display difficulty as stars
-        difficulty_stars = "★" * challenge["difficulty"] + "☆" * (5 - challenge["difficulty"])
+        difficulty_stars = "★" * challenge["difficulty"] + "☆" * (
+            5 - challenge["difficulty"]
+        )
         self.difficulty_value.setText(difficulty_stars)
 
         self.description_value.setText(challenge["description"])
@@ -286,11 +306,15 @@ class ChallengeDetailPanel(QFrame):
             "环保": "环保行动对地球的健康至关重要。每个人的小行动累积起来，能够产生巨大的积极影响。",
             "精神成长": "内心的成长和自我提升能够帮助你成为更好的自己，也能够更好地帮助他人。",
             "自我提升": "自我提升不仅仅是为了自己，也是为了能够更好地服务他人和社会。",
-            "人际关系": "健康的人际关系是幸福生活的基础。通过善待他人，你也在创造一个更和谐的社交环境。"
+            "人际关系": "健康的人际关系是幸福生活的基础。通过善待他人，你也在创造一个更和谐的社交环境。",
         }
 
         category = challenge["category"]
-        self.impact_value.setText(impact_texts.get(category, "这个挑战能够帮助你培养善良的品质，对自己和他人都有积极影响。"))
+        self.impact_value.setText(
+            impact_texts.get(
+                category, "这个挑战能够帮助你培养善良的品质，对自己和他人都有积极影响。"
+            )
+        )
 
         # Set a random motivational quote
         self.quote_label.setText(MotivationalQuotes.get_random_quote())
@@ -300,6 +324,7 @@ class CheckinWidget(QWidget):
     """
     Widget for daily check-in and reflection.
     """
+
     # Signal to notify when a check-in is successful
     check_in_successful = Signal(int)  # Challenge ID
 
@@ -324,9 +349,11 @@ class CheckinWidget(QWidget):
 
     def update_quote(self):
         """Update the motivational quote in the challenge detail panel."""
-        if hasattr(self, 'challenge_detail_panel'):
+        if hasattr(self, "challenge_detail_panel"):
             if self.challenge_detail_panel.challenge:
-                self.challenge_detail_panel.quote_label.setText(MotivationalQuotes.get_random_quote())
+                self.challenge_detail_panel.quote_label.setText(
+                    MotivationalQuotes.get_random_quote()
+                )
 
     def setup_ui(self):
         """Set up the user interface."""
@@ -397,7 +424,9 @@ class CheckinWidget(QWidget):
             self.checkin_button.setIcon(checkin_icon)
             self.checkin_button.setIconSize(QSize(20, 20))
         self.checkin_button.clicked.connect(self.submit_checkin)
-        left_layout.addWidget(self.checkin_button, alignment=Qt.AlignRight)
+        left_layout.addWidget(
+            self.checkin_button, alignment=Qt.AlignmentFlag.AlignRight
+        )
 
         # Add left panel to content layout
         content_layout.addWidget(left_panel, 1)  # 1 = stretch factor
@@ -447,7 +476,7 @@ class CheckinWidget(QWidget):
             self.challenge_list.clear()
             # Add a placeholder item when logged out
             placeholder_item = QListWidgetItem("请先登录")
-            placeholder_item.setFlags(Qt.NoItemFlags)
+            placeholder_item.setFlags(Qt.ItemFlag.NoItemFlags)
             self.challenge_list.addItem(placeholder_item)
             self.challenge_list.setEnabled(False)
 
@@ -462,13 +491,13 @@ class CheckinWidget(QWidget):
     @Slot(QListWidgetItem, QListWidgetItem)
     def on_challenge_selected(self, current, previous):
         """Handle challenge selection change."""
-        if not current or current.flags() == Qt.NoItemFlags:
+        if not current or current.flags() == Qt.ItemFlag.NoItemFlags:
             self.challenge_detail_panel.update_challenge(None)
             self.streak_container.setVisible(False)
             self.calendar.update_calendar(None, None)
             return
 
-        challenge_id = current.data(Qt.UserRole)
+        challenge_id = current.data(Qt.ItemDataRole.UserRole)
         if not challenge_id:
             return
 
@@ -483,7 +512,9 @@ class CheckinWidget(QWidget):
         # Update streak display
         if self.current_user:
             try:
-                current_streak = self.progress_tracker.get_streak(self.current_user["id"], challenge_id)
+                current_streak = self.progress_tracker.get_streak(
+                    self.current_user["id"], challenge_id
+                )
                 self.streak_label.setText(f"当前连续打卡: {current_streak} 天")
                 self.streak_container.setVisible(True)
             except Exception as e:
@@ -508,10 +539,12 @@ class CheckinWidget(QWidget):
 
         # Add a temporary loading item
         loading_item = QListWidgetItem("加载挑战中...")
-        loading_item.setFlags(Qt.NoItemFlags)
+        loading_item.setFlags(Qt.ItemFlag.NoItemFlags)
         self.challenge_list.addItem(loading_item)
 
-        subscribed_challenges = self.challenge_manager.get_user_challenges(self.current_user["id"])
+        subscribed_challenges = self.challenge_manager.get_user_challenges(
+            self.current_user["id"]
+        )
         today = datetime.date.today().isoformat()
         checkable_challenges = []
 
@@ -529,7 +562,7 @@ class CheckinWidget(QWidget):
             self.checkin_button.setEnabled(True)
             for challenge in checkable_challenges:
                 item = QListWidgetItem(challenge["title"])
-                item.setData(Qt.UserRole, challenge["id"])
+                item.setData(Qt.ItemDataRole.UserRole, challenge["id"])
                 self.challenge_list.addItem(item)
 
             # Select the first item by default
@@ -538,7 +571,7 @@ class CheckinWidget(QWidget):
                 # The on_challenge_selected slot will be called automatically
         else:
             placeholder_item = QListWidgetItem("今日已全部打卡或未订阅挑战")
-            placeholder_item.setFlags(Qt.NoItemFlags)
+            placeholder_item.setFlags(Qt.ItemFlag.NoItemFlags)
             self.challenge_list.addItem(placeholder_item)
             self.challenge_list.setEnabled(False)
             self.checkin_button.setEnabled(False)
@@ -548,35 +581,39 @@ class CheckinWidget(QWidget):
     def submit_checkin(self):
         """Handle the check-in submission."""
         if not self.current_user:
-            AnimatedMessageBox.showWarning(self, "错误", "用户未登录")
+            AnimatedMessageBox.showWarning(self.window(), "错误", "用户未登录")
             return
 
         # Get selected item from QListWidget
         selected_item = self.challenge_list.currentItem()
         notes = self.notes_edit.toPlainText().strip()
 
-        if selected_item is None or selected_item.flags() == Qt.NoItemFlags:
-            AnimatedMessageBox.showWarning(self, "打卡失败", "请选择一个要打卡的挑战")
+        if selected_item is None or selected_item.flags() == Qt.ItemFlag.NoItemFlags:
+            AnimatedMessageBox.showWarning(
+                self.window(), "打卡失败", "请选择一个要打卡的挑战"
+            )
             return
 
-        challenge_id = selected_item.data(Qt.UserRole)
+        challenge_id = selected_item.data(Qt.ItemDataRole.UserRole)
         challenge_title = selected_item.text()
 
         if challenge_id is None:
-            AnimatedMessageBox.showWarning(self, "打卡失败", "无法获取所选挑战的信息")
+            AnimatedMessageBox.showWarning(
+                self.window(), "打卡失败", "无法获取所选挑战的信息"
+            )
             return
 
         # Perform check-in using progress_tracker
         success = self.progress_tracker.check_in(
-            self.current_user["id"],
-            challenge_id,
-            notes=notes if notes else None
+            self.current_user["id"], challenge_id, notes=notes if notes else None
         )
 
         if success:
             # Get current streak
             try:
-                current_streak = self.progress_tracker.get_streak(self.current_user["id"], challenge_id)
+                current_streak = self.progress_tracker.get_streak(
+                    self.current_user["id"], challenge_id
+                )
                 streak_message = f"\n\n🔥 当前连续打卡: {current_streak} 天！"
 
                 # Update streak display
@@ -591,9 +628,9 @@ class CheckinWidget(QWidget):
 
             # Show success message
             AnimatedMessageBox.showInformation(
-                self,
+                self.window(),
                 "打卡成功!",
-                f"已成功为 '{challenge_title}' 打卡！{streak_message}"
+                f"已成功为 '{challenge_title}' 打卡！{streak_message}",
             )
 
             # Clear notes and reload challenges
@@ -604,6 +641,8 @@ class CheckinWidget(QWidget):
             self.check_in_successful.emit(challenge_id)
         else:
             # This might happen if there's a race condition or DB error
-            AnimatedMessageBox.showWarning(self, "打卡失败", "无法完成打卡，请稍后重试或检查是否已打卡。")
+            AnimatedMessageBox.showWarning(
+                self.window(), "打卡失败", "无法完成打卡，请稍后重试或检查是否已打卡。"
+            )
             # Reload to ensure consistency
             self.load_checkable_challenges()

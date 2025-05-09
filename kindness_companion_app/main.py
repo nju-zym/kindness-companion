@@ -236,6 +236,8 @@ def main():
 
     # 将主题管理器存储在应用程序实例中，使其可以被其他组件访问
     app.setProperty("theme_manager", theme_manager)
+    # 确保主题管理器可以被全局访问
+    app.setProperty("global_theme_manager", theme_manager)
 
     print("DEBUG: Applying theme...")
     theme_manager.apply_theme()  # Re-apply after changing style if needed for testing

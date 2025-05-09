@@ -49,15 +49,14 @@ class ChallengeCard(QFrame):
     def setup_ui(self):
         """Set up the user interface."""
         # Set frame style and object name
-        self.setObjectName("challenge_card")  # Set object name for styling
+        self.setObjectName("challenge_card")
         self.setFrameShape(QFrame.Shape.StyledPanel)
-        self.setFrameShadow(QFrame.Shadow.Raised)  # Keep shadow for card effect
+        self.setFrameShadow(QFrame.Shadow.Raised)
         self.setLineWidth(1)
 
-        # 设置卡片的最小高度，确保卡片有足够的空间
-        self.setMinimumHeight(200)
-
-        # 设置卡片的大小策略，使其在垂直方向上可以扩展
+        # 优化卡片尺寸和布局
+        self.setMinimumHeight(200)  # 增加最小高度
+        self.setMaximumHeight(350)  # 增加最大高度
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         # Main layout
@@ -67,12 +66,11 @@ class ChallengeCard(QFrame):
 
         # Title
         self.title_label = QLabel(self.challenge["title"])
-        self.title_label.setObjectName("challenge_title_label")  # 使用特定的对象名
-
-        # 设置标题字体
-        title_font = QFont("Hiragino Sans GB", 18, QFont.Weight.Bold)
+        self.title_label.setObjectName("challenge_title_label")
+        self.title_label.setWordWrap(True)
+        self.title_label.setMinimumHeight(45)  # 增加标题高度
+        title_font = QFont("Hiragino Sans GB", 16, QFont.Weight.Bold)
         self.title_label.setFont(title_font)
-
         self.main_layout.addWidget(self.title_label)
 
         # 添加分隔线
@@ -86,20 +84,22 @@ class ChallengeCard(QFrame):
         self.description_label = QLabel(self.challenge["description"])
         self.description_label.setWordWrap(True)
         self.description_label.setObjectName("challenge_description_label")
-
-        # 设置描述文本的最小高度，确保有足够的空间
-        self.description_label.setMinimumHeight(60)
-
+        self.description_label.setMinimumHeight(60)  # 增加描述高度
+        self.description_label.setMaximumHeight(100)  # 增加最大高度
+        self.description_label.setAlignment(
+            Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft
+        )
         self.main_layout.addWidget(self.description_label)
-        self.main_layout.addSpacing(10)  # 添加额外的空间
+        self.main_layout.addSpacing(8)  # 增加间距
 
         # Metadata layout
         self.meta_layout = QHBoxLayout()
-        self.meta_layout.setSpacing(15)  # 增加元素间距
+        self.meta_layout.setSpacing(12)  # 增加间距
 
         # Category
         self.category_label = QLabel(f"分类: {self.challenge['category']}")
         self.category_label.setObjectName("challenge_category_label")
+        self.category_label.setWordWrap(True)
         self.meta_layout.addWidget(self.category_label)
 
         # Difficulty
@@ -108,18 +108,15 @@ class ChallengeCard(QFrame):
         self.difficulty_label.setObjectName("challenge_difficulty_label")
         self.meta_layout.addWidget(self.difficulty_label)
 
-        # --- Add streak label placeholder (always present, visibility toggled) ---
-        self.streak_label = QLabel("")  # Create label, initially empty
+        # Streak label
+        self.streak_label = QLabel("")
         self.streak_label.setObjectName("streak_label")
-        self.streak_label.setVisible(False)  # Initially hidden
-
-        # 设置连续打卡标签的字体
-        streak_font = QFont("Hiragino Sans GB", 16, QFont.Weight.Bold)
+        self.streak_label.setVisible(False)
+        streak_font = QFont("Hiragino Sans GB", 14, QFont.Weight.Bold)
         self.streak_label.setFont(streak_font)
-
         self.meta_layout.addWidget(self.streak_label)
 
-        # 添加弹性空间，使连续打卡标签靠右对齐
+        # 添加弹性空间
         self.meta_layout.addStretch()
 
         self.main_layout.addLayout(self.meta_layout)
@@ -135,47 +132,52 @@ class ChallengeCard(QFrame):
         self.button_layout = QHBoxLayout()
         self.button_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.button_layout.setSpacing(10)  # 增加按钮间距
-        self.button_layout.setContentsMargins(0, 10, 0, 0)  # 添加上边距
+        self.button_layout.setContentsMargins(0, 10, 0, 0)  # 增加上边距
 
-        # --- Create buttons but don't add them yet ---
+        # 设置按钮样式
         self.icon_size = QSize(20, 20)  # 增加图标尺寸
+        button_min_width = 100  # 增加按钮最小宽度
+        button_min_height = 30  # 增加按钮最小高度
 
+        # Subscribe button
         self.subscribe_button = QPushButton("订阅挑战")
         self.subscribe_button.setObjectName("subscribe_button")
         self.subscribe_button.setIcon(QIcon(":/icons/plus-circle.svg"))
         self.subscribe_button.setIconSize(self.icon_size)
-        # 使用固定尺寸，与其他按钮保持一致
-        self.subscribe_button.setMinimumWidth(100)  # 设置最小宽度
-        self.subscribe_button.setMinimumHeight(28)  # 设置最小高度
+        self.subscribe_button.setMinimumWidth(button_min_width)
+        self.subscribe_button.setMinimumHeight(button_min_height)
         self.subscribe_button.clicked.connect(
             lambda: self.subscribe_clicked.emit(self.challenge["id"])
         )
 
+        # Unsubscribe button
         self.unsubscribe_button = QPushButton("取消订阅")
         self.unsubscribe_button.setObjectName("unsubscribe_button")
         self.unsubscribe_button.setIcon(QIcon(":/icons/x-circle.svg"))
         self.unsubscribe_button.setIconSize(self.icon_size)
-        # 使用固定尺寸，与其他按钮保持一致
-        self.unsubscribe_button.setMinimumWidth(100)  # 设置最小宽度
-        self.unsubscribe_button.setMinimumHeight(28)  # 设置最小高度
+        self.unsubscribe_button.setMinimumWidth(button_min_width)
+        self.unsubscribe_button.setMinimumHeight(button_min_height)
         self.unsubscribe_button.clicked.connect(
             lambda: self.unsubscribe_clicked.emit(self.challenge["id"])
         )
 
+        # Check-in button
         self.check_in_button = QPushButton("今日打卡")
         self.check_in_button.setObjectName("check_in_button")
         self.check_in_button.setIcon(QIcon(":/icons/check-square.svg"))
         self.check_in_button.setIconSize(self.icon_size)
-        # 使用固定尺寸，与其他按钮保持一致
-        self.check_in_button.setMinimumWidth(100)  # 设置最小宽度
-        self.check_in_button.setMinimumHeight(28)  # 设置最小高度
-        # 设置打卡按钮为主要按钮样式
+        self.check_in_button.setMinimumWidth(button_min_width)
+        self.check_in_button.setMinimumHeight(button_min_height)
         self.check_in_button.setProperty("class", "primaryButton")
         self.check_in_button.clicked.connect(
             lambda: self.check_in_clicked.emit(self.challenge["id"])
         )
 
-        # --- Add button layout to main layout ---
+        # Add buttons to layout
+        self.button_layout.addWidget(self.subscribe_button)
+        self.button_layout.addWidget(self.unsubscribe_button)
+        self.button_layout.addWidget(self.check_in_button)
+
         self.main_layout.addLayout(self.button_layout)
 
         # --- Initial UI update based on initial state ---
@@ -185,6 +187,7 @@ class ChallengeCard(QFrame):
         """Updates the card's UI elements based on subscription and streak."""
         self.is_subscribed = is_subscribed
         self.streak = streak
+        self.category_label.setText(f"分类: {self.challenge['category']}")
         self._update_card_elements()
 
     def _update_card_elements(self):
@@ -216,6 +219,9 @@ class ChallengeListWidget(QWidget):
     """
     Widget for displaying and managing challenges.
     """
+
+    # 新增信号，订阅/取消订阅后发射
+    challenge_subscription_changed = Signal()
 
     def __init__(self, challenge_manager, progress_tracker):
         """
@@ -428,12 +434,16 @@ class ChallengeListWidget(QWidget):
         # Create challenge cards
         row, col = 0, 0
 
-        # 根据容器宽度动态确定列数
+        # 优化：最小两列，断点更合理
         container_width = self.challenges_widget.width()
-        if container_width < 600:
-            max_cols = 1  # 窄容器只显示一列
+        if container_width < 400:
+            max_cols = 2  # 极窄窗口也显示两列
+        elif container_width < 900:
+            max_cols = 2  # 默认及中等宽度显示两列
+        elif container_width < 1400:
+            max_cols = 3
         else:
-            max_cols = 2  # 宽容器显示两列
+            max_cols = 4
 
         for challenge in challenges:
             is_subscribed = challenge["id"] in subscribed_ids
@@ -453,12 +463,8 @@ class ChallengeListWidget(QWidget):
                 self.challenge_cards[challenge["id"]] = card
 
             # Add card to layout (might be re-adding if it existed)
-            # Ensure it's added correctly to the grid
-            # Check if widget is already in the layout to avoid issues
             if self.challenges_layout.indexOf(card) == -1:
                 self.challenges_layout.addWidget(card, row, col)
-            else:  # If already in layout, ensure its position is correct (might not be needed if grid handles it)
-                pass  # Assume grid layout handles existing widgets correctly
 
             col += 1
             if col >= max_cols:
@@ -527,17 +533,18 @@ class ChallengeListWidget(QWidget):
             # --- Update the specific challenge card ---
             if challenge_id in self.challenge_cards:
                 card = self.challenge_cards[challenge_id]
-                card.update_ui(is_subscribed=True, streak=0)  # Update UI directly
-
-            # Show success message non-modally using AnimatedMessageBox
+                card.update_ui(is_subscribed=True, streak=0)
+            # 发射信号，通知主窗口刷新其他界面
+            self.challenge_subscription_changed.emit()
+            # 弹窗时始终传递主窗口parent
             challenge = self.challenge_manager.get_challenge_by_id(challenge_id)
-            subscribe_success_msg = AnimatedMessageBox(self)  # Use AnimatedMessageBox
+            subscribe_success_msg = AnimatedMessageBox(self.window())
             subscribe_success_msg.setWindowTitle("订阅成功")
             subscribe_success_msg.setText(
                 f"您已成功订阅{challenge['title']}挑战！\n记得每天完成挑战并打卡哦。"
             )
             subscribe_success_msg.setIcon(QMessageBox.Icon.Information)
-            subscribe_success_msg.showNonModal()  # Use custom non-modal method
+            subscribe_success_msg.showNonModal()
 
     def unsubscribe_from_challenge(self, challenge_id):
         """
@@ -562,12 +569,12 @@ class ChallengeListWidget(QWidget):
             success = self.challenge_manager.unsubscribe_from_challenge(
                 self.current_user["id"], challenge_id
             )
-
             if success:
                 # --- Update the specific challenge card ---
                 if challenge_id in self.challenge_cards:
                     card = self.challenge_cards[challenge_id]
-                    card.update_ui(is_subscribed=False, streak=0)  # Update UI directly
+                    card.update_ui(is_subscribed=False, streak=0)
+                self.challenge_subscription_changed.emit()
 
     def resizeEvent(self, event):
         """处理窗口大小变化事件"""
@@ -580,25 +587,33 @@ class ChallengeListWidget(QWidget):
         if not self.challenge_cards:
             return
 
-        # 根据容器宽度动态确定列数
+        # 优化：最小两列，断点更合理
         container_width = self.challenges_widget.width()
-        if container_width < 600:
-            max_cols = 1  # 窄容器只显示一列
+        if container_width < 400:
+            max_cols = 2
+        elif container_width < 900:
+            max_cols = 2
+        elif container_width < 1400:
+            max_cols = 3
         else:
-            max_cols = 2  # 宽容器显示两列
+            max_cols = 4
 
         # 重新布局挑战卡片
         row, col = 0, 0
         for card_id, card in self.challenge_cards.items():
             if card.isVisible():
-                # 先从布局中移除
                 self.challenges_layout.removeWidget(card)
-                # 再添加到新位置
                 self.challenges_layout.addWidget(card, row, col)
                 col += 1
                 if col >= max_cols:
                     col = 0
                     row += 1
+
+        self.challenges_layout.setRowStretch(row, 1)
+        self.challenges_layout.setHorizontalSpacing(15)
+        self.challenges_layout.setVerticalSpacing(15)
+        for i in range(max_cols):
+            self.challenges_layout.setColumnStretch(i, 1)
 
     def check_in_challenge(self, challenge_id):
         """
@@ -618,13 +633,13 @@ class ChallengeListWidget(QWidget):
 
         if check_ins:
             # Show already checked-in message non-modally using AnimatedMessageBox
-            already_checked_msg = AnimatedMessageBox(self)  # Use AnimatedMessageBox
+            already_checked_msg = AnimatedMessageBox(self.window())
             already_checked_msg.setWindowTitle("已打卡")
             already_checked_msg.setText(
                 "您今天已经完成了这个挑战的打卡！\n明天再来继续保持吧。"
             )
             already_checked_msg.setIcon(QMessageBox.Icon.Information)
-            already_checked_msg.showNonModal()  # Use custom non-modal method
+            already_checked_msg.showNonModal()
             return
 
         # Ask for confirmation using AnimatedMessageBox
@@ -655,10 +670,10 @@ class ChallengeListWidget(QWidget):
                     card.update_ui(is_subscribed=True, streak=streak)
 
                 # Show success message non-modally using AnimatedMessageBox
-                checkin_success_msg = AnimatedMessageBox(self)  # Use AnimatedMessageBox
+                checkin_success_msg = AnimatedMessageBox(self.window())
                 checkin_success_msg.setWindowTitle("打卡成功")
                 checkin_success_msg.setText(
                     f"恭喜您完成今日{challenge['title']}挑战！\n您已连续打卡 {streak} 天。"
                 )
                 checkin_success_msg.setIcon(QMessageBox.Icon.Information)
-                checkin_success_msg.showNonModal()  # Use custom non-modal method
+                checkin_success_msg.showNonModal()

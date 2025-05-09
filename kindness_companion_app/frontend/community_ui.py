@@ -1,18 +1,29 @@
 # TODO: 实现社区善意墙展示界面 ([可选])
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QTextEdit, QScrollArea, QPushButton
+from PySide6.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QTextEdit,
+    QScrollArea,
+    QPushButton,
+)
 from PySide6.QtCore import Slot
 from .widgets.animated_message_box import AnimatedMessageBox
 import requests
+
 
 class CommunityWidget(QWidget):
     """
     Widget for displaying the anonymous community kindness wall (optional feature).
     """
+
     def __init__(self):
         """Initialize the community widget."""
         super().__init__()
-        self.current_user = None # Store user if needed for context, even if wall is anonymous
+        self.current_user = (
+            None  # Store user if needed for context, even if wall is anonymous
+        )
 
         self.setup_ui()
 
@@ -36,11 +47,11 @@ class CommunityWidget(QWidget):
         # 5. Handling API errors gracefully.
 
         # Placeholder UI elements (add actual widgets)
-        self.post_input = QTextEdit() # Example input
+        self.post_input = QTextEdit()  # Example input
         self.post_input.setPlaceholderText("分享你的匿名善意...")
         self.submit_button = QPushButton("发布")
         self.submit_button.setMinimumHeight(28)  # 设置最小高度
-        self.posts_display_area = QScrollArea() # Example display area
+        self.posts_display_area = QScrollArea()  # Example display area
         self.posts_widget = QWidget()
         self.posts_layout = QVBoxLayout(self.posts_widget)
         self.posts_display_area.setWidget(self.posts_widget)
@@ -72,17 +83,17 @@ class CommunityWidget(QWidget):
             self.load_community_feed()
         else:
             # Clear community feed or disable interactions
-            pass # Add clearing logic later
+            pass  # Add clearing logic later
 
     def load_community_feed(self):
         """Load the community feed data (if implemented)."""
         # TODO: Implement API call and display logic
-        print("Loading community feed...") # Placeholder
+        print("Loading community feed...")  # Placeholder
 
     # TODO: Add function to load posts from the API
     def load_posts(self, page=1, limit=10):
         """Fetches posts from the API and updates the display."""
-        print(f"Loading posts: page={page}, limit={limit}") # Placeholder
+        print(f"Loading posts: page={page}, limit={limit}")  # Placeholder
         try:
             # response = requests.get(f"http://127.0.0.1:5000/api/community/wall?page={page}&limit={limit}")
             # response.raise_for_status()
@@ -90,8 +101,16 @@ class CommunityWidget(QWidget):
             # posts = data.get("posts", [])
             # Dummy data:
             posts = [
-                {"id": 1, "message": "今天帮助了迷路的老奶奶。", "timestamp": "2025-05-03T10:00:00Z"},
-                {"id": 2, "message": "给同事带了杯咖啡。", "timestamp": "2025-05-03T09:30:00Z"},
+                {
+                    "id": 1,
+                    "message": "今天帮助了迷路的老奶奶。",
+                    "timestamp": "2025-05-03T10:00:00Z",
+                },
+                {
+                    "id": 2,
+                    "message": "给同事带了杯咖啡。",
+                    "timestamp": "2025-05-03T09:30:00Z",
+                },
             ]
             self.display_posts(posts)
         except Exception as e:
@@ -112,9 +131,13 @@ class CommunityWidget(QWidget):
             self.posts_layout.addWidget(QLabel("还没有人分享善意，快来做第一个吧！"))
         else:
             for post in posts:
-                post_label = QLabel(f"{post['message']}\n<small><i>{post.get('timestamp', '')}</i></small>")
+                post_label = QLabel(
+                    f"{post['message']}\n<small><i>{post.get('timestamp', '')}</i></small>"
+                )
                 post_label.setWordWrap(True)
-                post_label.setStyleSheet("QLabel { border: 1px solid #eee; padding: 5px; margin-bottom: 5px; }")
+                post_label.setStyleSheet(
+                    "QLabel { border: 1px solid #eee; padding: 5px; margin-bottom: 5px; }"
+                )
                 self.posts_layout.addWidget(post_label)
         self.posts_layout.addStretch()
 
@@ -127,13 +150,13 @@ class CommunityWidget(QWidget):
             AnimatedMessageBox.showWarning(self, "错误", "分享内容不能为空！")
             return
 
-        print(f"Submitting post: {message}") # Placeholder
+        print(f"Submitting post: {message}")  # Placeholder
         try:
             # response = requests.post("http://127.0.0.1:5000/api/community/wall", json={"message": message})
             # response.raise_for_status()
             # data = response.json()
             # if data.get("success"):
-            AnimatedMessageBox.showInfo(self, "成功", "您的善意已成功分享！")
+            AnimatedMessageBox.showInformation(self, "成功", "您的善意已成功分享！")
             self.post_input.clear()
             # self.load_posts() # Refresh posts
             # else:

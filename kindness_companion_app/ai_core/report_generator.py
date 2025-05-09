@@ -1,12 +1,15 @@
 import logging
 import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Callable
 from .api_client import get_api_key, make_api_request
 from requests.exceptions import RequestException
 
 logger = logging.getLogger(__name__)
-ZHIPUAI_API_ENDPOINT = "https://open.bigmodel.cn/api/paas/v4/chat/completions" # Reusing chat endpoint
-DEFAULT_MODEL = "glm-4-flash" # Or a model suitable for summarization/reporting
+ZHIPUAI_API_ENDPOINT = (
+    "https://open.bigmodel.cn/api/paas/v4/chat/completions"  # Reusing chat endpoint
+)
+DEFAULT_MODEL = "glm-4-flash"  # Or a model suitable for summarization/reporting
+
 
 def generate_weekly_report(user_id: int) -> str:
     """
@@ -23,7 +26,9 @@ def generate_weekly_report(user_id: int) -> str:
     # 1. Fetch user data for the report period
     try:
         user_data = _get_user_data_for_report(user_id)
-        if not user_data or (user_data.get('check_ins', 0) == 0 and user_data.get('streak', 0) == 0):
+        if not user_data or (
+            user_data.get("check_ins", 0) == 0 and user_data.get("streak", 0) == 0
+        ):
             logger.warning("No user data found to generate report.")
             return "无法生成报告，似乎还没有足够的活动数据。请先完成一些善行伴侣后再尝试生成报告。"
     except Exception as e:
@@ -34,7 +39,9 @@ def generate_weekly_report(user_id: int) -> str:
     try:
         additional_context = _get_additional_context(user_id, user_data)
     except Exception as e:
-        logger.warning(f"Error getting additional context: {e}. Will proceed with basic report.")
+        logger.warning(
+            f"Error getting additional context: {e}. Will proceed with basic report."
+        )
         additional_context = {}
 
     # 3. Construct a prompt for the text generation API with enhanced personalization
@@ -57,17 +64,32 @@ def generate_weekly_report(user_id: int) -> str:
         logger.error(f"Error calling text generation API for report: {e}")
         return "生成报告时与 AI 连接出现问题。请检查网络连接或稍后再试。"
 
-def _build_report_prompt(user_id: int, user_data: Dict[str, Any], additional_context: Dict[str, Any]) -> str:
+
+def _build_report_prompt(
+    user_id: int, user_data: Dict[str, Any], additional_context: Dict[str, Any]
+) -> str:
     """Builds a detailed prompt for the AI to generate a weekly report."""
     # Format achievements for better readability
-    achievements_text = ', '.join(user_data.get('new_achievements', [])) or '无'
+    achievements_text = ", ".join(user_data.get("new_achievements", [])) or "无"
 
     # Get time-based greeting
     current_hour = datetime.datetime.now().hour
-    time_greeting = "早上好" if 5 <= current_hour < 12 else "下午好" if 12 <= current_hour < 18 else "晚上好"
+    time_greeting = (
+        "早上好"
+        if 5 <= current_hour < 12
+        else "下午好" if 12 <= current_hour < 18 else "晚上好"
+    )
 
     # Get day of week in Chinese
-    days_in_chinese = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
+    days_in_chinese = [
+        "星期一",
+        "星期二",
+        "星期三",
+        "星期四",
+        "星期五",
+        "星期六",
+        "星期日",
+    ]
     today_chinese = days_in_chinese[datetime.datetime.now().weekday()]
 
     # Build the prompt with enhanced personalization
@@ -116,6 +138,7 @@ Generate the report now based *only* on the provided data and instructions.
 
     return prompt
 
+
 def _post_process_report(report_text: str) -> str:
     """
     Post-processes the report text to remove unwanted prefixes or format issues.
@@ -132,17 +155,20 @@ def _post_process_report(report_text: str) -> str:
         "这是您的周报：",
         "周报：",
         "善行周报：",
-        "善行伴侣周报："
+        "善行伴侣周报：",
     ]
 
     cleaned_text = report_text
     for prefix in prefixes_to_remove:
         if cleaned_text.startswith(prefix):
-            cleaned_text = cleaned_text[len(prefix):].strip()
+            cleaned_text = cleaned_text[len(prefix) :].strip()
 
     return cleaned_text
 
-def _get_additional_context(user_id: int, current_data: Dict[str, Any]) -> Dict[str, Any]:
+
+def _get_additional_context(
+    user_id: int, current_data: Dict[str, Any]
+) -> Dict[str, Any]:
     """
     Gets additional context for the report to make it more personalized.
 
@@ -170,9 +196,7 @@ def _get_additional_context(user_id: int, current_data: Dict[str, Any]) -> Dict[
 
         # Get check-ins for the previous week
         previous_check_ins = progress_tracker.get_all_user_check_ins(
-            user_id,
-            start_date.isoformat(),
-            end_date.isoformat()
+            user_id, start_date.isoformat(), end_date.isoformat()
         )
 
         # Get total number of challenges the user is participating in
@@ -186,7 +210,7 @@ def _get_additional_context(user_id: int, current_data: Dict[str, Any]) -> Dict[
         current_week_data = progress_tracker.get_all_user_check_ins(
             user_id,
             (datetime.date.today() - datetime.timedelta(days=7)).isoformat(),
-            datetime.date.today().isoformat()
+            datetime.date.today().isoformat(),
         )
 
         for check_in in current_week_data:
@@ -198,7 +222,7 @@ def _get_additional_context(user_id: int, current_data: Dict[str, Any]) -> Dict[
         return {
             "previous_week_check_ins": len(previous_check_ins),
             "total_challenges": len(subscribed_challenges),
-            "completion_rate": completion_rate
+            "completion_rate": completion_rate,
         }
     except Exception as e:
         logger.warning(f"Error getting additional context: {e}")
@@ -224,21 +248,22 @@ def _get_user_data_for_report(user_id: int) -> Dict[str, Any]:
 
         # Get data for the past week
         import datetime
+
         end_date = datetime.date.today()
         start_date = end_date - datetime.timedelta(days=7)
 
         # Get check-ins for the past week
         check_ins = progress_tracker.get_all_user_check_ins(
-            user_id,
-            start_date.isoformat(),
-            end_date.isoformat()
+            user_id, start_date.isoformat(), end_date.isoformat()
         )
 
         # Count total check-ins
         total_check_ins = len(check_ins)
 
         # Count reflections (check-ins with non-empty notes)
-        reflections = sum(1 for ci in check_ins if ci.get("notes") and ci.get("notes").strip())
+        reflections = sum(
+            1 for ci in check_ins if ci.get("notes") and ci.get("notes").strip()
+        )
 
         # Get current streak across all challenges
         longest_streak = progress_tracker.get_longest_streak_all_challenges(user_id)
@@ -251,7 +276,11 @@ def _get_user_data_for_report(user_id: int) -> Dict[str, Any]:
                 category = challenge["category"]
                 category_counts[category] = category_counts.get(category, 0) + 1
 
-        top_category = "无" if not category_counts else max(category_counts, key=category_counts.get)
+        top_category = (
+            "无"
+            if not category_counts
+            else max(category_counts, key=lambda x: category_counts[x])
+        )
 
         # Get newly achieved milestones
         # For simplicity, we'll just check if any achievements were reached in the past week
@@ -260,8 +289,15 @@ def _get_user_data_for_report(user_id: int) -> Dict[str, Any]:
         new_achievements = []
 
         # Check for check-in milestones
-        for milestone, name in [(10, "善行初学者"), (50, "善行践行者"), (100, "善意大师")]:
-            if all_check_ins >= milestone and all_check_ins - total_check_ins < milestone:
+        for milestone, name in [
+            (10, "善行初学者"),
+            (50, "善行践行者"),
+            (100, "善意大师"),
+        ]:
+            if (
+                all_check_ins >= milestone
+                and all_check_ins - total_check_ins < milestone
+            ):
                 new_achievements.append(name)
 
         # Check for streak milestones
@@ -275,7 +311,7 @@ def _get_user_data_for_report(user_id: int) -> Dict[str, Any]:
             "streak": longest_streak,
             "reflections": reflections,
             "top_category": top_category,
-            "new_achievements": new_achievements
+            "new_achievements": new_achievements,
         }
     except Exception as e:
         logger.error(f"Error fetching user data for report: {e}", exc_info=True)
@@ -285,55 +321,57 @@ def _get_user_data_for_report(user_id: int) -> Dict[str, Any]:
             "streak": 0,
             "reflections": 0,
             "top_category": "无",
-            "new_achievements": []
+            "new_achievements": [],
         }
+
 
 def _call_text_generation_api(prompt: str) -> str | None:
     """
     Private helper function to call the configured text generation API (ZhipuAI Chat).
     Requires API key management.
     """
-    api_key = get_api_key('ZHIPUAI')
+    api_key = get_api_key("ZHIPUAI")
     if not api_key:
         logger.error("ZhipuAI API key not found. Cannot call text generation API.")
         return None
 
-    headers = {
-        'Authorization': f'Bearer {api_key}',
-        'Content-Type': 'application/json'
-    }
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
 
     payload = {
         "model": DEFAULT_MODEL,
         "messages": [
-            {"role": "system", "content": "You are an assistant for the Kindness Companion app. Generate encouraging weekly summaries based on user data. Keep the tone positive and warm. Respond in Chinese."}, # Added Chinese response instruction
-            {"role": "user", "content": prompt}
+            {
+                "role": "system",
+                "content": "You are an assistant for the Kindness Companion app. Generate encouraging weekly summaries based on user data. Keep the tone positive and warm. Respond in Chinese.",
+            },  # Added Chinese response instruction
+            {"role": "user", "content": prompt},
         ],
-        "max_tokens": 150, # Allow slightly longer responses for reports
-        "temperature": 0.7
+        "max_tokens": 150,  # Allow slightly longer responses for reports
+        "temperature": 0.7,
     }
 
     try:
         logger.debug(f"Calling ZhipuAI Text Generation API. Model: {DEFAULT_MODEL}")
         response_data = make_api_request(
-            method='POST',
-            url=ZHIPUAI_API_ENDPOINT,
-            headers=headers,
-            json_data=payload
+            method="POST", url=ZHIPUAI_API_ENDPOINT, headers=headers, data=payload
         )
 
         # Extract the response text
-        if response_data and 'choices' in response_data and response_data['choices']:
-            message = response_data['choices'][0].get('message')
-            if message and 'content' in message:
-                report = message['content'].strip()
+        if response_data and "choices" in response_data and response_data["choices"]:
+            message = response_data["choices"][0].get("message")
+            if message and "content" in message:
+                report = message["content"].strip()
                 logger.info(f"Received report text from API: {report[:50]}...")
                 return report
             else:
-                logger.warning(f"Unexpected response structure from ZhipuAI API (Report): No message content. Response: {response_data}")
+                logger.warning(
+                    f"Unexpected response structure from ZhipuAI API (Report): No message content. Response: {response_data}"
+                )
                 return None
         else:
-            logger.warning(f"Unexpected response structure or empty choices from ZhipuAI API (Report): {response_data}")
+            logger.warning(
+                f"Unexpected response structure or empty choices from ZhipuAI API (Report): {response_data}"
+            )
             return None
 
     except RequestException as e:

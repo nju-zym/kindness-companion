@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 # Will be initialized when db_manager is available
 _enhanced_dialogue_generator: Optional[EnhancedDialogueGenerator] = None
 
+
 def initialize_enhanced_dialogue(db_manager):
     """
     Initialize the enhanced dialogue generator with a database manager.
@@ -27,7 +28,10 @@ def initialize_enhanced_dialogue(db_manager):
         _enhanced_dialogue_generator = EnhancedDialogueGenerator(db_manager)
     return _enhanced_dialogue_generator
 
-def handle_pet_event(user_id: int, event_type: str, event_data: Dict[str, Any]) -> Dict[str, Any]:
+
+def handle_pet_event(
+    user_id: int, event_type: str, event_data: Dict[str, Any]
+) -> Dict[str, Any]:
     """
     Handles events triggered by user actions and determines the pet's response.
     Now supports enhanced dialogue with psychological analysis and extended context.
@@ -48,21 +52,29 @@ def handle_pet_event(user_id: int, event_type: str, event_data: Dict[str, Any]) 
     use_enhanced = _enhanced_dialogue_generator is not None
 
     emotion = None
-    dialogue_prompt_context = event_data.copy() # Start with base event data
+    dialogue_prompt_context = event_data.copy()  # Start with base event data
 
     # 1. Analyze emotion if it's a reflection event or user message
     emotion = None
-    suggested_animation = 'idle'  # Default animation
+    suggested_animation = "idle"  # Default animation
 
-    if event_type == 'reflection_added' and 'text' in event_data:
-        reflection_text = event_data.get('text', '')
+    if event_type == "reflection_added" and "text" in event_data:
+        reflection_text = event_data.get("text", "")
         if reflection_text:
             try:
-                emotion, suggested_animation = analyze_emotion_for_pet(user_id, reflection_text)
+                emotion, suggested_animation = analyze_emotion_for_pet(
+                    user_id, reflection_text
+                )
                 if emotion:
-                    dialogue_prompt_context['analyzed_emotion'] = emotion  # Add emotion to context for dialogue generation
-                    dialogue_prompt_context['suggested_animation'] = suggested_animation  # Add suggested animation
-                    logger.info(f"Analyzed emotion for reflection: {emotion}, suggested animation: {suggested_animation}")
+                    dialogue_prompt_context["analyzed_emotion"] = (
+                        emotion  # Add emotion to context for dialogue generation
+                    )
+                    dialogue_prompt_context["suggested_animation"] = (
+                        suggested_animation  # Add suggested animation
+                    )
+                    logger.info(
+                        f"Analyzed emotion for reflection: {emotion}, suggested animation: {suggested_animation}"
+                    )
                 else:
                     logger.warning("Emotion analysis returned None.")
             except Exception as e:
@@ -71,71 +83,111 @@ def handle_pet_event(user_id: int, event_type: str, event_data: Dict[str, Any]) 
             logger.warning("Reflection event received but no text found in event_data.")
 
     # Handle direct user messages
-    elif event_type == 'user_message' and 'message' in event_data:
-        user_message = event_data.get('message', '')
+    elif event_type == "user_message" and "message" in event_data:
+        user_message = event_data.get("message", "")
         if user_message:
             try:
                 # Analyze emotion for user messages
-                emotion, suggested_animation = analyze_emotion_for_pet(user_id, user_message)
+                emotion, suggested_animation = analyze_emotion_for_pet(
+                    user_id, user_message
+                )
                 if emotion:
-                    dialogue_prompt_context['analyzed_emotion'] = emotion
-                    dialogue_prompt_context['suggested_animation'] = suggested_animation
-                    logger.info(f"Analyzed emotion for user message: {emotion}, suggested animation: {suggested_animation}")
+                    dialogue_prompt_context["analyzed_emotion"] = emotion
+                    dialogue_prompt_context["suggested_animation"] = suggested_animation
+                    logger.info(
+                        f"Analyzed emotion for user message: {emotion}, suggested animation: {suggested_animation}"
+                    )
             except Exception as e:
                 logger.error(f"Error during emotion analysis for user message: {e}")
         else:
-            logger.warning("User message event received but no message found in event_data.")
+            logger.warning(
+                "User message event received but no message found in event_data."
+            )
 
     # 2. Generate dialogue based on the event and context
     try:
-        if use_enhanced:
+        if use_enhanced and _enhanced_dialogue_generator is not None:
             # Use enhanced dialogue generator with psychological analysis and extended context
             logger.info("Using enhanced dialogue generator")
-            response = _enhanced_dialogue_generator.generate_dialogue(user_id, event_type, dialogue_prompt_context)
-            dialogue = response['dialogue']
-            suggested_animation = response['suggested_animation']
+            response = _enhanced_dialogue_generator.generate_dialogue(
+                user_id, event_type, dialogue_prompt_context
+            )
+            dialogue = response["dialogue"]
+            suggested_animation = response["suggested_animation"]
 
-            logger.info(f"Enhanced dialogue generated. Context ID: {response.get('context_id')}")
+            logger.info(
+                f"Enhanced dialogue generated. Context ID: {response.get('context_id')}"
+            )
 
             # Return enhanced response
             return {
-                'dialogue': dialogue,
-                'emotion_detected': emotion,  # Include detected emotion if any
-                'suggested_animation': suggested_animation,
-                'context_id': response.get('context_id'),
-                'profile_available': response.get('profile_available', False)
+                "dialogue": dialogue,
+                "emotion_detected": emotion,  # Include detected emotion if any
+                "suggested_animation": suggested_animation,
+                "context_id": response.get("context_id"),
+                "profile_available": response.get("profile_available", False),
             }
         else:
             # Fall back to original dialogue generator
-            logger.info("Using original dialogue generator (enhanced generator not initialized)")
-            dialogue = generate_pet_dialogue(user_id, event_type, dialogue_prompt_context)
+            logger.info(
+                "Using original dialogue generator (enhanced generator not initialized)"
+            )
+            dialogue = generate_pet_dialogue(
+                user_id, event_type, dialogue_prompt_context
+            )
 
             # Use the suggested animation from emotion analysis if available
-            if 'suggested_animation' in dialogue_prompt_context:
-                suggested_animation = dialogue_prompt_context['suggested_animation']
+            if "suggested_animation" in dialogue_prompt_context:
+                suggested_animation = dialogue_prompt_context["suggested_animation"]
             # Otherwise, determine animation based on event type and basic emotion
             else:
-                suggested_animation = 'idle'  # Default animation
-                if event_type == 'check_in':
-                    suggested_animation = 'happy'  # Simple positive feedback for check-in
-                elif event_type == 'user_message' or event_type == 'reflection_added':
+                suggested_animation = "idle"  # Default animation
+                if event_type == "check_in":
+                    suggested_animation = (
+                        "happy"  # Simple positive feedback for check-in
+                    )
+                elif event_type == "user_message" or event_type == "reflection_added":
                     # For user messages and reflections, base animation on detected emotion
-                    if emotion in ['positive', 'happy', 'excited', 'joyful', 'content', 'proud', 'grateful', 'optimistic']:
-                        suggested_animation = 'excited' if emotion in ['excited', 'joyful', 'proud'] else 'happy'
-                    elif emotion in ['negative', 'sad', 'anxious', 'worried', 'frustrated', 'angry', 'disappointed', 'stressed']:
-                        suggested_animation = 'concerned'
-                    elif emotion in ['surprised', 'confused', 'uncertain']:
-                        suggested_animation = 'confused'
+                    if emotion in [
+                        "positive",
+                        "happy",
+                        "excited",
+                        "joyful",
+                        "content",
+                        "proud",
+                        "grateful",
+                        "optimistic",
+                    ]:
+                        suggested_animation = (
+                            "excited"
+                            if emotion in ["excited", "joyful", "proud"]
+                            else "happy"
+                        )
+                    elif emotion in [
+                        "negative",
+                        "sad",
+                        "anxious",
+                        "worried",
+                        "frustrated",
+                        "angry",
+                        "disappointed",
+                        "stressed",
+                    ]:
+                        suggested_animation = "concerned"
+                    elif emotion in ["surprised", "confused", "uncertain"]:
+                        suggested_animation = "confused"
                     else:
-                        suggested_animation = 'happy'  # Default for user messages
+                        suggested_animation = "happy"  # Default for user messages
 
-            logger.info(f"Pet response generated. Dialogue: '{dialogue[:30]}...', Animation: {suggested_animation}")
+            logger.info(
+                f"Pet response generated. Dialogue: '{dialogue[:30]}...', Animation: {suggested_animation}"
+            )
 
             # Return the combined response
             return {
-                'dialogue': dialogue,
-                'emotion_detected': emotion, # Include detected emotion if any
-                'suggested_animation': suggested_animation
+                "dialogue": dialogue,
+                "emotion_detected": emotion,  # Include detected emotion if any
+                "suggested_animation": suggested_animation,
             }
     except Exception as e:
         logger.error(f"Error during dialogue generation: {e}")
@@ -143,10 +195,11 @@ def handle_pet_event(user_id: int, event_type: str, event_data: Dict[str, Any]) 
 
         # Return fallback response
         return {
-            'dialogue': dialogue,
-            'emotion_detected': emotion,
-            'suggested_animation': 'confused'
+            "dialogue": dialogue,
+            "emotion_detected": emotion,
+            "suggested_animation": "confused",
         }
+
 
 # Example Usage (for testing purposes):
 # if __name__ == '__main__':

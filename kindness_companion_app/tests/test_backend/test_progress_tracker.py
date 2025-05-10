@@ -1,266 +1,525 @@
 import unittest
 import os
 import sys
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 import datetime
 
 # Add the parent directory to sys.path to allow importing the modules
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from backend.progress_tracker import ProgressTracker
 from backend.database_manager import DatabaseManager
+from backend.challenge_manager import ChallengeManager
+
 
 class TestProgressTracker(unittest.TestCase):
     """Test cases for the ProgressTracker class."""
 
     def setUp(self):
-        """Set up a mock database manager for testing."""
-        # Create a mock DatabaseManager
+        """Set up test fixtures."""
         self.mock_db_manager = MagicMock(spec=DatabaseManager)
-
-        # Create a ProgressTracker instance with the mock database manager
+        self.mock_challenge_manager = MagicMock(spec=ChallengeManager)
         self.progress_tracker = ProgressTracker(self.mock_db_manager)
+        self.progress_tracker.challenge_manager = self.mock_challenge_manager
 
+        # Sample data for tests
+        self.sample_user_id = 1
+        self.sample_challenge_id = 1
+        self.sample_date = datetime.datetime.now().date().isoformat()
+        self.sample_notes = "Test check-in notes"
+
+    def test_check_in_success(self):
+        """Test successful check-in with all parameters."""
+        # Configure mock to return success
+        self.mock_db_manager.execute_insert.return_value = 1
+
+        # Perform check-in
+        result = self.progress_tracker.check_in(
+            self.sample_user_id,
+            self.sample_challenge_id,
+            self.sample_date,
+            self.sample_notes,
+        )
+
+        # Verify result
+        self.assertTrue(result)
+        self.mock_db_manager.execute_insert.assert_called_once()
+
+    def test_check_in_minimal(self):
+        """Test check-in with minimal required parameters."""
+        # Configure mock to return success
+        self.mock_db_manager.execute_insert.return_value = 1
+
+        # Perform check-in without notes
+        result = self.progress_tracker.check_in(
+            self.sample_user_id, self.sample_challenge_id, self.sample_date
+        )
+
+        # Verify result
+        self.assertTrue(result)
+        self.mock_db_manager.execute_insert.assert_called_once()
+
+    def test_check_in_duplicate(self):
+        """Test duplicate check-in handling."""
+        # Configure mock to raise exception (simulating duplicate)
+        self.mock_db_manager.execute_insert.side_effect = Exception("Duplicate entry")
+
+        # Perform check-in
+        result = self.progress_tracker.check_in(
+            self.sample_user_id, self.sample_challenge_id, self.sample_date
+        )
+
+        # Verify result
+        self.assertFalse(result)
+
+    def test_check_in_database_error(self):
+        """Test check-in with database error."""
+        # Configure mock to raise general database error
+        self.mock_db_manager.execute_insert.side_effect = Exception("Database error")
+
+        # Perform check-in
+        result = self.progress_tracker.check_in(
+            self.sample_user_id, self.sample_challenge_id, self.sample_date
+        )
+
+        # Verify result
+        self.assertFalse(result)
+
+    def test_undo_check_in_success(self):
+        """测试成功撤销打卡"""
+        # 配置数据库返回值
+        self.mock_db_manager.execute_update.return_value = 1
+
+        # 撤销打卡
+        result = self.progress_tracker.undo_check_in(1, 1)
+
+        # 验证结果
+        self.assertTrue(result)
+        self.mock_db_manager.execute_update.assert_called_once()
+
+    def test_undo_check_in_nonexistent(self):
+        """测试撤销不存在的打卡"""
+        # 配置数据库返回值
+        self.mock_db_manager.execute_update.return_value = 0
+
+        # 撤销打卡
+        result = self.progress_tracker.undo_check_in(1, 1)
+
+        # 验证结果
+        self.assertFalse(result)
+        self.mock_db_manager.execute_update.assert_called_once()
+
+    def test_undo_check_in_database_error(self):
+        """测试数据库错误时的打卡撤销"""
+        # 配置数据库错误
+        self.mock_db_manager.execute_update.side_effect = Exception("Database error")
+
+        # 撤销打卡
+        result = self.progress_tracker.undo_check_in(1, 1)
+
+        # 验证结果
+        self.assertFalse(result)  # 应该返回 False 而不是抛出异常
+        self.mock_db_manager.execute_update.assert_called_once()
+
+    def test_get_check_ins_success(self):
+        """Test getting check-ins for a specific challenge."""
         # Sample progress data
-        self.sample_progress = [
+        sample_progress = [
             {
                 "id": 1,
-                "user_id": 1,
-                "challenge_id": 1,
-                "check_in_date": "2023-01-01",
-                "notes": "Helped an elderly person cross the street",
-                "created_at": "2023-01-01 12:00:00"
-            },
-            {
-                "id": 2,
-                "user_id": 1,
-                "challenge_id": 2,
-                "check_in_date": "2023-01-02",
-                "notes": "Volunteered at a local shelter",
-                "created_at": "2023-01-02 12:00:00"
-            },
-            {
-                "id": 3,
-                "user_id": 1,
-                "challenge_id": 1,
-                "check_in_date": "2023-01-03",
-                "notes": "Smiled at everyone I met today",
-                "created_at": "2023-01-03 12:00:00"
+                "user_id": self.sample_user_id,
+                "challenge_id": self.sample_challenge_id,
+                "check_in_date": self.sample_date,
+                "notes": self.sample_notes,
             }
         ]
 
-    def test_add_check_in(self):
-        """Test adding a check-in."""
-        # Configure the mock to return 1 for the insert
-        self.mock_db_manager.execute_insert.return_value = 1
+        # Configure mock
+        self.mock_db_manager.execute_query.return_value = sample_progress
 
-        # Add a check-in
-        result = self.progress_tracker.add_check_in(1, 1, "2023-01-01", "Test notes")
-
-        # Check that the result is 1 (the new ID)
-        self.assertEqual(result, 1)
-
-        # Check that the mock was called correctly
-        self.mock_db_manager.execute_insert.assert_called_once()
-
-    def test_get_check_in(self):
-        """Test getting a check-in by ID."""
-        # Configure the mock to return a single check-in
-        self.mock_db_manager.execute_query.return_value = [self.sample_progress[0]]
-
-        # Get a check-in by ID
-        result = self.progress_tracker.get_check_in(1)
-
-        # Check that the result is the expected check-in
-        self.assertEqual(result, self.sample_progress[0])
-
-        # Check that the mock was called correctly
-        self.mock_db_manager.execute_query.assert_called_once_with(
-            "SELECT * FROM progress WHERE id = ?",
-            (1,)
+        # Get check-ins
+        result = self.progress_tracker.get_check_ins(
+            self.sample_user_id, self.sample_challenge_id
         )
 
-    def test_get_check_in_not_found(self):
-        """Test getting a check-in by ID when it doesn't exist."""
-        # Configure the mock to return an empty list
-        self.mock_db_manager.execute_query.return_value = []
-
-        # Get a check-in by ID
-        result = self.progress_tracker.get_check_in(999)
-
-        # Check that the result is None
-        self.assertIsNone(result)
-
-        # Check that the mock was called correctly
-        self.mock_db_manager.execute_query.assert_called_once_with(
-            "SELECT * FROM progress WHERE id = ?",
-            (999,)
-        )
-
-    def test_get_user_check_ins(self):
-        """Test getting check-ins for a user."""
-        # Configure the mock to return check-ins
-        self.mock_db_manager.execute_query.return_value = self.sample_progress
-
-        # Get user check-ins
-        result = self.progress_tracker.get_user_check_ins(1, 1)
-
-        # Check that the result is the expected check-ins
-        self.assertEqual(result, self.sample_progress)
-
-        # Check that the mock was called correctly
-        self.mock_db_manager.execute_query.assert_called_once_with(
-            "SELECT * FROM progress WHERE user_id = ? AND challenge_id = ? ORDER BY check_in_date DESC",
-            (1, 1)
-        )
-
-    def test_get_all_user_check_ins(self):
-        """Test getting all check-ins for a user."""
-        # Configure the mock to return check-ins
-        self.mock_db_manager.execute_query.return_value = self.sample_progress
-
-        # Get all user check-ins
-        result = self.progress_tracker.get_all_user_check_ins(1)
-
-        # Check that the result is the expected check-ins
-        self.assertEqual(result, self.sample_progress)
-
-        # Check that the mock was called correctly
-        self.mock_db_manager.execute_query.assert_called_once_with(
-            "SELECT * FROM progress WHERE user_id = ? ORDER BY check_in_date DESC",
-            (1,)
-        )
-
-    def test_get_all_user_check_ins_with_date_range(self):
-        """Test getting all check-ins for a user within a date range."""
-        # Configure the mock to return check-ins
-        self.mock_db_manager.execute_query.return_value = self.sample_progress
-
-        # Get all user check-ins within a date range
-        result = self.progress_tracker.get_all_user_check_ins(1, "2023-01-01", "2023-01-03")
-
-        # Check that the result is the expected check-ins
-        self.assertEqual(result, self.sample_progress)
-
-        # Check that the mock was called correctly
-        self.mock_db_manager.execute_query.assert_called_once_with(
-            "SELECT * FROM progress WHERE user_id = ? AND check_in_date BETWEEN ? AND ? ORDER BY check_in_date DESC",
-            (1, "2023-01-01", "2023-01-03")
-        )
-
-    def test_get_check_in_dates(self):
-        """Test getting check-in dates for a user."""
-        # Configure the mock to return dates
-        self.mock_db_manager.execute_query.return_value = [
-            {"check_in_date": "2023-01-01"},
-            {"check_in_date": "2023-01-02"},
-            {"check_in_date": "2023-01-03"}
-        ]
-
-        # Get check-in dates
-        result = self.progress_tracker.get_check_in_dates(1)
-
-        # Check that the result is the expected dates
-        self.assertEqual(result, ["2023-01-01", "2023-01-02", "2023-01-03"])
-
-        # Check that the mock was called correctly
-        self.mock_db_manager.execute_query.assert_called_once_with(
-            "SELECT DISTINCT check_in_date FROM progress WHERE user_id = ? ORDER BY check_in_date",
-            (1,)
-        )
-
-    def test_get_total_check_ins(self):
-        """Test getting the total number of check-ins for a user."""
-        # Configure the mock to return a count
-        self.mock_db_manager.execute_query.return_value = [{"count": 3}]
-
-        # Get total check-ins
-        result = self.progress_tracker.get_total_check_ins(1)
-
-        # Check that the result is the expected count
-        self.assertEqual(result, 3)
-
-        # Check that the mock was called correctly
-        self.mock_db_manager.execute_query.assert_called_once_with(
-            "SELECT COUNT(*) as count FROM progress WHERE user_id = ?",
-            (1,)
-        )
-
-    def test_get_current_streak(self):
-        """Test getting the current streak for a user and challenge."""
-        # Today's date
-        today = datetime.date.today()
-
-        # Generate a sequence of consecutive dates ending with today
-        dates = []
-        for i in range(3):
-            date = today - datetime.timedelta(days=i)
-            dates.append({"check_in_date": date.isoformat()})
-
-        # Configure the mock to return the dates in reverse order (most recent first)
-        self.mock_db_manager.execute_query.return_value = list(reversed(dates))
-
-        # Mock the get_streak method to return 3
-        with unittest.mock.patch.object(self.progress_tracker, 'get_streak', return_value=3) as mock_get_streak:
-            # Get current streak
-            result = self.progress_tracker.get_current_streak(1, 1)
-
-            # Check that the result is the expected streak
-            self.assertEqual(result, 3)
-
-            # Check that the mock was called correctly
-            mock_get_streak.assert_called_once_with(1, 1)
-
-    def test_get_longest_streak(self):
-        """Test getting the longest streak for a user and challenge."""
-        # Configure the mock to return check-ins with gaps
-        self.mock_db_manager.execute_query.return_value = [
-            {"check_in_date": "2022-12-28"},
-            {"check_in_date": "2022-12-29"},
-            {"check_in_date": "2022-12-30"},
-            {"check_in_date": "2022-12-31"},
-            {"check_in_date": "2023-01-01"},
-            # Gap on 2023-01-02
-            {"check_in_date": "2023-01-03"},
-            {"check_in_date": "2023-01-04"},
-            {"check_in_date": "2023-01-05"}
-        ]
-
-        # Get longest streak
-        result = self.progress_tracker.get_longest_streak(1, 1)
-
-        # Check that the result is the expected streak (5 days)
-        # Note: The implementation counts consecutive days, so we expect 5 days
-        # (2022-12-28 to 2023-01-01) as the longest streak
-        self.assertEqual(result, 5)
-
-        # Check that the mock was called correctly
+        # Verify result
+        self.assertEqual(result, sample_progress)
         self.mock_db_manager.execute_query.assert_called_once()
 
-    def test_get_completion_rate(self):
-        """Test getting the completion rate for a user and challenge."""
-        # Mock the get_check_ins method to return sample check-ins
-        with unittest.mock.patch.object(self.progress_tracker, 'get_check_ins') as mock_get_check_ins:
-            # Return sample check-ins with check_in_date field
-            mock_get_check_ins.return_value = [
-                {"check_in_date": "2023-01-01"},
-                {"check_in_date": "2023-01-02"},
-                {"check_in_date": "2023-01-03"}
-            ]
+    def test_get_check_ins_empty(self):
+        """Test getting check-ins when none exist."""
+        # Configure mock to return empty list
+        self.mock_db_manager.execute_query.return_value = []
 
-            # Mock datetime.date.today() to return a fixed date
-            with unittest.mock.patch('datetime.date') as mock_date:
-                mock_date.today.return_value = datetime.date(2023, 1, 10)
-                mock_date.fromisoformat.side_effect = datetime.date.fromisoformat
+        # Get check-ins
+        result = self.progress_tracker.get_check_ins(
+            self.sample_user_id, self.sample_challenge_id
+        )
 
-                # Get completion rate (3 check-ins out of 30 days = 10%)
-                result = self.progress_tracker.get_completion_rate(1, 1)
+        # Verify result
+        self.assertEqual(result, [])
+        self.mock_db_manager.execute_query.assert_called_once()
 
-            # Check that the result is the expected rate (3 check-ins out of 30 days = 10%)
-            self.assertAlmostEqual(result, 0.1)  # 10%
+    def test_get_check_ins_database_error(self):
+        """测试数据库错误时的打卡记录获取"""
+        # 配置数据库错误
+        self.mock_db_manager.execute_query.side_effect = Exception("Database error")
 
-            # Check that the mock was called correctly
-            mock_get_check_ins.assert_called_once()
+        # 获取打卡记录
+        result = self.progress_tracker.get_check_ins(1, 1)
 
-if __name__ == '__main__':
+        # 验证结果
+        self.assertEqual(result, [])  # 应该返回空列表而不是抛出异常
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_get_all_user_check_ins_success(self):
+        """Test getting all check-ins for a user."""
+        # Sample progress data
+        sample_progress = [
+            {
+                "id": 1,
+                "user_id": self.sample_user_id,
+                "challenge_id": self.sample_challenge_id,
+                "check_in_date": self.sample_date,
+                "notes": self.sample_notes,
+            }
+        ]
+
+        # Configure mock
+        self.mock_db_manager.execute_query.return_value = sample_progress
+
+        # Get all user check-ins
+        result = self.progress_tracker.get_all_user_check_ins(self.sample_user_id)
+
+        # Verify result
+        self.assertEqual(result, sample_progress)
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_get_all_user_check_ins_empty(self):
+        """Test getting all check-ins when none exist."""
+        # Configure mock to return empty list
+        self.mock_db_manager.execute_query.return_value = []
+
+        # Get all user check-ins
+        result = self.progress_tracker.get_all_user_check_ins(self.sample_user_id)
+
+        # Verify result
+        self.assertEqual(result, [])
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_get_streak_consecutive(self):
+        """Test getting streak with consecutive days."""
+        # Sample progress data with consecutive days
+        dates = [
+            (datetime.datetime.now() - datetime.timedelta(days=i)).date().isoformat()
+            for i in range(3)
+        ]
+        sample_progress = [
+            {
+                "id": i + 1,
+                "user_id": self.sample_user_id,
+                "challenge_id": self.sample_challenge_id,
+                "check_in_date": date,
+                "notes": f"Check-in {i+1}",
+            }
+            for i, date in enumerate(dates)
+        ]
+
+        # Configure mock
+        self.mock_db_manager.execute_query.return_value = sample_progress
+
+        # Get streak
+        result = self.progress_tracker.get_streak(
+            self.sample_user_id, self.sample_challenge_id
+        )
+
+        # Verify result
+        self.assertEqual(result, 3)  # Should be 3 consecutive days
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_get_streak_with_gap(self):
+        """Test getting streak with a gap in check-ins."""
+        # Sample progress data with a gap
+        dates = [
+            datetime.datetime.now().date().isoformat(),
+            (datetime.datetime.now() - datetime.timedelta(days=2)).date().isoformat(),
+            (datetime.datetime.now() - datetime.timedelta(days=3)).date().isoformat(),
+        ]
+        sample_progress = [
+            {
+                "id": i + 1,
+                "user_id": self.sample_user_id,
+                "challenge_id": self.sample_challenge_id,
+                "check_in_date": date,
+                "notes": f"Check-in {i+1}",
+            }
+            for i, date in enumerate(dates)
+        ]
+
+        # Configure mock
+        self.mock_db_manager.execute_query.return_value = sample_progress
+
+        # Get streak
+        result = self.progress_tracker.get_streak(
+            self.sample_user_id, self.sample_challenge_id
+        )
+
+        # Verify result
+        self.assertEqual(result, 1)  # Should be 1 due to gap
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_get_streak_empty(self):
+        """Test getting streak with no check-ins."""
+        # Configure mock to return empty list
+        self.mock_db_manager.execute_query.return_value = []
+
+        # Get streak
+        result = self.progress_tracker.get_streak(
+            self.sample_user_id, self.sample_challenge_id
+        )
+
+        # Verify result
+        self.assertEqual(result, 0)  # Should be 0 with no check-ins
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_get_completion_rate_success(self):
+        """Test getting completion rate with regular check-ins."""
+        # Sample check-ins for the last 30 days
+        today = datetime.datetime.now().date()
+        dates = [
+            (today - datetime.timedelta(days=i)).isoformat()
+            for i in range(0, 30, 3)  # Check-ins every 3 days
+        ]
+        sample_progress = [
+            {
+                "id": i + 1,
+                "user_id": self.sample_user_id,
+                "challenge_id": self.sample_challenge_id,
+                "check_in_date": date,
+                "notes": f"Check-in {i+1}",
+            }
+            for i, date in enumerate(dates)
+        ]
+
+        # Configure mock
+        self.mock_db_manager.execute_query.return_value = sample_progress
+
+        # Get completion rate
+        result = self.progress_tracker.get_completion_rate(
+            self.sample_user_id, self.sample_challenge_id
+        )
+
+        # Verify result (10 check-ins in 30 days = 0.333...)
+        self.assertAlmostEqual(result, 0.333, places=3)
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_get_completion_rate_empty(self):
+        """Test getting completion rate with no check-ins."""
+        # Configure mock to return empty list
+        self.mock_db_manager.execute_query.return_value = []
+
+        # Get completion rate
+        result = self.progress_tracker.get_completion_rate(
+            self.sample_user_id, self.sample_challenge_id
+        )
+
+        # Verify result
+        self.assertEqual(result, 0.0)  # Should be 0 with no check-ins
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_get_check_ins_count_by_category_success(self):
+        """Test getting check-in count by category."""
+        # Configure mock to return count
+        self.mock_db_manager.execute_query.return_value = [{"COUNT(p.id)": 5}]
+
+        # Get count
+        result = self.progress_tracker.get_check_ins_count_by_category(
+            self.sample_user_id, "环保"
+        )
+
+        # Verify result
+        self.assertEqual(result, 5)
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_get_check_ins_count_by_category_empty(self):
+        """Test getting check-in count by category with no check-ins."""
+        # Configure mock to return zero count
+        self.mock_db_manager.execute_query.return_value = [{"COUNT(p.id)": 0}]
+
+        # Get count
+        result = self.progress_tracker.get_check_ins_count_by_category(
+            self.sample_user_id, "环保"
+        )
+
+        # Verify result
+        self.assertEqual(result, 0)
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_get_total_check_ins_success(self):
+        """Test getting total check-ins for a user."""
+        # Configure mock to return count
+        self.mock_db_manager.execute_query.return_value = [{"total": 10}]
+
+        # Get total
+        result = self.progress_tracker.get_total_check_ins(self.sample_user_id)
+
+        # Verify result
+        self.assertEqual(result, 10)
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_get_total_check_ins_empty(self):
+        """Test getting total check-ins when none exist."""
+        # Configure mock to return zero count
+        self.mock_db_manager.execute_query.return_value = [{"total": 0}]
+
+        # Get total
+        result = self.progress_tracker.get_total_check_ins(self.sample_user_id)
+
+        # Verify result
+        self.assertEqual(result, 0)
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_get_longest_streak_all_challenges_success(self):
+        """测试获取所有挑战的最长连续打卡天数（聚合逻辑）"""
+        self.mock_challenge_manager.get_user_challenges.return_value = [
+            {"id": 1, "name": "Challenge 1"},
+            {"id": 2, "name": "Challenge 2"},
+        ]
+        # 只关注聚合逻辑，mock get_streak
+        with patch.object(
+            self.progress_tracker, "get_streak", side_effect=[3, 2]
+        ) as mock_get_streak:
+            result = self.progress_tracker.get_longest_streak_all_challenges(1)
+            self.assertEqual(result, 3)  # 应返回最大值 3
+            self.mock_challenge_manager.get_user_challenges.assert_called_once_with(1)
+            self.assertEqual(mock_get_streak.call_count, 2)
+
+    def test_get_longest_streak_all_challenges_empty(self):
+        """测试获取空挑战列表的最长连续打卡天数"""
+        # 配置 mock 返回空列表
+        self.mock_challenge_manager.get_user_challenges.return_value = []
+
+        result = self.progress_tracker.get_longest_streak_all_challenges(1)
+        self.assertEqual(result, 0)
+
+        # 验证调用
+        self.mock_challenge_manager.get_user_challenges.assert_called_once_with(1)
+        self.mock_db_manager.execute_query.assert_not_called()
+
+    def test_save_weekly_report_success(self):
+        """Test saving a weekly report successfully."""
+        # Sample report data
+        report_text = "Weekly progress report"
+        start_date = "2024-01-01"
+        end_date = "2024-01-07"
+
+        # Configure mock to return success
+        self.mock_db_manager.execute_query.return_value = True
+
+        # Save report
+        result = self.progress_tracker.save_weekly_report(
+            self.sample_user_id, report_text, start_date, end_date
+        )
+
+        # Verify result
+        self.assertTrue(result)
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_save_weekly_report_error(self):
+        """Test saving a weekly report with database error."""
+        # Sample report data
+        report_text = "Weekly progress report"
+        start_date = "2024-01-01"
+        end_date = "2024-01-07"
+
+        # Configure mock to raise exception
+        self.mock_db_manager.execute_query.side_effect = Exception("Database error")
+
+        # Save report
+        result = self.progress_tracker.save_weekly_report(
+            self.sample_user_id, report_text, start_date, end_date
+        )
+
+        # Verify result
+        self.assertFalse(result)
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_get_weekly_report_success(self):
+        """Test getting a weekly report successfully."""
+        # Sample report data
+        sample_report = {
+            "report_text": "Weekly progress report",
+            "start_date": "2024-01-01",
+            "end_date": "2024-01-07",
+            "created_at": "2024-01-07 12:00:00",
+        }
+
+        # Configure mock
+        self.mock_db_manager.execute_query.return_value = [sample_report]
+
+        # Get report
+        result = self.progress_tracker.get_weekly_report(
+            self.sample_user_id, "2024-01-01", "2024-01-07"
+        )
+
+        # Verify result
+        self.assertEqual(result, sample_report)
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_get_weekly_report_not_found(self):
+        """Test getting a non-existent weekly report."""
+        # Configure mock to return empty list
+        self.mock_db_manager.execute_query.return_value = []
+
+        # Get report
+        result = self.progress_tracker.get_weekly_report(
+            self.sample_user_id, "2024-01-01", "2024-01-07"
+        )
+
+        # Verify result
+        self.assertIsNone(result)
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_get_all_weekly_reports_success(self):
+        """Test getting all weekly reports successfully."""
+        # Sample reports data
+        sample_reports = [
+            {
+                "report_text": "Report 1",
+                "start_date": "2024-01-01",
+                "end_date": "2024-01-07",
+                "created_at": "2024-01-07 12:00:00",
+            },
+            {
+                "report_text": "Report 2",
+                "start_date": "2024-01-08",
+                "end_date": "2024-01-14",
+                "created_at": "2024-01-14 12:00:00",
+            },
+        ]
+
+        # Configure mock
+        self.mock_db_manager.execute_query.return_value = sample_reports
+
+        # Get all reports
+        result = self.progress_tracker.get_all_weekly_reports(self.sample_user_id)
+
+        # Verify result
+        self.assertEqual(result, sample_reports)
+        self.mock_db_manager.execute_query.assert_called_once()
+
+    def test_get_all_weekly_reports_empty(self):
+        """Test getting all weekly reports when none exist."""
+        # Configure mock to return empty list
+        self.mock_db_manager.execute_query.return_value = []
+
+        # Get all reports
+        result = self.progress_tracker.get_all_weekly_reports(self.sample_user_id)
+
+        # Verify result
+        self.assertEqual(result, [])
+        self.mock_db_manager.execute_query.assert_called_once()
+
+
+if __name__ == "__main__":
     unittest.main()

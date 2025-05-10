@@ -64,18 +64,57 @@ class ProgressTracker:
         Returns:
             bool: True if removal is successful, False otherwise
         """
-        if date is None:
-            date = datetime.date.today().isoformat()
+        try:
+            print(f"[撤销打卡] 开始撤销操作")
+            print(
+                f"[撤销打卡] 输入参数: user_id={user_id}, challenge_id={challenge_id}, date={date}"
+            )
 
-        affected_rows = self.db_manager.execute_update(
-            """
+            if date is None:
+                date = datetime.date.today().isoformat()
+                print(f"[撤销打卡] 使用当前日期: {date}")
+
+            # 验证日期格式
+            try:
+                datetime.date.fromisoformat(date)
+                print(f"[撤销打卡] 日期格式验证通过: {date}")
+            except ValueError as e:
+                print(f"[撤销打卡] 日期格式无效: {date}, 错误: {e}")
+                return False
+
+            # 撤销前，打印当前数据库中该记录
+            before = self.get_check_ins(user_id, challenge_id, date, date)
+            print(f"[撤销打卡] 撤销前数据库内容: {before}")
+
+            if not before:
+                print(f"[撤销打卡] 未找到要撤销的记录")
+                return False
+
+            # 执行删除操作
+            sql = """
             DELETE FROM progress
             WHERE user_id = ? AND challenge_id = ? AND check_in_date = ?
-            """,
-            (user_id, challenge_id, date),
-        )
+            """
+            params = (user_id, challenge_id, date)
+            print(f"[撤销打卡] 执行SQL: {sql}")
+            print(f"[撤销打卡] SQL参数: {params}")
 
-        return affected_rows > 0
+            affected_rows = self.db_manager.execute_update(sql, params)
+            print(f"[撤销打卡] SQL删除受影响行数: {affected_rows}")
+
+            # 撤销后，打印当前数据库中该记录
+            after = self.get_check_ins(user_id, challenge_id, date, date)
+            print(f"[撤销打卡] 撤销后数据库内容: {after}")
+
+            result = affected_rows > 0
+            print(f"[撤销打卡] 操作结果: {'成功' if result else '失败'}")
+            return result
+        except Exception as e:
+            print(f"[撤销打卡] 发生异常: {str(e)}")
+            import traceback
+
+            print(f"[撤销打卡] 异常堆栈: {traceback.format_exc()}")
+            return False
 
     def get_check_ins(self, user_id, challenge_id, start_date=None, end_date=None):
         """
@@ -90,23 +129,27 @@ class ProgressTracker:
         Returns:
             list: List of check-in dictionaries
         """
-        query = """
-        SELECT * FROM progress
-        WHERE user_id = ? AND challenge_id = ?
-        """
-        params = [user_id, challenge_id]
+        try:
+            query = """
+            SELECT * FROM progress
+            WHERE user_id = ? AND challenge_id = ?
+            """
+            params = [user_id, challenge_id]
 
-        if start_date:
-            query += " AND check_in_date >= ?"
-            params.append(start_date)
+            if start_date:
+                query += " AND check_in_date >= ?"
+                params.append(start_date)
 
-        if end_date:
-            query += " AND check_in_date <= ?"
-            params.append(end_date)
+            if end_date:
+                query += " AND check_in_date <= ?"
+                params.append(end_date)
 
-        query += " ORDER BY check_in_date DESC"
+            query += " ORDER BY check_in_date DESC"
 
-        return self.db_manager.execute_query(query, tuple(params))
+            return self.db_manager.execute_query(query, tuple(params))
+        except Exception as e:
+            print(f"Error getting check-ins: {e}")
+            return []
 
     def get_all_user_check_ins(self, user_id, start_date=None, end_date=None):
         """
@@ -252,16 +295,20 @@ class ProgressTracker:
         Returns:
             int: Longest current streak
         """
-        subscribed_challenges = self.challenge_manager.get_user_challenges(user_id)
-        if not subscribed_challenges:
+        try:
+            subscribed_challenges = self.challenge_manager.get_user_challenges(user_id)
+            if not subscribed_challenges:
+                return 0
+
+            longest_streak = 0
+            for challenge in subscribed_challenges:
+                current_streak = self.get_streak(user_id, challenge["id"])
+                longest_streak = max(longest_streak, current_streak)
+
+            return longest_streak
+        except Exception as e:
+            print(f"Error getting longest streak: {e}")
             return 0
-
-        longest_streak = 0
-        for challenge in subscribed_challenges:
-            current_streak = self.get_streak(user_id, challenge["id"])
-            longest_streak = max(longest_streak, current_streak)
-
-        return longest_streak
 
     def save_weekly_report(self, user_id, report_text, start_date, end_date):
         """

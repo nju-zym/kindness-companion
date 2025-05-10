@@ -145,7 +145,20 @@ class AnimatedMessageBox(QMessageBox):
         # Only start closing animation if not already closing and visible
         if not self._is_closing and self.windowOpacity() > 0:
             self._is_closing = True
-            self._result_role = role  # Store the role of the button clicked
+            # Store the role of the button clicked
+            if isinstance(role, QMessageBox.StandardButton):
+                self._result_role = role
+            elif isinstance(role, QMessageBox.ButtonRole):
+                self._result_role = role
+            else:
+                # If role is an integer, try to convert it to the appropriate enum
+                try:
+                    self._result_role = QMessageBox.StandardButton(role)
+                except ValueError:
+                    try:
+                        self._result_role = QMessageBox.ButtonRole(role)
+                    except ValueError:
+                        self._result_role = role
             # Don't call super().done() yet, start animation
             self.fade_out_animation.start()
         elif not self._is_closing:
@@ -167,12 +180,12 @@ class AnimatedMessageBox(QMessageBox):
                     QMessageBox.StandardButton.Yes,
                     QMessageBox.StandardButton.Save,
                     QMessageBox.StandardButton.Open,
-                    QMessageBox.StandardButton.Apply,  # Added Apply as acceptance
+                    QMessageBox.StandardButton.Apply,
                 ]:
                     result_code = QDialog.DialogCode.Accepted
                 # Other standard buttons (Cancel, No, Abort, etc.) default to Rejected
 
-            # Check if it's a ButtonRole enum (less common for standard buttons but possible)
+            # Check if it's a ButtonRole enum
             elif isinstance(self._result_role, QMessageBox.ButtonRole):
                 # Map button roles that typically mean acceptance
                 if self._result_role in [
@@ -184,7 +197,7 @@ class AnimatedMessageBox(QMessageBox):
                 # Other roles (RejectRole, NoRole, DestructiveRole, etc.) default to Rejected
 
             # Now call the original QDialog.done() with the correct integer result code
-            QDialog.done(self, result_code)
+            super().done(result_code)
             self.animation_finished.emit()  # Emit signal after closing
             # Resetting flag is handled in showEvent
 
@@ -259,13 +272,35 @@ class AnimatedMessageBox(QMessageBox):
         | QMessageBox.StandardButton.No,
         defaultButton: QMessageBox.StandardButton = QMessageBox.StandardButton.NoButton,
     ) -> int:
-        msgBox = AnimatedMessageBox(parent)
-        msgBox.setWindowTitle(title)
-        msgBox.setText(text)
-        msgBox.setIcon(QMessageBox.Icon.Question)
-        msgBox.setStandardButtons(buttons)
-        msgBox.setDefaultButton(defaultButton)
-        return msgBox.exec()
+        """
+        Show a question dialog with Yes/No buttons.
+
+        Args:
+            parent: Parent widget
+            title: Dialog title
+            text: Dialog text
+            buttons: Button flags
+            defaultButton: Default button
+
+        Returns:
+            int: The button that was clicked (QMessageBox.StandardButton)
+        """
+        msg_box = AnimatedMessageBox(parent)
+        msg_box.setWindowTitle(title)
+        msg_box.setText(text)
+        msg_box.setIcon(QMessageBox.Icon.Question)
+        msg_box.setStandardButtons(buttons)
+        if defaultButton != QMessageBox.StandardButton.NoButton:
+            msg_box.setDefaultButton(defaultButton)
+
+        # Execute the dialog and get the result
+        result = msg_box.exec()
+
+        # Convert the result to the appropriate button value
+        if result == QDialog.DialogCode.Accepted:
+            return QMessageBox.StandardButton.Yes
+        else:
+            return QMessageBox.StandardButton.No
 
     @staticmethod
     def show_info():

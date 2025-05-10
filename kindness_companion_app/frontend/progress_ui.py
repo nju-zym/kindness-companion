@@ -744,18 +744,32 @@ class ProgressWidget(QWidget):
         Args:
             check_in (dict): Check-in information
         """
+        print("[UI] 开始撤销打卡操作")
+        print(f"[UI] 撤销打卡参数: {check_in}")
+
         if not self.current_user:
+            print("[UI] 错误: 用户未登录")
             return
 
         challenge = self.challenge_manager.get_challenge_by_id(check_in["challenge_id"])
         challenge_title = challenge["title"] if challenge else "未知挑战"
+        print(f"[UI] 获取到挑战信息: {challenge_title}")
 
         # 确保日期为字符串且只取日期部分
         date_str = check_in["check_in_date"]
+        print(f"[UI] 原始日期值: {date_str}, 类型: {type(date_str)}")
+
         if isinstance(date_str, datetime.date):
             date_str = date_str.isoformat()
+            print(f"[UI] 转换日期对象为字符串: {date_str}")
         elif isinstance(date_str, str):
             date_str = date_str[:10]  # 只取YYYY-MM-DD
+            print(f"[UI] 截取日期字符串: {date_str}")
+        else:
+            print(f"[UI] 警告: 未知的日期类型: {type(date_str)}")
+            return
+
+        print(f"[UI] 最终使用的日期: {date_str}")
 
         reply = AnimatedMessageBox.showQuestion(
             self.window(),
@@ -767,6 +781,7 @@ class ProgressWidget(QWidget):
         )
 
         if reply == QMessageBox.StandardButton.Yes:
+            print("[UI] 用户确认撤销")
             success = self.progress_tracker.undo_check_in(
                 self.current_user["id"],
                 check_in["challenge_id"],
@@ -774,14 +789,18 @@ class ProgressWidget(QWidget):
             )
 
             if success:
+                print("[UI] 撤销成功")
                 AnimatedMessageBox.showInformation(
                     self.window(), "操作成功", "打卡记录已撤销。"
                 )
                 self.load_progress()
             else:
+                print("[UI] 撤销失败")
                 AnimatedMessageBox.showWarning(
                     self.window(), "操作失败", "无法撤销打卡记录，请稍后再试。"
                 )
+        else:
+            print("[UI] 用户取消撤销")
 
     def load_achievements(self):
         """Load and display user achievements/badges within a scroll area."""

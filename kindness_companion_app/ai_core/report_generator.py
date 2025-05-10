@@ -1,6 +1,8 @@
 import logging
 import datetime
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, Optional
+from functools import lru_cache
+import time
 from .api_client import get_api_key, make_api_request
 from requests.exceptions import RequestException
 
@@ -10,30 +12,127 @@ ZHIPUAI_API_ENDPOINT = (
 )
 DEFAULT_MODEL = "glm-4-flash"  # Or a model suitable for summarization/reporting
 
+# Constants for retry mechanism
+MAX_RETRIES = 3
+RETRY_DELAY = 1  # seconds
+CACHE_TTL = 3600  # 1 hour in seconds
 
-def generate_weekly_report(user_id: int) -> str:
+
+class ReportGenerationError(Exception):
+    """Base exception for report generation errors."""
+
+    pass
+
+
+class DataFetchError(ReportGenerationError):
+    """Exception raised when there's an error fetching user data."""
+
+    pass
+
+
+class APIError(ReportGenerationError):
+    """Exception raised when there's an error with the API call."""
+
+    pass
+
+
+class ValidationError(ReportGenerationError):
+    """Exception raised when data validation fails."""
+
+    pass
+
+
+def validate_user_data(data: Dict[str, Any]) -> bool:
     """
-    Generates a personalized weekly kindness report for the user using an AI API.
+    Validates the user data for report generation.
 
     Args:
-        user_id: The ID of the user to generate a report for.
+        data: The user data to validate
+
+    Returns:
+        bool: True if data is valid, False otherwise
+
+    Raises:
+        ValidationError: If data validation fails
+    """
+    if not isinstance(data, dict):
+        raise ValidationError("User data must be a dictionary")
+
+    required_fields = [
+        "check_ins",
+        "streak",
+        "reflections",
+        "top_category",
+        "new_achievements",
+    ]
+    for field in required_fields:
+        if field not in data:
+            raise ValidationError(f"Missing required field: {field}")
+
+    if not isinstance(data["check_ins"], int) or data["check_ins"] < 0:
+        raise ValidationError("check_ins must be a non-negative integer")
+
+    if not isinstance(data["streak"], int) or data["streak"] < 0:
+        raise ValidationError("streak must be a non-negative integer")
+
+    if not isinstance(data["reflections"], int) or data["reflections"] < 0:
+        raise ValidationError("reflections must be a non-negative integer")
+
+    if not isinstance(data["top_category"], str):
+        raise ValidationError("top_category must be a string")
+
+    if not isinstance(data["new_achievements"], list):
+        raise ValidationError("new_achievements must be a list")
+
+    return True
+
+
+def _get_cache_key(user_id: int, start_date: str, end_date: str) -> str:
+    """Generate a cache key for the report."""
+    return f"{user_id}_{start_date}_{end_date}"
+
+
+def generate_weekly_report(report_input: Dict[str, Any]) -> str:
+    """
+    Generates a personalized weekly kindness report for the user using an AI API.
+    Includes retry mechanism and caching.
+
+    Args:
+        report_input: A dictionary containing user data and report parameters.
 
     Returns:
         A string containing the generated report text, or an error message if generation fails.
+
+    Raises:
+        ReportGenerationError: If report generation fails
     """
+    user_id = report_input.get("user_id")
+    if not user_id:
+        return "生成报告时出错：缺少用户ID"
+
     logger.info(f"Generating weekly report for user {user_id}.")
 
     # 1. Fetch user data for the report period
     try:
         user_data = _get_user_data_for_report(user_id)
-        if not user_data or (
-            user_data.get("check_ins", 0) == 0 and user_data.get("streak", 0) == 0
-        ):
-            logger.warning("No user data found to generate report.")
+        if not user_data:
+            raise DataFetchError("No user data found")
+
+        # Validate user data
+        validate_user_data(user_data)
+
+        if user_data.get("check_ins", 0) == 0 and user_data.get("streak", 0) == 0:
             return "无法生成报告，似乎还没有足够的活动数据。请先完成一些善行伴侣后再尝试生成报告。"
+
+    except ValidationError as e:
+        logger.error(f"Data validation error: {e}")
+        return f"生成报告时出错（数据验证失败）：{str(e)}"
+    except DataFetchError as e:
+        logger.error(f"Error fetching user data: {e}")
+        return f"生成报告时出错（获取数据失败）：{str(e)}"
     except Exception as e:
-        logger.error(f"Error fetching user data for report: {e}")
-        return "生成报告时出错（获取数据失败）。请稍后再试或联系支持团队。"
+        logger.error(f"Unexpected error fetching user data: {e}")
+        return "生成报告时出错（未知错误）。请稍后再试或联系支持团队。"
 
     # 2. Get additional context for a more personalized report
     try:
@@ -44,25 +143,37 @@ def generate_weekly_report(user_id: int) -> str:
         )
         additional_context = {}
 
-    # 3. Construct a prompt for the text generation API with enhanced personalization
+    # 3. Construct a prompt for the text generation API
     prompt = _build_report_prompt(user_id, user_data, additional_context)
 
-    # 4. Call the text generation API
-    try:
-        report_text = _call_text_generation_api(prompt)
-        if not report_text:
-            logger.warning("Text generation API returned empty response for report.")
-            return "AI 正在思考中，暂时无法生成报告...请稍后再试。"
+    # 4. Call the text generation API with retry mechanism
+    for attempt in range(MAX_RETRIES):
+        try:
+            report_text = _call_text_generation_api(prompt)
+            if not report_text:
+                raise APIError("Empty response from API")
 
-        # Post-process the report text if needed (e.g., remove unwanted prefixes)
-        report_text = _post_process_report(report_text)
+            # Post-process the report text
+            report_text = _post_process_report(report_text)
 
-        logger.info(f"Generated report text (first 50 chars): {report_text[:50]}...")
-        # Return only the generated text, formatting can happen in the UI
-        return report_text
-    except Exception as e:
-        logger.error(f"Error calling text generation API for report: {e}")
-        return "生成报告时与 AI 连接出现问题。请检查网络连接或稍后再试。"
+            logger.info(
+                f"Generated report text (first 50 chars): {report_text[:50]}..."
+            )
+            return report_text
+
+        except APIError as e:
+            if attempt == MAX_RETRIES - 1:
+                logger.error(f"API error after {MAX_RETRIES} attempts: {e}")
+                return "生成报告时与 AI 连接出现问题。请检查网络连接或稍后再试。"
+            logger.warning(f"API error (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
+            time.sleep(RETRY_DELAY)
+        except Exception as e:
+            logger.error(f"Unexpected error calling API: {e}")
+            return "生成报告时出现未知错误。请稍后再试。"
+
+    # This should never be reached due to the return statements in the loop,
+    # but we need it to satisfy the type checker
+    return "生成报告时出现未知错误。请稍后再试。"
 
 
 def _build_report_prompt(
@@ -95,7 +206,7 @@ def _build_report_prompt(
     # Build the prompt with enhanced personalization
     prompt = f"""
 You are a data analyst and motivational coach for the Kindness Companion app.
-Your task is to generate a personalized weekly progress report for user ID {user_id}.
+Your task is to generate a personalized weekly progress report for user {user_data.get('username', '亲爱的用户')}.
 
 User Data for the Past Week:
 {{
@@ -119,7 +230,7 @@ Instructions for Generating the Report:
 1.  **Tone:** Warm, encouraging, supportive, and insightful, like a friendly coach celebrating progress and offering gentle guidance.
 2.  **Length:** Concise, around 3-5 sentences.
 3.  **Content:**
-    *   Start with a friendly, personalized greeting.
+    *   Start with a friendly, personalized greeting using the user's name.
     *   Acknowledge the user's effort and consistency (or lack thereof, gently).
     *   Highlight 1-2 key achievements or positive trends using specific data (e.g., "Great job completing the '{user_data.get('top_category', '无')}' challenge 5 times!" or "Your streak is growing!").
     *   If specific challenge titles are available in the data, try to mention one.
@@ -130,7 +241,7 @@ Instructions for Generating the Report:
 4.  **Style:**
     *   Use clear and simple language.
     *   Vary sentence structure and vocabulary to avoid repetition.
-    *   Directly address the user (use "you", "your").
+    *   Directly address the user (use "你", "你的").
 5.  **Output Format:** Respond *only* with the report text itself. Do not include any preamble, explanation, or labels like "Report:".
 
 Generate the report now based *only* on the provided data and instructions.

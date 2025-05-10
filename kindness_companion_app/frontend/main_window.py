@@ -297,14 +297,14 @@ class MainWindow(QMainWindow):
         )  # 需要时显示垂直滚动条
         self.progress_scroll_area.setWidget(self.progress_widget)
 
-        # 获取主题管理器并传递给提醒设置界面
-        theme_manager: Optional[Any] = None
+        # 获取主题管理器
         app = QApplication.instance()
-        if app and hasattr(app, "theme_manager"):
-            try:
-                theme_manager = getattr(app, "theme_manager")
+        theme_manager = None
+        if app:
+            theme_manager = app.property("theme_manager")
+            if theme_manager:
                 self.logger.info("成功获取应用程序实例中的主题管理器")
-            except AttributeError:
+            else:
                 self.logger.warning("无法获取主题管理器属性")
         else:
             self.logger.warning(

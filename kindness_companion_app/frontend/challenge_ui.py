@@ -69,6 +69,10 @@ class ChallengeCard(QFrame):
         self.title_label.setObjectName("challenge_title_label")
         self.title_label.setWordWrap(True)
         self.title_label.setMinimumHeight(45)  # 增加标题高度
+        self.title_label.setToolTip(self.challenge["title"])
+        self.title_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
         title_font = QFont("Hiragino Sans GB", 16, QFont.Weight.Bold)
         self.title_label.setFont(title_font)
         self.main_layout.addWidget(self.title_label)
@@ -89,6 +93,10 @@ class ChallengeCard(QFrame):
         self.description_label.setAlignment(
             Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft
         )
+        self.description_label.setToolTip(self.challenge["description"])
+        self.description_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
         self.main_layout.addWidget(self.description_label)
         self.main_layout.addSpacing(8)  # 增加间距
 
@@ -96,25 +104,48 @@ class ChallengeCard(QFrame):
         self.meta_layout = QHBoxLayout()
         self.meta_layout.setSpacing(12)  # 增加间距
 
-        # Category
-        self.category_label = QLabel(f"分类: {self.challenge['category']}")
-        self.category_label.setObjectName("challenge_category_label")
-        self.category_label.setWordWrap(True)
-        self.meta_layout.addWidget(self.category_label)
+        # 分类
+        self.category_box = QFrame()
+        self.category_box.setObjectName("challenge_meta_box")
+        category_layout = QVBoxLayout(self.category_box)
+        category_layout.setContentsMargins(8, 8, 8, 8)
+        category_layout.setSpacing(2)
+        category_label = QLabel("分类:")
+        category_label.setObjectName("challenge_meta_label")
+        category_value = QLabel(self.challenge["category"])
+        category_value.setObjectName("challenge_meta_value")
+        category_value.setWordWrap(True)
+        category_layout.addWidget(category_label)
+        category_layout.addWidget(category_value)
+        self.meta_layout.addWidget(self.category_box)
 
-        # Difficulty
-        difficulty_text = "★" * self.challenge["difficulty"]
-        self.difficulty_label = QLabel(f"难度: {difficulty_text}")
-        self.difficulty_label.setObjectName("challenge_difficulty_label")
-        self.meta_layout.addWidget(self.difficulty_label)
+        # 难度
+        self.difficulty_box = QFrame()
+        self.difficulty_box.setObjectName("challenge_meta_box")
+        difficulty_layout = QVBoxLayout(self.difficulty_box)
+        difficulty_layout.setContentsMargins(8, 8, 8, 8)
+        difficulty_layout.setSpacing(2)
+        difficulty_label = QLabel("难度:")
+        difficulty_label.setObjectName("challenge_meta_label")
+        difficulty_value = QLabel("★" * self.challenge["difficulty"])
+        difficulty_value.setObjectName("challenge_meta_value")
+        difficulty_layout.addWidget(difficulty_label)
+        difficulty_layout.addWidget(difficulty_value)
+        self.meta_layout.addWidget(self.difficulty_box)
 
-        # Streak label
-        self.streak_label = QLabel("")
-        self.streak_label.setObjectName("streak_label")
-        self.streak_label.setVisible(False)
-        streak_font = QFont("Hiragino Sans GB", 14, QFont.Weight.Bold)
-        self.streak_label.setFont(streak_font)
-        self.meta_layout.addWidget(self.streak_label)
+        # 连续打卡
+        self.streak_box = QFrame()
+        self.streak_box.setObjectName("challenge_meta_box")
+        streak_layout = QVBoxLayout(self.streak_box)
+        streak_layout.setContentsMargins(8, 8, 8, 8)
+        streak_layout.setSpacing(2)
+        streak_label = QLabel("连续打卡:")
+        streak_label.setObjectName("challenge_meta_label")
+        self.streak_value = QLabel(f"{self.streak}天")
+        self.streak_value.setObjectName("challenge_meta_value")
+        streak_layout.addWidget(streak_label)
+        streak_layout.addWidget(self.streak_value)
+        self.meta_layout.addWidget(self.streak_box)
 
         # 添加弹性空间
         self.meta_layout.addStretch()
@@ -187,18 +218,27 @@ class ChallengeCard(QFrame):
         """Updates the card's UI elements based on subscription and streak."""
         self.is_subscribed = is_subscribed
         self.streak = streak
-        self.category_label.setText(f"分类: {self.challenge['category']}")
+        # 更新嵌套布局中的内容
+        category_value_label = self.category_box.findChild(
+            QLabel, "challenge_meta_value"
+        )
+        if category_value_label is not None:
+            category_value_label.setText(self.challenge["category"])
+        difficulty_value_label = self.difficulty_box.findChild(
+            QLabel, "challenge_meta_value"
+        )
+        if difficulty_value_label is not None:
+            difficulty_value_label.setText("★" * self.challenge["difficulty"])
+        self.streak_value.setText(f"{self.streak}天")
         self._update_card_elements()
 
     def _update_card_elements(self):
         """Helper method to update streak label and buttons."""
         # --- Update Streak Label ---
         if self.is_subscribed and self.streak > 0:
-            self.streak_label.setText(f"连续打卡: {self.streak}天")
-            self.streak_label.setVisible(True)
+            self.streak_value.setText(f"{self.streak}天")
         else:
-            self.streak_label.setText("")  # Clear text
-            self.streak_label.setVisible(False)
+            self.streak_value.setText("")  # Clear text
 
         # --- Update Buttons ---
         # Clear existing buttons from layout first

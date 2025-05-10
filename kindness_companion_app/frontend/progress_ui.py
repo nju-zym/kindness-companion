@@ -27,6 +27,9 @@ from PySide6.QtWidgets import (
     QTabWidget,
     QBoxLayout,
     QLayout,  # 添加QLayout导入
+    QDialog,
+    QDialogButtonBox,
+    QApplication,
 )
 from PySide6.QtCore import Qt, Signal, Slot, QDate, QSize, QTimer, QThread, QMargins
 from PySide6.QtGui import (
@@ -112,6 +115,8 @@ class ProgressWidget(QWidget):
         self.current_user = None
         self.weekly_report_text = ""
         self.report_last_generated = None
+        self.report_history = []  # Store report history
+        self.ai_report_generator = None  # Initialize AI report generator
 
         # 添加图表相关属性
         self.pie_chart = None
@@ -306,6 +311,11 @@ class ProgressWidget(QWidget):
         self.weekly_report_text_edit.setMinimumHeight(70)
         self.weekly_report_text_edit.setMaximumHeight(110)
         ai_layout.addWidget(self.weekly_report_text_edit)
+        self.report_progress_bar = QProgressBar()
+        self.report_progress_bar.setVisible(False)
+        self.report_progress_bar.setRange(0, 0)  # Indeterminate progress
+        self.report_progress_bar.setTextVisible(False)
+        ai_layout.addWidget(self.report_progress_bar)
         ai_btn_layout = QHBoxLayout()
         ai_btn_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.generate_report_button = QPushButton("生成周报")
@@ -314,10 +324,16 @@ class ProgressWidget(QWidget):
         self.generate_report_button.setFixedSize(110, 32)
         self.generate_report_button.clicked.connect(self.generate_weekly_report)
         ai_btn_layout.addWidget(self.generate_report_button)
+        self.history_button = QPushButton("历史记录")
+        self.history_button.setObjectName("history_button")
+        self.history_button.setIcon(QIcon(":/icons/history.svg"))
+        self.history_button.setFixedSize(110, 32)
+        self.history_button.clicked.connect(self.show_report_history)
+        ai_btn_layout.addWidget(self.history_button)
         ai_layout.addLayout(ai_btn_layout)
         ai_group.setLayout(ai_layout)
         self.bottom_split.addWidget(ai_group, 1)
-        # 成就Tab
+        # 成就显示
         achievements_group = QGroupBox("我的成就")
         achievements_group.setObjectName("achievements_group")
         achievements_group.setMinimumWidth(260)
@@ -350,13 +366,7 @@ class ProgressWidget(QWidget):
         self.achievements_layout.addSpacerItem(self.achievements_spacer)
         self.achievements_scroll_area.setWidget(self.achievements_container)
         achievements_layout.addWidget(self.achievements_scroll_area)
-        # 添加Tab
-        self.bottom_split_widget = QTabWidget()
-        self.bottom_split_widget.setTabPosition(QTabWidget.TabPosition.South)
-        self.bottom_split_widget.setObjectName("bottom_split_widget")
-        self.bottom_split_widget.addTab(ai_group, "AI 周报")
-        self.bottom_split_widget.addTab(achievements_group, "我的成就")
-        self.bottom_split_widget.setMinimumHeight(220)
+        self.bottom_split.addWidget(achievements_group, 1)
         bottom_split_widget = QWidget()
         bottom_split_widget.setLayout(self.bottom_split)
         bottom_split_widget.setMinimumHeight(220)
@@ -372,107 +382,84 @@ class ProgressWidget(QWidget):
         # 保证AI周报与成就区块强制显示
         ai_group.setVisible(True)
         achievements_group.setVisible(True)
-        self.bottom_split_widget.setVisible(True)
 
     def resizeEvent(self, event):
         width = self.width()
-        itemAt = getattr(self.main_layout, "itemAt", None)
-        main_content = itemAt(1) if callable(itemAt) else None
-        if main_content is not None and hasattr(main_content, "layout"):
-            main_content_layout = main_content.layout()
-            if width < 950:
+
+        # Get the main content layout
+        main_content_layout = None
+        if self.main_layout is not None:
+            for i in range(self.main_layout.count()):
+                item = self.main_layout.itemAt(i)
+                if item and item.layout():
+                    main_content_layout = item.layout()
+                    break
+
+        if main_content_layout is not None:
+            if width < 1000:  # 窄屏布局
                 if isinstance(main_content_layout, QBoxLayout):
                     main_content_layout.setDirection(QBoxLayout.Direction.TopToBottom)
-                    right_panel_item = None
-                    if main_content_layout.count() > 1:
-                        right_panel_item = main_content_layout.itemAt(1)
-                    if right_panel_item is not None and hasattr(
-                        right_panel_item, "layout"
-                    ):
-                        right_panel_layout = right_panel_item.layout()
-                        if isinstance(right_panel_layout, QBoxLayout):
-                            # 移除横向分栏
-                            for i in range(right_panel_layout.count()):
-                                item = right_panel_layout.itemAt(i)
-                                if (
-                                    item is not None
-                                    and item.layout() is not None
-                                    and item.layout() is self.bottom_split
-                                ):
-                                    right_panel_layout.removeItem(item)
-                                    break
-                            # 添加TabWidget（如未添加）
-                            if (
-                                self.bottom_split_widget is not None
-                                and self.bottom_split_widget.parent() is None
-                            ):
-                                right_panel_layout.addWidget(
-                                    self.bottom_split_widget, 1
-                                )
+                    # 移除横向分栏
+                    for i in range(main_content_layout.count()):
+                        item = main_content_layout.itemAt(i)
+                        if (
+                            item is not None
+                            and item.layout() is not None
+                            and item.layout() is self.bottom_split
+                        ):
+                            if self.bottom_split is not None:
+                                main_content_layout.removeItem(item)
+                            break
+                    # 添加纵向分栏
+                    if self.bottom_split is not None:
+                        main_content_layout.addLayout(self.bottom_split)
                 self.setStyleSheet(
                     "font-size: 13px; QGroupBox {margin-top: 8px;} QTableWidget {font-size: 12px;}"
                 )
                 if self.progress_table is not None:
                     self.progress_table.setMinimumHeight(180)
-            else:
+            else:  # 宽屏布局
                 if isinstance(main_content_layout, QBoxLayout):
                     main_content_layout.setDirection(QBoxLayout.Direction.LeftToRight)
-                    right_panel_item = None
-                    if main_content_layout.count() > 1:
-                        right_panel_item = main_content_layout.itemAt(1)
-                    if right_panel_item is not None and hasattr(
-                        right_panel_item, "layout"
-                    ):
-                        right_panel_layout = right_panel_item.layout()
-                        if isinstance(right_panel_layout, QBoxLayout):
-                            # 移除TabWidget
-                            for i in range(right_panel_layout.count()):
-                                item = right_panel_layout.itemAt(i)
-                                if (
-                                    item is not None
-                                    and item.widget() is not None
-                                    and item.widget() is self.bottom_split_widget
-                                ):
-                                    if self.bottom_split_widget is not None:
-                                        right_panel_layout.removeWidget(
-                                            self.bottom_split_widget
-                                        )
-                                    break
-                            # 添加横向分栏（如未添加）
-                            found = False
-                            for i in range(right_panel_layout.count()):
-                                item = right_panel_layout.itemAt(i)
-                                if (
-                                    item is not None
-                                    and item.layout() is not None
-                                    and item.layout() is self.bottom_split
-                                ):
-                                    found = True
-                                    break
-                            if not found and self.bottom_split is not None:
-                                right_panel_layout.addLayout(self.bottom_split, 1)
+                    # 移除纵向分栏
+                    for i in range(main_content_layout.count()):
+                        item = main_content_layout.itemAt(i)
+                        if (
+                            item is not None
+                            and item.layout() is not None
+                            and item.layout() is self.bottom_split
+                        ):
+                            if self.bottom_split is not None:
+                                main_content_layout.removeItem(item)
+                            break
+                    # 添加横向分栏
+                    if self.bottom_split is not None:
+                        main_content_layout.addLayout(self.bottom_split)
                 self.setStyleSheet(
                     "font-size: 15px; QGroupBox {margin-top: 14px;} QTableWidget {font-size: 14px;}"
                 )
                 if self.progress_table is not None:
                     self.progress_table.setMinimumHeight(260)
+
         super().resizeEvent(event)
 
     @Slot(dict)
     def set_user(self, user):
-        """
-        Set the current user.
-
-        Args:
-            user (dict): User information
-        """
+        """Set the current user and update the UI accordingly."""
         self.current_user = user
-
         if user:
+            # 初始化 AI 报告生成器
+            from ..ai_core.report_generator import generate_weekly_report
+
+            self.ai_report_generator = generate_weekly_report
+
+            # 加载用户数据
             self.load_user_challenges()
             self.load_progress()
+            self.load_achievements()
         else:
             self.clear_progress()
+            self.clear_achievements()
 
     def load_user_challenges(self):
         """Load user's subscribed challenges."""
@@ -1015,59 +1002,39 @@ class ProgressWidget(QWidget):
                 )  # Collapse spacer if no achievements
 
     def generate_weekly_report(self):
-        """Generate and display a weekly AI report for the user."""
+        """Generate a weekly report using AI."""
         if not self.current_user:
-            AnimatedMessageBox.showWarning(self, "无法生成报告", "请先登录")
+            QMessageBox.warning(self, "提示", "请先登录后再生成报告")
             return
 
-        if not generate_weekly_report:
-            AnimatedMessageBox.showWarning(
-                self, "功能不可用", "AI 报告功能不可用。请确保 AI 核心模块已正确安装。"
-            )
+        if not hasattr(self, "ai_report_generator") or self.ai_report_generator is None:
+            QMessageBox.warning(self, "提示", "AI报告生成功能不可用")
             return
 
-        # --- AI Consent Check Removed ---
-        # Consent is now assumed True by default
-        user_id = self.current_user.get("id")
-        logging.info(
-            f"AI consent assumed True for user {user_id}. Proceeding with report generation."
-        )
-        # --- End AI Consent Check Removed ---
+        # 准备报告生成所需的数据
+        report_input = {
+            "user_id": self.current_user["id"],
+            "username": self.current_user["username"],
+            "start_date": (
+                datetime.datetime.now() - datetime.timedelta(days=7)
+            ).strftime("%Y-%m-%d"),
+            "end_date": datetime.datetime.now().strftime("%Y-%m-%d"),
+        }
 
-        # Show loading state
-        if self.weekly_report_text_edit is not None:
-            self.weekly_report_text_edit.setPlainText("正在生成报告，请稍候...")
-        if self.generate_report_button is not None:
+        # 更新UI状态
+        if self.generate_report_button:
             self.generate_report_button.setEnabled(False)
+            self.generate_report_button.setText("生成中...")
+        if self.weekly_report_text_edit:
+            self.weekly_report_text_edit.setPlainText("正在生成报告，请稍候...")
+        if self.report_progress_bar:
+            self.report_progress_bar.setVisible(True)
 
-        # Call the AI report generator in a separate thread
-        try:
-            # Fetch recent progress data
-            end_date = datetime.date.today()
-            start_date = end_date - datetime.timedelta(days=7)
-            # Corrected method name
-            progress_data = self.progress_tracker.get_all_user_check_ins(
-                user_id, start_date.isoformat(), end_date.isoformat()
-            )
-
-            # Prepare data for AI
-            report_input = {
-                "user_id": user_id,
-                "username": self.current_user.get("username", "用户"),
-                "progress_data": progress_data,
-                "start_date": start_date.isoformat(),
-                "end_date": end_date.isoformat(),
-            }
-
-            # Run AI generation in a thread
-            self.report_thread = AIReportThread(generate_weekly_report, report_input)
-            self.report_thread.report_ready.connect(self.display_report)
-            self.report_thread.report_error.connect(self.display_report_error)
-            self.report_thread.start()
-
-        except Exception as e:
-            logging.error(f"Error preparing data for weekly report: {e}", exc_info=True)
-            self.display_report_error(f"准备报告数据时出错: {e}")
+        # 创建并启动报告生成线程
+        self.report_thread = AIReportThread(self.ai_report_generator, report_input)
+        self.report_thread.report_ready.connect(self.display_report)
+        self.report_thread.report_error.connect(self.display_report_error)
+        self.report_thread.start()
 
     def display_report(self, report_text):
         """Display the generated AI report."""
@@ -1075,15 +1042,223 @@ class ProgressWidget(QWidget):
         if self.weekly_report_text_edit is not None:
             self.weekly_report_text_edit.setPlainText(report_text)
         self.report_last_generated = datetime.datetime.now()
+
+        # 获取当前周的开始和结束日期
+        current_week_start = self.report_last_generated.date() - datetime.timedelta(
+            days=7
+        )
+        current_week_end = self.report_last_generated.date()
+        current_week_range = f"{current_week_start} 至 {current_week_end}"
+
+        # 检查是否存在同一周的周报，如果存在则覆盖
+        for i, report in enumerate(self.report_history):
+            if report["date_range"] == current_week_range:
+                self.report_history[i] = {
+                    "text": report_text,
+                    "timestamp": self.report_last_generated,
+                    "date_range": current_week_range,
+                }
+                break
+        else:
+            # 如果不存在同一周的周报，则添加新记录
+            self.report_history.append(
+                {
+                    "text": report_text,
+                    "timestamp": self.report_last_generated,
+                    "date_range": current_week_range,
+                }
+            )
+
+        # 更新UI状态
         if self.generate_report_button is not None:
             self.generate_report_button.setEnabled(True)
+            self.generate_report_button.setText("生成周报")
+        if self.report_progress_bar is not None:
+            self.report_progress_bar.setVisible(False)
 
     def display_report_error(self, error_message):
-        """Display an error message in the report area."""
+        """Display an error message when report generation fails."""
         if self.weekly_report_text_edit is not None:
-            self.weekly_report_text_edit.setPlainText(f"生成报告失败: {error_message}")
+            self.weekly_report_text_edit.setPlainText(error_message)
         if self.generate_report_button is not None:
             self.generate_report_button.setEnabled(True)
+        if self.report_progress_bar is not None:
+            self.report_progress_bar.setVisible(False)
+
+    def show_report_history(self):
+        """显示历史周报记录对话框"""
+        if not self.report_history:
+            QMessageBox.information(
+                self, "历史记录", "暂无历史周报记录", QMessageBox.StandardButton.Ok
+            )
+            return
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("周报历史记录")
+        dialog.setMinimumSize(800, 600)
+
+        # 设置对话框居中
+        screen = QApplication.primaryScreen().geometry()
+        dialog_geometry = dialog.geometry()
+        x = (screen.width() - dialog_geometry.width()) // 2
+        y = (screen.height() - dialog_geometry.height()) // 2
+        dialog.move(x, y)
+
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
+
+        # 添加标题
+        title_label = QLabel("历史周报记录")
+        title_label.setObjectName("dialog_title_label")
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title_label)
+
+        # 创建水平布局来放置历史列表和预览
+        content_layout = QHBoxLayout()
+        content_layout.setSpacing(20)
+
+        # 左侧历史列表
+        history_container = QWidget()
+        history_container.setObjectName("history_container")
+        history_layout = QVBoxLayout(history_container)
+        history_layout.setContentsMargins(0, 0, 0, 0)
+        history_layout.setSpacing(10)
+
+        history_label = QLabel("历史记录")
+        history_label.setObjectName("section_label")
+        history_layout.addWidget(history_label)
+
+        history_list = QListWidget()
+        history_list.setObjectName("history_list")
+        history_list.setAlternatingRowColors(True)
+        history_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
+        history_list.setMinimumWidth(250)
+        history_layout.addWidget(history_list)
+
+        content_layout.addWidget(history_container)
+
+        # 右侧预览区域
+        preview_container = QWidget()
+        preview_container.setObjectName("preview_container")
+        preview_layout = QVBoxLayout(preview_container)
+        preview_layout.setContentsMargins(0, 0, 0, 0)
+        preview_layout.setSpacing(10)
+
+        preview_label = QLabel("周报预览")
+        preview_label.setObjectName("section_label")
+        preview_layout.addWidget(preview_label)
+
+        preview_text = QTextEdit()
+        preview_text.setObjectName("report_preview")
+        preview_text.setReadOnly(True)
+        preview_layout.addWidget(preview_text)
+
+        content_layout.addWidget(preview_container)
+        layout.addLayout(content_layout)
+
+        # 添加按钮
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        button_box.setObjectName("dialog_button_box")
+        button_box.rejected.connect(dialog.reject)
+        layout.addWidget(button_box)
+
+        # 设置样式
+        dialog.setStyleSheet(
+            """
+            QDialog {
+                background-color: #1A1A1A;
+                border-radius: 12px;
+            }
+            QLabel#dialog_title_label {
+                color: #E67E22;
+                font-size: 16pt;
+                font-weight: 600;
+                padding: 10px;
+            }
+            QLabel#section_label {
+                color: #E67E22;
+                font-size: 12pt;
+                font-weight: 600;
+            }
+            QWidget#history_container, QWidget#preview_container {
+                background-color: #252525;
+                border-radius: 8px;
+                padding: 15px;
+            }
+            QListWidget#history_list {
+                background-color: #2A2A2A;
+                border: 1px solid #3A3A3A;
+                border-radius: 6px;
+                padding: 5px;
+                font-size: 11pt;
+            }
+            QListWidget#history_list::item {
+                padding: 10px;
+                border-bottom: 1px solid #3A3A3A;
+                color: #F5F5F5;
+            }
+            QListWidget#history_list::item:selected {
+                background-color: #E67E22;
+                color: #FFFFFF;
+            }
+            QListWidget#history_list::item:hover {
+                background-color: #3A3A3A;
+            }
+            QTextEdit#report_preview {
+                background-color: #2A2A2A;
+                color: #F5F5F5;
+                border: 1px solid #3A3A3A;
+                border-radius: 6px;
+                padding: 10px;
+                font-size: 11pt;
+                line-height: 1.5;
+            }
+            QDialogButtonBox {
+                margin-top: 20px;
+            }
+            QPushButton {
+                background-color: #E67E22;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-size: 11pt;
+            }
+            QPushButton:hover {
+                background-color: #D35400;
+            }
+            QPushButton:pressed {
+                background-color: #A04000;
+            }
+        """
+        )
+
+        # 按时间倒序添加历史记录
+        for report in sorted(
+            self.report_history, key=lambda x: x["timestamp"], reverse=True
+        ):
+            item = QListWidgetItem(report["date_range"])
+            item.setData(Qt.ItemDataRole.UserRole, report["text"])
+            history_list.addItem(item)
+
+        # 连接选择事件
+        def on_selection_changed():
+            selected_items = history_list.selectedItems()
+            if selected_items:
+                preview_text.setPlainText(
+                    selected_items[0].data(Qt.ItemDataRole.UserRole)
+                )
+            else:
+                preview_text.clear()
+
+        history_list.itemSelectionChanged.connect(on_selection_changed)
+
+        # 默认选中第一项
+        if history_list.count() > 0:
+            history_list.setCurrentRow(0)
+
+        dialog.exec()
 
     def clear_achievements(self):
         """Safely clear the achievements display area, preserving placeholder and spacer."""
@@ -1207,143 +1382,6 @@ class ProgressWidget(QWidget):
             self.pie_chart.legend().setColor(QColor("#E6E6E6"))
             self.pie_chart.legend().setAlignment(Qt.AlignmentFlag.AlignBottom)
             self.pie_chart.setMargins(QMargins(40, 40, 40, 40))
-
-
-class AchievementWidget(QWidget):
-    def __init__(self, progress_tracker):
-        super().__init__()
-        self.progress_tracker = progress_tracker
-        self.setup_ui()
-
-    def setup_ui(self):
-        """设置成就显示界面"""
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(20)
-
-        # 标题
-        title_label = QLabel("我的成就")
-        title_font = QFont("Hiragino Sans GB", 18, QFont.Weight.Bold)
-        title_label.setFont(title_font)
-        main_layout.addWidget(title_label)
-
-        # 添加分隔线
-        separator = QFrame()
-        separator.setFrameShape(QFrame.Shape.HLine)
-        separator.setFrameShadow(QFrame.Shadow.Sunken)
-        separator.setLineWidth(1)
-        main_layout.addWidget(separator)
-
-        # 成就统计卡片
-        stats_layout = QHBoxLayout()
-        stats_layout.setSpacing(15)
-
-        # 总成就数
-        total_achievements = QFrame()
-        total_achievements.setObjectName("achievement_card")
-        total_layout = QVBoxLayout(total_achievements)
-        total_label = QLabel("总成就数")
-        total_value = QLabel("0")
-        total_value.setObjectName("achievement_value")
-        total_layout.addWidget(total_label)
-        total_layout.addWidget(total_value)
-        stats_layout.addWidget(total_achievements)
-
-        # 本月成就
-        monthly_achievements = QFrame()
-        monthly_achievements.setObjectName("achievement_card")
-        monthly_layout = QVBoxLayout(monthly_achievements)
-        monthly_label = QLabel("本月成就")
-        monthly_value = QLabel("0")
-        monthly_value.setObjectName("achievement_value")
-        monthly_layout.addWidget(monthly_label)
-        monthly_layout.addWidget(monthly_value)
-        stats_layout.addWidget(monthly_achievements)
-
-        # 连续打卡
-        streak_achievements = QFrame()
-        streak_achievements.setObjectName("achievement_card")
-        streak_layout = QVBoxLayout(streak_achievements)
-        streak_label = QLabel("最长连续打卡")
-        streak_value = QLabel("0天")
-        streak_value.setObjectName("achievement_value")
-        streak_layout.addWidget(streak_label)
-        streak_layout.addWidget(streak_value)
-        stats_layout.addWidget(streak_achievements)
-
-        main_layout.addLayout(stats_layout)
-
-        # 成就列表
-        achievements_group = QGroupBox("成就列表")
-        achievements_layout = QVBoxLayout()
-        achievements_layout.setSpacing(10)
-
-        # 成就列表视图
-        self.achievements_list = QListWidget()
-        self.achievements_list.setObjectName("achievements_list")
-        self.achievements_list.setSpacing(5)
-        achievements_layout.addWidget(self.achievements_list)
-
-        achievements_group.setLayout(achievements_layout)
-        main_layout.addWidget(achievements_group)
-
-        # 加载成就数据
-        self.load_achievements()
-
-    def load_achievements(self):
-        """加载成就数据"""
-        achievements = self.progress_tracker.get_achievements()
-
-        # 更新统计卡片
-        total = len(achievements)
-        monthly = sum(
-            1
-            for a in achievements
-            if a.get("date", "").startswith(datetime.date.today().strftime("%Y-%m"))
-        )
-        max_streak = max((a.get("streak", 0) for a in achievements), default=0)
-
-        # 更新统计值
-        label_total = self.findChild(QLabel, "achievement_value")
-        if label_total is not None:
-            label_total.setText(str(total))
-        label_monthly = self.findChild(QLabel, "achievement_value")
-        if label_monthly is not None:
-            label_monthly.setText(str(monthly))
-        label_streak = self.findChild(QLabel, "achievement_value")
-        if label_streak is not None:
-            label_streak.setText(f"{max_streak}天")
-
-        # 更新成就列表
-        self.achievements_list.clear()
-        for achievement in achievements:
-            item = QListWidgetItem()
-            widget = QWidget()
-            layout = QHBoxLayout(widget)
-
-            # 成就图标
-            icon_label = QLabel()
-            icon_label.setPixmap(QIcon(":/icons/trophy.svg").pixmap(32, 32))
-            layout.addWidget(icon_label)
-
-            # 成就信息
-            info_layout = QVBoxLayout()
-            title_label = QLabel(achievement.get("title", ""))
-            title_label.setObjectName("achievement_title")
-            desc_label = QLabel(achievement.get("description", ""))
-            desc_label.setObjectName("achievement_description")
-            date_label = QLabel(achievement.get("date", ""))
-            date_label.setObjectName("achievement_date")
-
-            info_layout.addWidget(title_label)
-            info_layout.addWidget(desc_label)
-            info_layout.addWidget(date_label)
-            layout.addLayout(info_layout)
-
-            # 设置列表项
-            item.setSizeHint(widget.sizeHint())
-            self.achievements_list.addItem(item)
-            self.achievements_list.setItemWidget(item, widget)
 
 
 class WeeklyReportWidget(QWidget):

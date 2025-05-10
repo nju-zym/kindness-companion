@@ -32,6 +32,7 @@ from kindness_companion_app.backend.user_manager import UserManager
 from kindness_companion_app.backend.challenge_manager import ChallengeManager
 from kindness_companion_app.backend.progress_tracker import ProgressTracker
 from kindness_companion_app.backend.reminder_scheduler import ReminderScheduler
+from kindness_companion_app.backend.wall_manager import WallManager
 from kindness_companion_app.backend.utils import setup_logging
 import kindness_companion_app.resources.resources_rc  # Import the compiled resources
 
@@ -259,6 +260,9 @@ def main():
     print("DEBUG: Initializing ReminderScheduler...")
     reminder_scheduler = ReminderScheduler(db_manager)
     print("DEBUG: ReminderScheduler initialized.")
+    print("DEBUG: Initializing WallManager...")
+    wall_manager = WallManager(db_manager)
+    print("DEBUG: WallManager initialized.")
 
     # Initialize enhanced dialogue generator
     try:
@@ -284,6 +288,7 @@ def main():
         challenge_manager=challenge_manager,
         progress_tracker=progress_tracker,
         reminder_scheduler=reminder_scheduler,
+        wall_manager=wall_manager,
     )
     print("DEBUG: MainWindow created.")
     print("DEBUG: Showing MainWindow...")

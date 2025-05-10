@@ -66,7 +66,12 @@ class MainWindow(QMainWindow):
     user_changed = Signal(dict)
 
     def __init__(
-        self, user_manager, challenge_manager, progress_tracker, reminder_scheduler
+        self,
+        user_manager,
+        challenge_manager,
+        progress_tracker,
+        reminder_scheduler,
+        wall_manager,
     ):
         """
         Initialize the main window.
@@ -76,6 +81,7 @@ class MainWindow(QMainWindow):
             challenge_manager: Challenge manager instance
             progress_tracker: Progress tracker instance
             reminder_scheduler: Reminder scheduler instance
+            wall_manager: Wall manager instance
         """
         super().__init__()
 
@@ -90,6 +96,7 @@ class MainWindow(QMainWindow):
         self.challenge_manager = challenge_manager
         self.progress_tracker = progress_tracker
         self.reminder_scheduler = reminder_scheduler
+        self.wall_manager = wall_manager  # Add wall manager
 
         # 设置窗口大小变化时的响应
         self.timer = QTimer(self)
@@ -314,7 +321,7 @@ class MainWindow(QMainWindow):
         self.reminder_widget = ReminderWidget(
             self.reminder_scheduler, self.challenge_manager, theme_manager
         )
-        self.community_widget = CommunityWidget()
+        self.community_widget = CommunityWidget(self.wall_manager, self.user_manager)
         self.profile_widget = ProfileWidget(
             self.user_manager, self.progress_tracker, self.challenge_manager
         )
@@ -389,9 +396,7 @@ class MainWindow(QMainWindow):
         self.user_changed.connect(self.reminder_widget.set_user)
         self.user_changed.connect(self.community_widget.set_user)
         self.user_changed.connect(self.profile_widget.set_user)
-        self.user_changed.connect(
-            self.pet_widget.set_user
-        )  # Connect user_changed to PetWidget
+        self.user_changed.connect(self.pet_widget.set_user)
 
         # Connect profile widget signals
         self.profile_widget.user_updated.connect(self.update_user_info)

@@ -56,7 +56,7 @@ class TestPetHandler(unittest.TestCase):
     def test_handle_positive_reflection_event(self, mock_analyze_emotion, mock_generate_dialogue):
         """Test handling a positive reflection event."""
         # Configure mocks
-        mock_analyze_emotion.return_value = 'positive'
+        mock_analyze_emotion.return_value = ('positive', 'excited')
         mock_generate_dialogue.return_value = "I'm so happy to hear that!"
 
         # Call the function
@@ -72,6 +72,7 @@ class TestPetHandler(unittest.TestCase):
         # Check that the emotion was added to the context for dialogue generation
         dialogue_context = self.reflection_event_pos.copy()
         dialogue_context['analyzed_emotion'] = 'positive'
+        dialogue_context['suggested_animation'] = 'excited'
         mock_generate_dialogue.assert_called_once_with(1, 'reflection_added', dialogue_context)
 
     @patch('ai_core.pet_handler.generate_pet_dialogue')
@@ -79,7 +80,7 @@ class TestPetHandler(unittest.TestCase):
     def test_handle_negative_reflection_event(self, mock_analyze_emotion, mock_generate_dialogue):
         """Test handling a negative reflection event."""
         # Configure mocks
-        mock_analyze_emotion.return_value = 'negative'
+        mock_analyze_emotion.return_value = ('negative', 'concerned')
         mock_generate_dialogue.return_value = "I understand it was tough, but you did great!"
 
         # Call the function
@@ -95,6 +96,7 @@ class TestPetHandler(unittest.TestCase):
         # Check that the emotion was added to the context for dialogue generation
         dialogue_context = self.reflection_event_neg.copy()
         dialogue_context['analyzed_emotion'] = 'negative'
+        dialogue_context['suggested_animation'] = 'concerned'
         mock_generate_dialogue.assert_called_once_with(1, 'reflection_added', dialogue_context)
 
     @patch('ai_core.pet_handler.generate_pet_dialogue')
@@ -102,7 +104,7 @@ class TestPetHandler(unittest.TestCase):
     def test_handle_reflection_event_no_emotion(self, mock_analyze_emotion, mock_generate_dialogue):
         """Test handling a reflection event when emotion analysis fails."""
         # Configure mocks
-        mock_analyze_emotion.return_value = None  # Emotion analysis failed
+        mock_analyze_emotion.return_value = (None, None)  # Emotion analysis failed
         mock_generate_dialogue.return_value = "Thanks for sharing your thoughts!"
 
         # Call the function
@@ -111,7 +113,8 @@ class TestPetHandler(unittest.TestCase):
         # Verify the result
         self.assertEqual(result['dialogue'], "Thanks for sharing your thoughts!")
         self.assertIsNone(result['emotion_detected'])
-        self.assertEqual(result['suggested_animation'], 'idle')  # Default animation when no emotion is detected
+        # The default animation for reflection events with no emotion is now 'happy'
+        self.assertEqual(result['suggested_animation'], 'happy')
 
         # Verify the mocks were called correctly
         mock_analyze_emotion.assert_called_once_with(1, self.reflection_event_pos['text'])
@@ -129,7 +132,8 @@ class TestPetHandler(unittest.TestCase):
 
         # Verify the result contains a default message
         self.assertEqual(result['dialogue'], "... (The pet seems lost in thought)")
-        self.assertEqual(result['suggested_animation'], 'happy')  # Check-ins should still suggest 'happy'
+        # The default animation for errors is now 'confused'
+        self.assertEqual(result['suggested_animation'], 'confused')
 
         # Verify the mock was called correctly
         mock_generate_dialogue.assert_called_once_with(1, 'check_in', self.check_in_event)
@@ -150,7 +154,8 @@ class TestPetHandler(unittest.TestCase):
             # Verify the result doesn't contain emotion data
             self.assertEqual(result['dialogue'], "Thanks for sharing!")
             self.assertIsNone(result['emotion_detected'])
-            self.assertEqual(result['suggested_animation'], 'idle')  # Default animation when emotion analysis fails
+            # The default animation is now 'happy' for reflection events with no emotion
+            self.assertEqual(result['suggested_animation'], 'happy')
 
             # Verify the mocks were called correctly
             mock_analyze_emotion.assert_called_once_with(1, self.reflection_event_pos['text'])
@@ -161,7 +166,7 @@ class TestPetHandler(unittest.TestCase):
     def test_handle_user_message_event(self, mock_analyze_emotion, mock_generate_dialogue):
         """Test handling a user message event."""
         # Configure mocks
-        mock_analyze_emotion.return_value = 'positive'
+        mock_analyze_emotion.return_value = ('positive', 'excited')
         mock_generate_dialogue.return_value = "你好！很高兴和你聊天。"
 
         # Call the function
@@ -177,6 +182,7 @@ class TestPetHandler(unittest.TestCase):
         # Check that the emotion was added to the context for dialogue generation
         dialogue_context = self.user_message_event.copy()
         dialogue_context['analyzed_emotion'] = 'positive'
+        dialogue_context['suggested_animation'] = 'excited'
         mock_generate_dialogue.assert_called_once_with(1, 'user_message', dialogue_context)
 
     @patch('ai_core.pet_handler.generate_pet_dialogue')
@@ -184,7 +190,7 @@ class TestPetHandler(unittest.TestCase):
     def test_handle_user_message_no_emotion(self, mock_analyze_emotion, mock_generate_dialogue):
         """Test handling a user message when emotion analysis returns None."""
         # Configure mocks
-        mock_analyze_emotion.return_value = None
+        mock_analyze_emotion.return_value = (None, None)
         mock_generate_dialogue.return_value = "你好！有什么我能帮你的吗？"
 
         # Call the function

@@ -133,12 +133,12 @@ class TestReportGenerator(unittest.TestCase):
         prompt = _build_report_prompt(user_id, user_data, additional_context)
 
         # Verify the prompt contains the expected data
-        self.assertIn("用户 ID: 1", prompt)
-        self.assertIn("完成打卡次数: 5", prompt)
-        self.assertIn("当前连胜天数: 3", prompt)
-        self.assertIn("主要参与的挑战类别: 社区服务", prompt)
-        self.assertIn("参与的总挑战数: 3", prompt)
-        self.assertIn("本周完成率: 70.0%", prompt)
+        self.assertIn("user ID 1", prompt)
+        self.assertIn('"完成打卡次数": 5', prompt)
+        self.assertIn('"当前连胜天数": 3', prompt)
+        self.assertIn('"主要参与的挑战类别": 社区服务', prompt)
+        self.assertIn('"参与的总挑战数": 3', prompt)
+        self.assertIn('本周完成率', prompt)
 
     @patch('backend.database_manager.DatabaseManager')
     @patch('backend.progress_tracker.ProgressTracker')

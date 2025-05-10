@@ -81,7 +81,7 @@ class TestDialogueGenerator(unittest.TestCase):
         result = generate_pet_dialogue(1, 'check_in', self.check_in_event)
 
         # Verify the result is a default message
-        self.assertEqual(result, "... (宠物似乎正在安静地思考)")
+        self.assertEqual(result, "...")  # The default message is now just "..."
 
         # Verify the mock was called
         mock_call_api.assert_called_once()
@@ -96,7 +96,7 @@ class TestDialogueGenerator(unittest.TestCase):
         result = generate_pet_dialogue(1, 'check_in', self.check_in_event)
 
         # Verify the result is a default message
-        self.assertEqual(result, "... (宠物似乎正在安静地思考)")
+        self.assertEqual(result, "...")  # The default message is now just "..."
 
         # Verify the mock was called
         mock_call_api.assert_called_once()
@@ -177,7 +177,7 @@ class TestDialogueGenerator(unittest.TestCase):
         prompt = mock_call_api.call_args[0][0]
         self.assertIn('Hello, how are you today?', prompt)
         self.assertIn('neutral', prompt)
-        self.assertIn('direct message', prompt)  # Check that it mentions this is a direct message
+        self.assertIn('Respond directly', prompt)  # Check that it mentions responding directly to the message
 
 if __name__ == '__main__':
     unittest.main()

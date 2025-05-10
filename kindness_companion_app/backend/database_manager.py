@@ -174,6 +174,21 @@ class DatabaseManager:
                 """,
                     "reminders",
                 ),
+                (
+                    """
+                CREATE TABLE IF NOT EXISTS weekly_reports (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    report_text TEXT NOT NULL,
+                    start_date DATE NOT NULL,
+                    end_date DATE NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id),
+                    UNIQUE (user_id, start_date, end_date)
+                )
+                """,
+                    "weekly_reports",
+                ),
             ]
 
             for create_sql, table_name in tables:

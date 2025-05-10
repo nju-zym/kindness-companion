@@ -1050,23 +1050,13 @@ class ProgressWidget(QWidget):
         current_week_end = self.report_last_generated.date()
         current_week_range = f"{current_week_start} 至 {current_week_end}"
 
-        # 检查是否存在同一周的周报，如果存在则覆盖
-        for i, report in enumerate(self.report_history):
-            if report["date_range"] == current_week_range:
-                self.report_history[i] = {
-                    "text": report_text,
-                    "timestamp": self.report_last_generated,
-                    "date_range": current_week_range,
-                }
-                break
-        else:
-            # 如果不存在同一周的周报，则添加新记录
-            self.report_history.append(
-                {
-                    "text": report_text,
-                    "timestamp": self.report_last_generated,
-                    "date_range": current_week_range,
-                }
+        # 保存周报到数据库
+        if self.current_user:
+            self.progress_tracker.save_weekly_report(
+                self.current_user["id"],
+                report_text,
+                current_week_start.strftime("%Y-%m-%d"),
+                current_week_end.strftime("%Y-%m-%d"),
             )
 
         # 更新UI状态
@@ -1086,179 +1076,88 @@ class ProgressWidget(QWidget):
             self.report_progress_bar.setVisible(False)
 
     def show_report_history(self):
-        """显示历史周报记录对话框"""
-        if not self.report_history:
-            QMessageBox.information(
-                self, "历史记录", "暂无历史周报记录", QMessageBox.StandardButton.Ok
-            )
+        """显示周报历史记录"""
+        if not self.current_user:
+            QMessageBox.warning(self, "提示", "请先登录后再查看历史记录")
             return
 
+        # 从数据库获取所有周报
+        reports = self.progress_tracker.get_all_weekly_reports(self.current_user["id"])
+        if not reports:
+            QMessageBox.information(self, "提示", "暂无历史周报记录")
+            return
+
+        # 创建历史记录对话框
         dialog = QDialog(self)
         dialog.setWindowTitle("周报历史记录")
-        dialog.setMinimumSize(800, 600)
-
-        # 设置对话框居中
-        screen = QApplication.primaryScreen().geometry()
-        dialog_geometry = dialog.geometry()
-        x = (screen.width() - dialog_geometry.width()) // 2
-        y = (screen.height() - dialog_geometry.height()) // 2
-        dialog.move(x, y)
+        dialog.setMinimumSize(600, 400)
 
         layout = QVBoxLayout(dialog)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(15)
 
-        # 添加标题
-        title_label = QLabel("历史周报记录")
-        title_label.setObjectName("dialog_title_label")
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(title_label)
+        # 创建列表控件
+        list_widget = QListWidget()
+        list_widget.setObjectName("report_history_list")
+        layout.addWidget(list_widget)
 
-        # 创建水平布局来放置历史列表和预览
-        content_layout = QHBoxLayout()
-        content_layout.setSpacing(20)
+        # 添加周报到列表
+        for report in reports:
+            start_date = datetime.datetime.strptime(
+                report["start_date"], "%Y-%m-%d"
+            ).date()
+            end_date = datetime.datetime.strptime(report["end_date"], "%Y-%m-%d").date()
+            date_range = f"{start_date} 至 {end_date}"
 
-        # 左侧历史列表
-        history_container = QWidget()
-        history_container.setObjectName("history_container")
-        history_layout = QVBoxLayout(history_container)
-        history_layout.setContentsMargins(0, 0, 0, 0)
-        history_layout.setSpacing(10)
+            item = QListWidgetItem(date_range)
+            item.setData(Qt.ItemDataRole.UserRole, report)
+            list_widget.addItem(item)
 
-        history_label = QLabel("历史记录")
-        history_label.setObjectName("section_label")
-        history_layout.addWidget(history_label)
-
-        history_list = QListWidget()
-        history_list.setObjectName("history_list")
-        history_list.setAlternatingRowColors(True)
-        history_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
-        history_list.setMinimumWidth(250)
-        history_layout.addWidget(history_list)
-
-        content_layout.addWidget(history_container)
-
-        # 右侧预览区域
-        preview_container = QWidget()
-        preview_container.setObjectName("preview_container")
-        preview_layout = QVBoxLayout(preview_container)
-        preview_layout.setContentsMargins(0, 0, 0, 0)
-        preview_layout.setSpacing(10)
-
-        preview_label = QLabel("周报预览")
-        preview_label.setObjectName("section_label")
-        preview_layout.addWidget(preview_label)
-
+        # 创建预览区域
         preview_text = QTextEdit()
-        preview_text.setObjectName("report_preview")
         preview_text.setReadOnly(True)
-        preview_layout.addWidget(preview_text)
+        preview_text.setObjectName("report_preview")
+        layout.addWidget(preview_text)
 
-        content_layout.addWidget(preview_container)
-        layout.addLayout(content_layout)
+        # 连接列表选择信号
+        def on_item_selected(item):
+            report = item.data(Qt.ItemDataRole.UserRole)
+            preview_text.setPlainText(report["report_text"])
 
-        # 添加按钮
+        list_widget.currentItemChanged.connect(on_item_selected)
+
+        # 添加关闭按钮
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
-        button_box.setObjectName("dialog_button_box")
         button_box.rejected.connect(dialog.reject)
         layout.addWidget(button_box)
 
-        # 设置样式
-        dialog.setStyleSheet(
-            """
-            QDialog {
-                background-color: #1A1A1A;
-                border-radius: 12px;
-            }
-            QLabel#dialog_title_label {
-                color: #E67E22;
-                font-size: 16pt;
-                font-weight: 600;
-                padding: 10px;
-            }
-            QLabel#section_label {
-                color: #E67E22;
-                font-size: 12pt;
-                font-weight: 600;
-            }
-            QWidget#history_container, QWidget#preview_container {
-                background-color: #252525;
-                border-radius: 8px;
-                padding: 15px;
-            }
-            QListWidget#history_list {
-                background-color: #2A2A2A;
-                border: 1px solid #3A3A3A;
-                border-radius: 6px;
-                padding: 5px;
-                font-size: 11pt;
-            }
-            QListWidget#history_list::item {
-                padding: 10px;
-                border-bottom: 1px solid #3A3A3A;
-                color: #F5F5F5;
-            }
-            QListWidget#history_list::item:selected {
-                background-color: #E67E22;
-                color: #FFFFFF;
-            }
-            QListWidget#history_list::item:hover {
-                background-color: #3A3A3A;
-            }
-            QTextEdit#report_preview {
-                background-color: #2A2A2A;
-                color: #F5F5F5;
-                border: 1px solid #3A3A3A;
-                border-radius: 6px;
-                padding: 10px;
-                font-size: 11pt;
-                line-height: 1.5;
-            }
-            QDialogButtonBox {
-                margin-top: 20px;
-            }
-            QPushButton {
-                background-color: #E67E22;
-                color: white;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
-                font-size: 11pt;
-            }
-            QPushButton:hover {
-                background-color: #D35400;
-            }
-            QPushButton:pressed {
-                background-color: #A04000;
-            }
-        """
-        )
-
-        # 按时间倒序添加历史记录
-        for report in sorted(
-            self.report_history, key=lambda x: x["timestamp"], reverse=True
-        ):
-            item = QListWidgetItem(report["date_range"])
-            item.setData(Qt.ItemDataRole.UserRole, report["text"])
-            history_list.addItem(item)
-
-        # 连接选择事件
-        def on_selection_changed():
-            selected_items = history_list.selectedItems()
-            if selected_items:
-                preview_text.setPlainText(
-                    selected_items[0].data(Qt.ItemDataRole.UserRole)
-                )
-            else:
-                preview_text.clear()
-
-        history_list.itemSelectionChanged.connect(on_selection_changed)
-
-        # 默认选中第一项
-        if history_list.count() > 0:
-            history_list.setCurrentRow(0)
-
+        # 显示对话框
         dialog.exec()
+
+    def load_user_data(self, user_data):
+        """Load user data and update the UI."""
+        self.current_user = user_data
+        self.clear_progress()
+
+        # 加载最新的周报
+        if user_data:
+            latest_report = self.progress_tracker.get_weekly_report(user_data["id"])
+            if latest_report:
+                self.weekly_report_text = latest_report["report_text"]
+                if self.weekly_report_text_edit is not None:
+                    self.weekly_report_text_edit.setPlainText(
+                        latest_report["report_text"]
+                    )
+                self.report_last_generated = datetime.datetime.strptime(
+                    latest_report["created_at"], "%Y-%m-%d %H:%M:%S"
+                )
+
+        self.update_progress_display()
+
+    def update_progress_display(self):
+        """Update the progress display based on the loaded user data."""
+        if self.current_user:
+            self.load_progress()
+        else:
+            self.clear_progress()
 
     def clear_achievements(self):
         """Safely clear the achievements display area, preserving placeholder and spacer."""

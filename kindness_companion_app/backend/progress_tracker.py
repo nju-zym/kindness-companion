@@ -1,6 +1,7 @@
 import datetime
 from .database_manager import DatabaseManager
-from .challenge_manager import ChallengeManager # Import ChallengeManager
+from .challenge_manager import ChallengeManager  # Import ChallengeManager
+
 
 class ProgressTracker:
     """
@@ -44,7 +45,7 @@ class ProgressTracker:
                 INSERT INTO progress (user_id, challenge_id, check_in_date, notes)
                 VALUES (?, ?, ?, ?)
                 """,
-                (user_id, challenge_id, date, notes)
+                (user_id, challenge_id, date, notes),
             )
             return True
         except Exception:
@@ -71,7 +72,7 @@ class ProgressTracker:
             DELETE FROM progress
             WHERE user_id = ? AND challenge_id = ? AND check_in_date = ?
             """,
-            (user_id, challenge_id, date)
+            (user_id, challenge_id, date),
         )
 
         return affected_rows > 0
@@ -156,7 +157,7 @@ class ProgressTracker:
             WHERE user_id = ? AND challenge_id = ?
             ORDER BY check_in_date DESC
             """,
-            (user_id, challenge_id)
+            (user_id, challenge_id),
         )
 
         if not check_ins:
@@ -193,13 +194,10 @@ class ProgressTracker:
             float: Completion rate (0.0 to 1.0)
         """
         end_date = datetime.date.today()
-        start_date = end_date - datetime.timedelta(days=days-1)
+        start_date = end_date - datetime.timedelta(days=days - 1)
 
         check_ins = self.get_check_ins(
-            user_id,
-            challenge_id,
-            start_date.isoformat(),
-            end_date.isoformat()
+            user_id, challenge_id, start_date.isoformat(), end_date.isoformat()
         )
 
         # Count unique dates
@@ -227,7 +225,7 @@ class ProgressTracker:
         result = self.db_manager.execute_query(query, (user_id, category))
         # The result is a list of dictionaries, e.g., [{'COUNT(p.id)': 5}]
         # Access the count value correctly
-        return result[0]['COUNT(p.id)'] if result and result[0] else 0
+        return result[0]["COUNT(p.id)"] if result and result[0] else 0
 
     def get_total_check_ins(self, user_id):
         """
@@ -240,8 +238,7 @@ class ProgressTracker:
             int: Total number of check-ins
         """
         result = self.db_manager.execute_query(
-            "SELECT COUNT(*) as total FROM progress WHERE user_id = ?",
-            (user_id,)
+            "SELECT COUNT(*) as total FROM progress WHERE user_id = ?", (user_id,)
         )
         return result[0]["total"] if result else 0
 
@@ -265,3 +262,86 @@ class ProgressTracker:
             longest_streak = max(longest_streak, current_streak)
 
         return longest_streak
+
+    def save_weekly_report(self, user_id, report_text, start_date, end_date):
+        """
+        Save a weekly report to the database.
+
+        Args:
+            user_id (int): User ID
+            report_text (str): The generated report text
+            start_date (str): Start date in YYYY-MM-DD format
+            end_date (str): End date in YYYY-MM-DD format
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            query = """
+            INSERT OR REPLACE INTO weekly_reports 
+            (user_id, report_text, start_date, end_date)
+            VALUES (?, ?, ?, ?)
+            """
+            params = (user_id, report_text, start_date, end_date)
+            self.db_manager.execute_query(query, params)
+            return True
+        except Exception as e:
+            print(f"Error saving weekly report: {e}")
+            return False
+
+    def get_weekly_report(self, user_id, start_date=None, end_date=None):
+        """
+        Get a weekly report from the database.
+
+        Args:
+            user_id (int): User ID
+            start_date (str, optional): Start date in YYYY-MM-DD format
+            end_date (str, optional): End date in YYYY-MM-DD format
+
+        Returns:
+            dict: Report data if found, None otherwise
+        """
+        query = """
+        SELECT report_text, start_date, end_date, created_at
+        FROM weekly_reports
+        WHERE user_id = ?
+        """
+        params = [user_id]
+
+        if start_date:
+            query += " AND start_date = ?"
+            params.append(start_date)
+
+        if end_date:
+            query += " AND end_date = ?"
+            params.append(end_date)
+
+        query += " ORDER BY created_at DESC LIMIT 1"
+
+        result = self.db_manager.execute_query(query, tuple(params))
+        if result:
+            return {
+                "report_text": result[0]["report_text"],
+                "start_date": result[0]["start_date"],
+                "end_date": result[0]["end_date"],
+                "created_at": result[0]["created_at"],
+            }
+        return None
+
+    def get_all_weekly_reports(self, user_id):
+        """
+        Get all weekly reports for a user.
+
+        Args:
+            user_id (int): User ID
+
+        Returns:
+            list: List of report dictionaries
+        """
+        query = """
+        SELECT report_text, start_date, end_date, created_at
+        FROM weekly_reports
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+        """
+        return self.db_manager.execute_query(query, (user_id,))

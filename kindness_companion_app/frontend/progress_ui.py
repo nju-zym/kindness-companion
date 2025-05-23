@@ -247,6 +247,18 @@ class ProgressWidget(QWidget):
         self.pie_chart.legend().setVisible(True)
         self.pie_chart.legend().setAlignment(Qt.AlignmentFlag.AlignRight)
 
+        # 设置标题颜色：浅色模式为深色，深色模式为浅色
+        app = QApplication.instance()
+        theme = "light"
+        if app:
+            theme_manager = app.property("theme_manager")
+            if theme_manager:
+                theme = theme_manager.current_theme
+        if theme == "light":
+            self.pie_chart.setTitleBrush(QBrush(QColor("#333333")))
+        else:
+            self.pie_chart.setTitleBrush(QBrush(QColor("#E6E6E6")))
+
         self.pie_view = QChartView(self.pie_chart)
         self.pie_view.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.pie_view.setMinimumHeight(320)

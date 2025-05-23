@@ -17,7 +17,18 @@ from PySide6.QtWidgets import (
     QFrame,
 )
 from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer
-from PySide6.QtGui import QIcon, QFont, QFontMetrics
+from PySide6.QtGui import (
+    QIcon,
+    QPixmap,
+    QPainter,
+    QColor,
+    QFont,
+    QFontMetrics,
+    QPainterPath,
+    QLinearGradient,
+    QFontDatabase,
+    QIconEngine,
+)
 from typing import Optional, Any
 
 # Import the custom message box
@@ -56,6 +67,43 @@ THEME_COLORS = {
     },
 }
 
+class ChevronIcon(QIcon):
+    """自定义箭头图标类"""
+    def __init__(self, direction="right"):
+        super().__init__()
+        self.direction = direction
+        self.addPixmap(self.create_chevron_pixmap())
+
+    def create_chevron_pixmap(self):
+        """创建箭头图标的像素图"""
+        size = QSize(24, 24)
+        pixmap = QPixmap(size)
+        pixmap.fill(Qt.transparent)
+        
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        # 设置画笔
+        pen = painter.pen()
+        pen.setWidth(2)
+        pen.setColor(QColor("#666666"))
+        painter.setPen(pen)
+        
+        # 绘制箭头
+        path = QPainterPath()
+        if self.direction == "right":
+            path.moveTo(9, 6)
+            path.lineTo(15, 12)
+            path.lineTo(9, 18)
+        else:  # left
+            path.moveTo(15, 6)
+            path.lineTo(9, 12)
+            path.lineTo(15, 18)
+        
+        painter.drawPath(path)
+        painter.end()
+        
+        return pixmap
 
 class MainWindow(QMainWindow):
     """
@@ -72,6 +120,8 @@ class MainWindow(QMainWindow):
         progress_tracker,
         reminder_scheduler,
         wall_manager,
+        theme_manager,
+        ai_manager,
     ):
         """
         Initialize the main window.
@@ -82,6 +132,8 @@ class MainWindow(QMainWindow):
             progress_tracker: Progress tracker instance
             reminder_scheduler: Reminder scheduler instance
             wall_manager: Wall manager instance
+            theme_manager: Theme manager instance
+            ai_manager: AI manager instance
         """
         super().__init__()
 
@@ -96,7 +148,13 @@ class MainWindow(QMainWindow):
         self.challenge_manager = challenge_manager
         self.progress_tracker = progress_tracker
         self.reminder_scheduler = reminder_scheduler
-        self.wall_manager = wall_manager  # Add wall manager
+        self.wall_manager = wall_manager
+        self.theme_manager = theme_manager
+        self.ai_manager = ai_manager
+
+        # 设置窗口标题和大小
+        self.setWindowTitle("Kindness Companion")
+        self.resize(1200, 800)
 
         # 设置窗口大小变化时的响应
         self.timer = QTimer(self)
@@ -106,16 +164,10 @@ class MainWindow(QMainWindow):
         # Set up reminder callback
         self.reminder_scheduler.set_callback(self.show_reminder)
 
-        # Set window properties
-        self.setWindowTitle("善行伴侣 (Kindness Companion)")
-
-        # 设置全局样式表
-        # self.setStyleSheet(...)  # 移除
-
         # 获取屏幕尺寸，设置窗口为屏幕的一定比例
         screen = QApplication.primaryScreen().availableGeometry()
         width = int(screen.width() * 0.75)  # 窗口宽度为屏幕宽度的75%
-        height = int(screen.height() * 0.75)  # 窗口高度为屏幕高度的75%
+        height = int(screen.height() * 0.75)
 
         # 设置最小尺寸，确保在小屏幕上也有合理的显示
         self.setMinimumSize(min(800, width), min(600, height))
@@ -126,53 +178,49 @@ class MainWindow(QMainWindow):
         # Create central widget and layout
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
-        self.central_widget.setObjectName(
-            "main_central_widget"
-        )  # 为中央部件设置对象名，便于样式表定制
+        self.central_widget.setObjectName("main_central_widget")
 
         # 创建主布局
         self.main_layout = QHBoxLayout(self.central_widget)
-        self.main_layout.setSpacing(15)  # 增加间距，使各区域有更明显的分隔
-        self.main_layout.setContentsMargins(
-            20, 20, 20, 20
-        )  # 添加更大的边距，使布局更加宽松
+        self.main_layout.setSpacing(15)
+        self.main_layout.setContentsMargins(20, 20, 20, 20)
 
-        # Create navigation sidebar
-        self.setup_navigation()
-
-        # Create content area (stacked widget)
-        self.setup_content_area()
-
-        # Create Pet Widget Area
-        self.setup_pet_area()  # New method to setup pet widget
+        # 创建导航栏和宠物区域（初始隐藏）
+        self.setup_navigation()  # 导航栏会添加到最左侧
+        self.setup_content_area()  # 内容区域会添加到中间
+        self.setup_pet_area()  # 宠物区域会添加到最右侧
 
         # Connect signals
         self.connect_signals()
 
-        # Start with login screen
-        self.show_login()
+        # 尝试自动登录
+        self.attempt_auto_login()
 
     def setup_navigation(self):
         """Set up the navigation sidebar."""
+        # 创建一个容器来包裹导航栏
+        self.nav_container = QWidget()
+        self.nav_container.setObjectName("nav_container")
+        nav_container_layout = QVBoxLayout(self.nav_container)
+        nav_container_layout.setContentsMargins(0, 0, 0, 0)
+        nav_container_layout.setSpacing(0)
+
+        # 创建导航栏内容容器
+        self.nav_content = QWidget()
+        nav_content_layout = QVBoxLayout(self.nav_content)
+        nav_content_layout.setContentsMargins(0, 0, 0, 0)
+        nav_content_layout.setSpacing(0)
+
+        # 创建导航栏
         self.nav_widget = QWidget()
-        self.nav_widget.setObjectName("nav_widget")  # Set object name for styling
-
-        # 获取屏幕宽度，设置侧边栏为屏幕宽度的一定比例
-        screen_width = QApplication.primaryScreen().availableGeometry().width()
-        nav_min_width = min(
-            int(screen_width * 0.15), 220
-        )  # 最小宽度为屏幕宽度的15%，但不超过220
-        nav_max_width = min(
-            int(screen_width * 0.2), 280
-        )  # 最大宽度为屏幕宽度的20%，但不超过280
-
-        self.nav_widget.setMinimumWidth(nav_min_width)
-        self.nav_widget.setMaximumWidth(nav_max_width)
+        self.nav_widget.setObjectName("nav_widget")
+        self.nav_widget.setMinimumWidth(220)  # 设置最小宽度
+        self.nav_widget.setMaximumWidth(280)  # 设置最大宽度
 
         self.nav_layout = QVBoxLayout(self.nav_widget)
         self.nav_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.nav_layout.setContentsMargins(15, 30, 15, 30)  # 增加内边距，使布局更加宽松
-        self.nav_layout.setSpacing(20)  # 增加元素间距，改善布局
+        self.nav_layout.setContentsMargins(15, 30, 15, 30)
+        self.nav_layout.setSpacing(20)
 
         # 创建一个容器控件来包含标题标签
         self.title_container = QWidget()
@@ -264,8 +312,12 @@ class MainWindow(QMainWindow):
         # Add stretch to push logout button to bottom
         self.nav_layout.addStretch()
 
-        # Add navigation to main layout
-        self.main_layout.addWidget(self.nav_widget, 1)
+        # 将导航栏添加到容器
+        nav_content_layout.addWidget(self.nav_widget)
+        nav_container_layout.addWidget(self.nav_content)
+        
+        # 将导航容器添加到主布局的最左侧
+        self.main_layout.insertWidget(0, self.nav_container, 1)  # 使用 insertWidget 确保在最左侧
 
     def apply_theme(self, theme="light"):
         """移除，全部交由全局QSS管理"""
@@ -338,22 +390,29 @@ class MainWindow(QMainWindow):
         self.content_widget.addWidget(self.community_widget)
         self.content_widget.addWidget(self.profile_widget)
 
-        # Add content area to main layout
-        self.main_layout.addWidget(self.content_widget, 3)
+        # 将内容区域添加到主布局的中间
+        self.main_layout.insertWidget(1, self.content_widget, 3)  # 使用 insertWidget 确保在中间位置
 
     def setup_pet_area(self):
         """Sets up the area for the PetWidget."""
-        # 创建一个容器来包裹宠物区域，便于添加边距和样式
+        # 创建一个容器来包裹宠物区域和折叠按钮
+        self.pet_area_container = QWidget()
+        self.pet_area_container.setObjectName("pet_area_container")
+        pet_area_layout = QHBoxLayout(self.pet_area_container)
+        pet_area_layout.setContentsMargins(0, 0, 0, 0)
+        pet_area_layout.setSpacing(0)
+
+        # 创建宠物区域容器
         self.pet_container = QWidget()
         self.pet_container.setObjectName("pet_container")
+        self.pet_container.setMinimumWidth(260)  # 设置最小宽度
+        self.pet_container.setMaximumWidth(320)  # 设置最大宽度
 
         # 为容器创建布局
         self.pet_container_layout = QVBoxLayout(self.pet_container)
-        self.pet_container_layout.setContentsMargins(
-            20, 30, 20, 30
-        )  # 增加内边距，使宠物区域更加宽松
-        self.pet_container_layout.setSpacing(20)  # 增加内部间距，改善布局
-        self.pet_container_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)  # 居中对齐
+        self.pet_container_layout.setContentsMargins(20, 30, 20, 30)
+        self.pet_container_layout.setSpacing(20)
+        self.pet_container_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # 实例化宠物部件
         self.pet_widget = PetWidget(self.user_manager)  # Instantiate PetWidget
@@ -362,22 +421,9 @@ class MainWindow(QMainWindow):
         # 将宠物部件添加到容器布局中
         self.pet_container_layout.addWidget(self.pet_widget)
 
-        # 设置宠物容器的尺寸限制，使用相对尺寸
-        screen_width = QApplication.primaryScreen().availableGeometry().width()
-        pet_min_width = min(
-            int(screen_width * 0.18), 260
-        )  # 最小宽度为屏幕宽度的18%，但不超过260
-        pet_max_width = min(
-            int(screen_width * 0.22), 320
-        )  # 最大宽度为屏幕宽度的22%，但不超过320
-
-        self.pet_container.setMinimumWidth(pet_min_width)
-        self.pet_container.setMaximumWidth(pet_max_width)
-
-        # 添加宠物容器到主布局
-        self.main_layout.addWidget(
-            self.pet_container, 1
-        )  # Give pet area less stretch factor
+        # 将宠物区域容器添加到主布局的最右侧
+        self.main_layout.insertWidget(2, self.pet_area_container, 1)  # 使用 insertWidget 确保在最右侧
+        pet_area_layout.addWidget(self.pet_container)
 
     def connect_signals(self):
         """Connect signals between widgets."""
@@ -422,6 +468,11 @@ class MainWindow(QMainWindow):
             user (dict): User information
         """
         logging.info("Login successful, preparing UI updates...")
+        
+        # 显示导航栏和宠物区域（包括它们的容器）
+        self.nav_container.show()
+        self.pet_area_container.show()
+        
         # Enable navigation buttons
         for button in self.nav_buttons.values():
             button.setEnabled(True)
@@ -441,13 +492,10 @@ class MainWindow(QMainWindow):
             self.update_button_style(self.nav_buttons["challenges"])
 
         # Show a non-modal animated welcome message
-        welcome_msg = AnimatedMessageBox(self)  # Use AnimatedMessageBox
+        welcome_msg = AnimatedMessageBox(self)
         welcome_msg.setWindowTitle("登录成功")
-        welcome_msg.setText(
-            f"欢迎回来，{user['username']}！\n准备好今天的善行挑战了吗？"
-        )
+        welcome_msg.setText(f"欢迎回来，{user['username']}！\n准备好今天的善行挑战了吗？")
         welcome_msg.setIcon(QMessageBox.Icon.Information)
-        # Use the custom method for non-modal display
         welcome_msg.showNonModal()
         logging.info("Non-modal animated welcome message shown.")
 
@@ -473,6 +521,10 @@ class MainWindow(QMainWindow):
     def logout(self):
         """Log out the current user."""
         self.user_manager.logout()
+
+        # 隐藏导航栏和宠物区域（包括它们的容器）
+        self.nav_container.hide()
+        self.pet_area_container.hide()
 
         # Disable navigation buttons
         for button in self.nav_buttons.values():
@@ -670,10 +722,10 @@ class MainWindow(QMainWindow):
 
         # 根据窗口宽度调整布局比例
         if width < 1000:  # 窄窗口
-            # 调整主布局的比例
-            self.main_layout.setStretch(0, 1)  # 导航区域
-            self.main_layout.setStretch(1, 3)  # 内容区域
-            self.main_layout.setStretch(2, 1)  # 宠物区域
+            # 调整主布局的比例，确保导航栏在最左侧
+            self.main_layout.setStretch(0, 1)  # 导航区域（最左侧）
+            self.main_layout.setStretch(1, 3)  # 内容区域（中间）
+            self.main_layout.setStretch(2, 1)  # 宠物区域（最右侧）
 
             # 调整内容区域的内边距，使其在小窗口中更紧凑
             self.content_widget.setContentsMargins(
@@ -700,10 +752,10 @@ class MainWindow(QMainWindow):
             )
 
         elif width < 1400:  # 中等窗口
-            # 调整主布局的比例
-            self.main_layout.setStretch(0, 1)  # 导航区域
-            self.main_layout.setStretch(1, 3)  # 内容区域
-            self.main_layout.setStretch(2, 1)  # 宠物区域
+            # 调整主布局的比例，确保导航栏在最左侧
+            self.main_layout.setStretch(0, 1)  # 导航区域（最左侧）
+            self.main_layout.setStretch(1, 3)  # 内容区域（中间）
+            self.main_layout.setStretch(2, 1)  # 宠物区域（最右侧）
 
             # 调整内容区域的内边距
             self.content_widget.setContentsMargins(
@@ -730,10 +782,10 @@ class MainWindow(QMainWindow):
             )
 
         else:  # 宽窗口
-            # 调整主布局的比例
-            self.main_layout.setStretch(0, 1)  # 导航区域
-            self.main_layout.setStretch(1, 4)  # 内容区域
-            self.main_layout.setStretch(2, 1)  # 宠物区域
+            # 调整主布局的比例，确保导航栏在最左侧
+            self.main_layout.setStretch(0, 1)  # 导航区域（最左侧）
+            self.main_layout.setStretch(1, 4)  # 内容区域（中间）
+            self.main_layout.setStretch(2, 1)  # 宠物区域（最右侧）
 
             # 调整内容区域的内边距
             self.content_widget.setContentsMargins(
@@ -846,3 +898,21 @@ class MainWindow(QMainWindow):
     def on_checkin_successful(self, challenge_id):
         self.progress_widget.load_progress()
         self.show_progress()
+
+    def attempt_auto_login(self):
+        """尝试自动登录"""
+        try:
+            # 尝试使用保存的登录状态自动登录
+            user = self.user_manager.auto_login()
+            if user:
+                self.logger.info(f"自动登录成功: {user['username']}")
+                # 更新界面状态
+                self.on_login_successful(user)
+            else:
+                self.logger.info("没有保存的登录状态或自动登录失败")
+                # 显示登录界面
+                self.content_widget.setCurrentWidget(self.login_widget)
+        except Exception as e:
+            self.logger.error(f"自动登录时发生错误: {e}")
+            # 显示登录界面
+            self.content_widget.setCurrentWidget(self.login_widget)

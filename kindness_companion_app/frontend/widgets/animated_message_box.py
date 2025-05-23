@@ -67,9 +67,9 @@ class AnimatedMessageBox(QMessageBox):
                 if isinstance(parent_widget, QWidget):
                     parent_rect.setWidth(parent_widget.width())
                     parent_rect.setHeight(parent_widget.height())
-                    parent_rect.moveTopLeft(
-                        QPoint(parent_widget.x(), parent_widget.y())
-                    )
+                    # Use mapToGlobal to get the correct global position of the parent
+                    global_parent_pos = parent_widget.mapToGlobal(QPoint(0, 0))
+                    parent_rect.moveTopLeft(global_parent_pos)
                 # --- Use parent's top-level window for centering --- End
                 geo = (
                     self.frameGeometry()

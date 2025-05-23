@@ -23,6 +23,87 @@ class UserManager:
         """
         self.db_manager = db_manager or DatabaseManager()
         self.current_user = None
+        self._initialize_login_state_table()
+
+    def _initialize_login_state_table(self):
+        """初始化保存登录状态的数据库表"""
+        try:
+            self.db_manager.execute_query("""
+                CREATE TABLE IF NOT EXISTS login_state (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    username TEXT NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id)
+                )
+            """)
+        except Exception as e:
+            logger.error(f"Error initializing login_state table: {e}")
+
+    def save_login_state(self, user_id: int, username: str, password_hash: str) -> bool:
+        """
+        保存用户的登录状态
+
+        Args:
+            user_id (int): 用户ID
+            username (str): 用户名
+            password_hash (str): 密码哈希
+
+        Returns:
+            bool: 是否保存成功
+        """
+        try:
+            # 先删除旧的登录状态
+            self.db_manager.execute_update(
+                "DELETE FROM login_state WHERE user_id = ?",
+                (user_id,)
+            )
+            
+            # 保存新的登录状态
+            self.db_manager.execute_insert(
+                """
+                INSERT INTO login_state (user_id, username, password_hash)
+                VALUES (?, ?, ?)
+                """,
+                (user_id, username, password_hash)
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Error saving login state: {e}")
+            return False
+
+    def clear_login_state(self) -> bool:
+        """
+        清除所有保存的登录状态
+
+        Returns:
+            bool: 是否清除成功
+        """
+        try:
+            self.db_manager.execute_update("DELETE FROM login_state")
+            return True
+        except Exception as e:
+            logger.error(f"Error clearing login state: {e}")
+            return False
+
+    def get_saved_login_state(self) -> dict | None:
+        """
+        获取保存的登录状态
+
+        Returns:
+            dict | None: 包含登录信息的字典，如果没有保存的状态则返回None
+        """
+        try:
+            result = self.db_manager.execute_query(
+                "SELECT * FROM login_state ORDER BY last_login DESC LIMIT 1"
+            )
+            if result:
+                return dict(result[0])
+            return None
+        except Exception as e:
+            logger.error(f"Error getting saved login state: {e}")
+            return None
 
     def _hash_password(self, password, salt=None):
         """
@@ -125,8 +206,11 @@ class UserManager:
             # Update last login time
             self.db_manager.execute_update(
                 "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
-                (user["id"],),
+                (user["id"],)
             )
+
+            # 保存登录状态
+            self.save_login_state(user["id"], username, user["password_hash"])
 
             # Check and potentially update NULL AI consent for existing users
             current_consent = user.get("ai_consent_given")
@@ -162,6 +246,8 @@ class UserManager:
     def logout(self):
         """Log out the current user."""
         self.current_user = None
+        # 清除保存的登录状态
+        self.clear_login_state()
 
     def get_current_user(self):
         """
@@ -406,3 +492,57 @@ class UserManager:
         except sqlite3.Error as e:
             print(f"Error during account deletion transaction for user {user_id}: {e}")
             return False
+
+    def auto_login(self) -> dict | None:
+        """
+        尝试使用保存的登录状态自动登录
+
+        Returns:
+            dict | None: 登录成功返回用户信息，失败返回None
+        """
+        saved_state = self.get_saved_login_state()
+        if not saved_state:
+            return None
+
+        try:
+            # 验证用户是否存在
+            user_result = self.db_manager.execute_query(
+                "SELECT * FROM users WHERE id = ? AND username = ?",
+                (saved_state["user_id"], saved_state["username"])
+            )
+
+            if not user_result:
+                self.clear_login_state()
+                return None
+
+            user = user_result[0]
+            
+            # 验证密码哈希是否匹配
+            if user["password_hash"] != saved_state["password_hash"]:
+                self.clear_login_state()
+                return None
+
+            # 更新最后登录时间
+            self.db_manager.execute_update(
+                "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
+                (user["id"],)
+            )
+
+            # 设置当前用户
+            self.current_user = {
+                "id": user["id"],
+                "username": user["username"],
+                "email": user.get("email"),
+                "bio": user.get("bio", ""),
+                "avatar_path": user.get("avatar_path", ":/images/profilePicture.png"),
+                "avatar": user.get("avatar"),
+                "registration_date": user.get("created_at"),
+                "ai_consent_given": True,
+            }
+
+            return self.current_user
+
+        except Exception as e:
+            logger.error(f"Error during auto login: {e}")
+            self.clear_login_state()
+            return None

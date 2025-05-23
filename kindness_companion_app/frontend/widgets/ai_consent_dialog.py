@@ -71,6 +71,12 @@ class AIConsentDialog(BaseDialog):
         self.consent_changed.emit(False)
         self.reject() # Close dialog with QDialog.Rejected status
 
+    def showEvent(self, event):
+        """Override showEvent to center and trigger fade-in animation."""
+        super().showEvent(event)
+        self._center_window()  # Ensure the dialog is centered
+        self.fade_in_animation.start()
+
 # Example Usage (for testing the dialog itself)
 if __name__ == '__main__':
     import sys

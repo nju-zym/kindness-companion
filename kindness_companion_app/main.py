@@ -289,6 +289,8 @@ def main():
         progress_tracker=progress_tracker,
         reminder_scheduler=reminder_scheduler,
         wall_manager=wall_manager,
+        theme_manager=theme_manager,
+        ai_manager=db_manager,
     )
     print("DEBUG: MainWindow created.")
     print("DEBUG: Showing MainWindow...")

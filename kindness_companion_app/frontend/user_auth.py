@@ -413,16 +413,19 @@ class RegisterWidget(QWidget):
     def show_terms(self):
         """Show terms and conditions."""
         # Use AnimatedMessageBox for terms display
-        AnimatedMessageBox.showInformation(  # Use AnimatedMessageBox
-            self,
-            "用户协议",
-            "善行伴侣应用用户协议\n\n"
-            "1. 本应用旨在鼓励用户进行善行，提升社会正能量。\n"
-            "2. 用户需对自己的行为负责，不得利用本应用进行违法或不道德活动。\n"
-            "3. 用户提供的个人信息将被安全保存，不会泄露给第三方。\n"
-            "4. 本应用保留随时修改服务内容和协议的权利。\n\n"
-            "感谢您的理解与支持！",
+        # Use AnimatedMessageBox for terms display
+        msg_box = AnimatedMessageBox(self)
+        msg_box.setWindowTitle("用户协议")
+        msg_box.setText("善行伴侣应用用户协议")
+        msg_box.setInformativeText(
+            "1. 本应用旨在鼓励用户进行善行，提升社会正能量.\n"
+            "2. 用户需对自己的行为负责，不得利用本应用进行违法或不道德活动.\n"
+            "3. 用户提供的个人信息将被安全保存，不会泄露给第三方.\n"
+            "4. 本应用保留随时修改服务内容和协议的权利.\n\n"
+            "感谢您的理解与支持！"
         )
+        msg_box.setStandardButtons(AnimatedMessageBox.StandardButton.Ok)
+        msg_box.exec()
 
     def clear_fields(self):
         """Clear input fields."""

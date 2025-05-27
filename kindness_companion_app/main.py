@@ -218,6 +218,15 @@ class ThemeManager(QObject):
 
 def main():
     print("DEBUG: Starting main function...")
+    # 检查命令行参数
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Kindness Companion App")
+    parser.add_argument(
+        "--reset-login", action="store_true", help="清除登录状态，显示登录界面"
+    )
+    args = parser.parse_args()
+
     # 创建应用程序实例
     print("DEBUG: Creating QApplication...")
     app = QApplication(sys.argv)
@@ -251,6 +260,12 @@ def main():
     print("DEBUG: Initializing UserManager...")
     user_manager = UserManager(db_manager)
     print("DEBUG: UserManager initialized.")
+
+    # 如果指定了重置登录参数，清除登录状态
+    if args.reset_login:
+        print("DEBUG: Clearing login state as requested...")
+        user_manager.clear_login_state()
+        print("DEBUG: Login state cleared.")
     print("DEBUG: Initializing ChallengeManager...")
     challenge_manager = ChallengeManager(db_manager)
     print("DEBUG: ChallengeManager initialized.")

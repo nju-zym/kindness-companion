@@ -1,13 +1,3 @@
-<svg
-  xmlns="http://www.w3.org/2000/svg"
-  width="24"
-  height="24"
-  viewBox="0 0 24 24"
-  fill="none"
-  stroke="currentColor"
-  stroke-width="2"
-  stroke-linecap="round"
-  stroke-linejoin="round"
->
-  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-</svg>
+version https://git-lfs.github.com/spec/v1
+oid sha256:2388159c48c0a16d5245920511b6be38e3b64922d64bea6c25b8875a0f50b126
+size 268

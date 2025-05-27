@@ -4,12 +4,15 @@ import time
 import logging
 from typing import Optional, Dict, Any
 
-# Attempt to import the config module directly (absolute import)
+# Attempt to import the config module with correct package path
 try:
-    import config
+    from kindness_companion_app import config
 except ImportError:
-    logging.warning("Could not import config.py. API keys might not be available.")
-    config = None  # type: ignore
+    try:
+        import config
+    except ImportError:
+        logging.warning("Could not import config.py. API keys might not be available.")
+        config = None  # type: ignore
 
 DEFAULT_TIMEOUT = 15  # seconds
 MAX_RETRIES = 3

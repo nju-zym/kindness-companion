@@ -86,13 +86,129 @@ class AIReportThread(QThread):
         """Run the report generation in a separate thread."""
         try:
             if self.generator_func:
-                report = self.generator_func(self.report_input)
-                self.report_ready.emit(report)
+                # 提取用户ID作为参数，兼容新的API
+                if (
+                    isinstance(self.report_input, dict)
+                    and "user_id" in self.report_input
+                ):
+                    user_id = self.report_input["user_id"]
+                    result = self.generator_func(user_id, 7)  # 默认7天的报告
+
+                    # 处理返回结果
+                    if isinstance(result, dict):
+                        if result.get("success", False):
+                            # 生成成功，格式化报告内容
+                            report_text = self.format_report_text(result)
+                            self.report_ready.emit(report_text)
+                        else:
+                            # 生成失败，显示错误信息
+                            error_msg = result.get("message", "报告生成失败")
+                            self.report_error.emit(error_msg)
+                    else:
+                        # 处理字符串返回值（向后兼容）
+                        self.report_ready.emit(str(result))
+                else:
+                    # 兼容旧的调用方式
+                    report = self.generator_func(self.report_input)
+                    self.report_ready.emit(str(report))
             else:
                 self.report_error.emit("报告生成功能不可用")
         except Exception as e:
             logging.error(f"Error in AI report thread: {e}", exc_info=True)
             self.report_error.emit(f"生成报告时出错: {e}")
+
+    def format_report_text(self, result: dict) -> str:
+        """将API结果格式化为可读的报告文本"""
+        try:
+            report_lines = []
+            report_lines.append("=== 心理健康周报 ===\n")
+
+            # 报告时间段
+            period = result.get("report_period", "过去7天")
+            report_lines.append(f"📅 报告时间段: {period}\n")
+
+            # PERMA得分
+            perma_scores = result.get("perma_scores", {})
+            if perma_scores:
+                report_lines.append("📊 PERMA幸福感得分:")
+                report_lines.append(
+                    f"  • 积极情感: {perma_scores.get('positive_emotion', 0):.1f}/10"
+                )
+                report_lines.append(
+                    f"  • 投入感: {perma_scores.get('engagement', 0):.1f}/10"
+                )
+                report_lines.append(
+                    f"  • 人际关系: {perma_scores.get('relationships', 0):.1f}/10"
+                )
+                report_lines.append(
+                    f"  • 人生意义: {perma_scores.get('meaning', 0):.1f}/10"
+                )
+                report_lines.append(
+                    f"  • 成就感: {perma_scores.get('achievement', 0):.1f}/10"
+                )
+                report_lines.append(
+                    f"  • 整体幸福感: {perma_scores.get('overall_wellbeing', 0):.1f}/10\n"
+                )
+
+            # 心理学洞察
+            insights = result.get("insights", [])
+            if insights:
+                report_lines.append("🔍 心理学洞察:")
+                for insight in insights[:3]:  # 最多显示3个洞察
+                    category = insight.get("category", "")
+                    content = insight.get("content", "")
+                    confidence = insight.get("confidence", 0)
+                    report_lines.append(
+                        f"  • {category}: {content} (置信度: {confidence:.2f})"
+                    )
+                report_lines.append("")
+
+            # 成长建议
+            recommendations = result.get("recommendations", [])
+            if recommendations:
+                report_lines.append("💡 成长建议:")
+                for i, rec in enumerate(recommendations[:5], 1):  # 最多显示5个建议
+                    report_lines.append(f"  {i}. {rec}")
+                report_lines.append("")
+
+            # 保护因素和风险因素
+            protective_factors = result.get("protective_factors", [])
+            risk_factors = result.get("risk_factors", [])
+
+            if protective_factors:
+                report_lines.append("✅ 保护因素:")
+                for factor in protective_factors[:3]:
+                    report_lines.append(f"  • {factor}")
+                report_lines.append("")
+
+            if risk_factors:
+                report_lines.append("⚠️ 需要关注:")
+                for factor in risk_factors[:3]:
+                    report_lines.append(f"  • {factor}")
+                report_lines.append("")
+
+            # 报告置信度
+            confidence = result.get("confidence", 0)
+            report_lines.append(f"📈 分析置信度: {confidence:.2f}/1.0")
+
+            # 生成时间
+            generated_at = result.get("generated_at", "")
+            if generated_at:
+                try:
+                    from datetime import datetime
+
+                    dt = datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
+                    report_lines.append(
+                        f"🕐 生成时间: {dt.strftime('%Y-%m-%d %H:%M:%S')}"
+                    )
+                except:
+                    report_lines.append(f"🕐 生成时间: {generated_at}")
+
+            return "\n".join(report_lines)
+
+        except Exception as e:
+            logging.error(f"格式化报告文本失败: {e}")
+            return f"报告生成成功，但格式化失败: {str(result)}"
 
 
 class ProgressWidget(QWidget):

@@ -64,11 +64,8 @@ class EnhancedDialogueGenerator:
 
                 self.conversation_analyzer.store_message(
                     user_id=user_id,
-                    content=user_message,
-                    is_user=True,
-                    context_id=context_id,
-                    topic="user_message",
-                    emotion_score=0.0,
+                    message=user_message,
+                    emotion_detected="neutral"
                 )
 
                 # 定期分析用户心理特征（每10条消息）
@@ -103,11 +100,8 @@ class EnhancedDialogueGenerator:
             if dialogue:
                 self.conversation_analyzer.store_message(
                     user_id=user_id,
-                    content=dialogue,
-                    is_user=False,
-                    context_id=context_id,
-                    topic="ai_response",
-                    emotion_score=0.0,
+                    message="[AI回复]: " + dialogue,
+                    emotion_detected="positive"
                 )
 
             # 更新活跃上下文

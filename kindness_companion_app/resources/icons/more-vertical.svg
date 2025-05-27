@@ -1,15 +1,3 @@
-<svg
-  xmlns="http://www.w3.org/2000/svg"
-  width="24"
-  height="24"
-  viewBox="0 0 24 24"
-  fill="none"
-  stroke="currentColor"
-  stroke-width="2"
-  stroke-linecap="round"
-  stroke-linejoin="round"
->
-  <circle cx="12" cy="12" r="1" />
-  <circle cx="12" cy="5" r="1" />
-  <circle cx="12" cy="19" r="1" />
-</svg>
+version https://git-lfs.github.com/spec/v1
+oid sha256:655ee2104d9540cc9377c83f3b9fea628d78d9f4e1cdca7c1b36e952599944d7
+size 312

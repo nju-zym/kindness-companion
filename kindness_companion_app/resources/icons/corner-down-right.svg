@@ -1,14 +1,3 @@
-<svg
-  xmlns="http://www.w3.org/2000/svg"
-  width="24"
-  height="24"
-  viewBox="0 0 24 24"
-  fill="none"
-  stroke="currentColor"
-  stroke-width="2"
-  stroke-linecap="round"
-  stroke-linejoin="round"
->
-  <polyline points="15 10 20 15 15 20" />
-  <path d="M4 4v7a4 4 0 0 0 4 4h12" />
-</svg>
+version https://git-lfs.github.com/spec/v1
+oid sha256:f8243594c04160662ecaf2633bf8d13266ff292e9146b580443dbcc194c28d5c
+size 289

@@ -24,6 +24,7 @@ from PySide6.QtCore import (
     QPoint,
     QObject,
     QIODevice,
+    Signal,
 )
 
 from kindness_companion_app.frontend.main_window import MainWindow
@@ -114,6 +115,9 @@ def load_fonts():
 
 class ThemeManager(QObject):
     """管理应用主题的类，支持系统主题变化的检测和自动切换"""
+
+    # 主题变更信号
+    theme_changed = Signal(str, str)  # 参数: theme_type, theme_style
 
     def __init__(self, app, logger):
         super().__init__()
@@ -210,6 +214,8 @@ class ThemeManager(QObject):
                 widget.update()
             # 预留：切换主题相关的图片/图标
             self.update_theme_icons()
+            # 发出主题变更信号
+            self.theme_changed.emit(self.current_theme, self.theme_style)
 
     def update_theme_icons(self):
         # 预留：根据 self.current_theme 切换所有需要的图标/图片资源

@@ -88,6 +88,9 @@ class PetWidget(QWidget):
         self._pending_event = None
         self.movie = None  # Initialize movie attribute
         self.db_manager = None  # Will be set when database_manager is available
+        self.chat_messages = (
+            []
+        )  # 存储聊天消息的列表，格式：[{'message': str, 'is_user': bool, 'timestamp': datetime}, ...]
 
         # Initialize enhanced dialogue generator if possible
         try:
@@ -175,7 +178,8 @@ class PetWidget(QWidget):
 
         if theme == "dark":
             # 暗色主题样式
-            self.chat_history.setStyleSheet("""
+            self.chat_history.setStyleSheet(
+                """
                 QTextEdit {
                     background-color: #2D2D2D;
                     border: 1px solid #404040;
@@ -203,10 +207,12 @@ class PetWidget(QWidget):
                 QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
                     background: none;
                 }
-            """)
+            """
+            )
         else:
             # 亮色主题样式
-            self.chat_history.setStyleSheet("""
+            self.chat_history.setStyleSheet(
+                """
                 QTextEdit {
                     background-color: #FFFFFF;
                     border: 1px solid #E0E0E0;
@@ -234,7 +240,8 @@ class PetWidget(QWidget):
                 QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
                     background: none;
                 }
-            """)
+            """
+            )
 
     def resizeEvent(self, event):
         """Apply a circular mask whenever the widget is resized."""
@@ -306,8 +313,21 @@ class PetWidget(QWidget):
             return
 
         # 获取当前时间
-        current_time = datetime.now().strftime("%H:%M")
-        
+        current_time = datetime.now()
+
+        # 保存消息到列表
+        self.chat_messages.append(
+            {"message": message, "is_user": is_user, "timestamp": current_time}
+        )
+
+        # 渲染并添加消息到UI
+        self._render_message_to_ui(message, is_user, current_time)
+
+    def _render_message_to_ui(self, message: str, is_user: bool, timestamp: datetime):
+        """将单条消息渲染到UI中"""
+        # 格式化时间
+        time_str = timestamp.strftime("%H:%M")
+
         # 获取当前主题
         app = QApplication.instance()
         theme_manager = None
@@ -324,7 +344,7 @@ class PetWidget(QWidget):
             user_text_color = "#333333"
             ai_text_color = "#333333"
             time_color = "#666666"
-        
+
         # 设置消息样式
         if is_user:
             message_html = f"""
@@ -332,7 +352,7 @@ class PetWidget(QWidget):
                     <span style='color: {user_text_color}; padding: 8px 12px; border-radius: 12px; display: inline-block; max-width: 80%; background: none;'>
                         {message}
                         <br>
-                        <span style='font-size: 10px; color: {time_color};'>{current_time}</span>
+                        <span style='font-size: 10px; color: {time_color};'>{time_str}</span>
                     </span>
                 </div>
             """
@@ -342,7 +362,7 @@ class PetWidget(QWidget):
                     <span style='color: {ai_text_color}; padding: 8px 12px; border-radius: 12px; display: inline-block; max-width: 80%; background: none;'>
                         {message}
                         <br>
-                        <span style='font-size: 10px; color: {time_color};'>{current_time}</span>
+                        <span style='font-size: 10px; color: {time_color};'>{time_str}</span>
                     </span>
                 </div>
             """
@@ -354,11 +374,24 @@ class PetWidget(QWidget):
             self.chat_history.verticalScrollBar().maximum()
         )
 
+    def _rerender_all_messages(self):
+        """重新渲染所有聊天消息（用于主题切换）"""
+        # 清空聊天历史显示
+        self.chat_history.clear()
+
+        # 重新渲染所有保存的消息
+        for msg_data in self.chat_messages:
+            self._render_message_to_ui(
+                msg_data["message"], msg_data["is_user"], msg_data["timestamp"]
+            )
+
     def update_pet_display(self, response: dict):
         """Updates the pet animation GIF and dialogue bubble."""
         dialogue = response.get("dialogue", "")
         suggested_animation = response.get("suggested_animation", "idle")
-        logger.info(f"Updating pet display. Animation: {suggested_animation}, Dialogue: '{dialogue[:20]}...'")
+        logger.info(
+            f"Updating pet display. Animation: {suggested_animation}, Dialogue: '{dialogue[:20]}...'"
+        )
 
         # 添加AI回复到聊天历史
         if dialogue:
@@ -481,6 +514,9 @@ class PetWidget(QWidget):
         )
         # --- End AI Consent Check Removed ---
 
+        # 添加用户消息到聊天历史
+        self.add_message_to_history(user_message, is_user=True)
+
         # Clear input and show thinking state
         self.message_input.clear()
         self.pet_status_label.setText("正在思考...")
@@ -520,19 +556,20 @@ class PetWidget(QWidget):
             self.message_input.setEnabled(False)
             self.send_button.setEnabled(False)
             self.chat_history.clear()  # 清空聊天历史
+            self.chat_messages.clear()  # 清空聊天消息存储
 
     @Slot(str, str)
     def handle_theme_changed(self, theme_type: str, theme_style: str):
         """处理主题变更事件"""
+        logger.info(f"Theme changed to: {theme_type}, style: {theme_style}")
+
+        # 更新聊天历史样式
         self.update_chat_history_style()
-        # 重新渲染历史内容，区分用户消息和AI消息
-        current_plain = self.chat_history.toPlainText().splitlines()
-        self.chat_history.clear()
-        for line in current_plain:
-            if line.strip():
-                # 简单判断：如果以空格或特殊符号开头，视为AI消息，否则视为用户消息
-                is_user = not (line.startswith("AI:") or line.startswith("宠物:") or line.startswith("[AI]") or line.startswith("[宠物]") or line.startswith(" ") or line.startswith("【AI") or line.startswith("【宠物"))
-                self.add_message_to_history(line, is_user=is_user)
+
+        # 重新渲染所有消息以应用新的主题颜色
+        self._rerender_all_messages()
+
+        logger.info("Chat history style updated for theme change")
 
     def connect_signals(self):
         """连接信号"""
@@ -542,3 +579,6 @@ class PetWidget(QWidget):
             theme_manager = app.property("theme_manager")
             if theme_manager and hasattr(theme_manager, "theme_changed"):
                 theme_manager.theme_changed.connect(self.handle_theme_changed)
+                logger.info("Successfully connected to theme_changed signal")
+            else:
+                logger.warning("Theme manager or theme_changed signal not available")

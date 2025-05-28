@@ -1,0 +1,3 @@
+ZHIPUAI_API_KEY = (
+    "11111111111111111111111111111111"  # Replace with your API key
+)

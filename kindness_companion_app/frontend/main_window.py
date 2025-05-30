@@ -159,7 +159,7 @@ class MainWindow(QMainWindow):
         self.sync_manager = sync_manager
 
         # 设置窗口标题和大小
-        self.setWindowTitle("Kindness Companion")
+        self.setWindowTitle("善行伴侣 (Kindness Companion)")
         self.resize(1200, 800)
 
         # 设置窗口大小变化时的响应

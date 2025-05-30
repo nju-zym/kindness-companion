@@ -239,6 +239,12 @@ def main():
     app = QApplication(sys.argv)
     print("DEBUG: QApplication created.")
 
+    # 设置应用程序图标和名称
+    app.setApplicationName("Kindness Companion")
+    app.setApplicationDisplayName("Kindness Companion")
+    app.setWindowIcon(QIcon(":/icons/app_icon.png"))
+    print("DEBUG: Application icon and name set.")
+
     # 设置日志记录
     print("DEBUG: Setting up logging...")
     logger = setup_logging()

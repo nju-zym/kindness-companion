@@ -433,18 +433,13 @@ class ChallengeListWidget(QWidget):
 
     def load_categories(self):
         """Load challenge categories."""
-        # Get all challenges
-        challenges = self.challenge_manager.get_all_challenges()
-
-        # Extract unique categories
-        categories = set()
-        for challenge in challenges:
-            categories.add(challenge["category"])
+        # Get unique categories from the backend (more efficient and consistent)
+        categories = self.challenge_manager.get_unique_categories()
 
         # Clear and repopulate category combo
         self.category_combo.clear()
         self.category_combo.addItem("全部分类", None)
-        for category in sorted(categories):
+        for category in categories:  # Categories are already sorted by backend
             self.category_combo.addItem(category, category)
 
     def load_challenges(self):
@@ -471,19 +466,8 @@ class ChallengeListWidget(QWidget):
                 self.current_user["id"], challenge_id
             )
 
-        # Create challenge cards
-        row, col = 0, 0
-
-        # 优化：最小两列，断点更合理
-        container_width = self.challenges_widget.width()
-        if container_width < 400:
-            max_cols = 2  # 极窄窗口也显示两列
-        elif container_width < 900:
-            max_cols = 2  # 默认及中等宽度显示两列
-        elif container_width < 1400:
-            max_cols = 3
-        else:
-            max_cols = 4
+        # Create challenge cards without adding to layout yet
+        all_cards = []
 
         for challenge in challenges:
             is_subscribed = challenge["id"] in subscribed_ids
@@ -502,14 +486,10 @@ class ChallengeListWidget(QWidget):
                 card.check_in_clicked.connect(self.check_in_challenge)
                 self.challenge_cards[challenge["id"]] = card
 
-            # Add card to layout (might be re-adding if it existed)
-            if self.challenges_layout.indexOf(card) == -1:
-                self.challenges_layout.addWidget(card, row, col)
+            all_cards.append(card)
 
-            col += 1
-            if col >= max_cols:
-                col = 0
-                row += 1
+        # Arrange all cards using the new layout method
+        self._rearrange_visible_cards(all_cards)
 
         # Apply filters after loading/updating all cards
         self.filter_challenges()
@@ -523,6 +503,9 @@ class ChallengeListWidget(QWidget):
         category = self.category_combo.currentData()
         difficulty = self.difficulty_combo.currentData()
         subscription = self.subscription_combo.currentData()
+
+        # Collect visible cards
+        visible_cards = []
 
         # Show/hide challenge cards based on filters
         for challenge_id, card in self.challenge_cards.items():
@@ -543,6 +526,52 @@ class ChallengeListWidget(QWidget):
 
             # Show or hide the card
             card.setVisible(show)
+
+            # Collect visible cards for re-layout
+            if show:
+                visible_cards.append(card)
+
+        # Re-arrange visible cards to eliminate blank spaces
+        self._rearrange_visible_cards(visible_cards)
+
+    def _rearrange_visible_cards(self, visible_cards):
+        """
+        Rearrange visible cards in the grid layout to eliminate blank spaces.
+
+        Args:
+            visible_cards (list): List of visible challenge cards
+        """
+        # Remove all cards from layout first
+        for card_id, card in self.challenge_cards.items():
+            self.challenges_layout.removeWidget(card)
+
+        # Calculate optimal column count
+        container_width = self.challenges_widget.width()
+        if container_width < 400:
+            max_cols = 2
+        elif container_width < 900:
+            max_cols = 2
+        elif container_width < 1400:
+            max_cols = 3
+        else:
+            max_cols = 4
+
+        # Re-add only visible cards in proper grid positions
+        row, col = 0, 0
+        for card in visible_cards:
+            self.challenges_layout.addWidget(card, row, col)
+            col += 1
+            if col >= max_cols:
+                col = 0
+                row += 1
+
+        # Set proper stretch for the last row
+        if visible_cards:
+            self.challenges_layout.setRowStretch(row + 1, 1)
+
+        # Ensure proper column stretching
+        for i in range(max_cols):
+            self.challenges_layout.setColumnStretch(i, 1)
 
     def clear_challenges(self):
         """Clear all challenge cards."""
@@ -627,33 +656,14 @@ class ChallengeListWidget(QWidget):
         if not self.challenge_cards:
             return
 
-        # 优化：最小两列，断点更合理
-        container_width = self.challenges_widget.width()
-        if container_width < 400:
-            max_cols = 2
-        elif container_width < 900:
-            max_cols = 2
-        elif container_width < 1400:
-            max_cols = 3
-        else:
-            max_cols = 4
-
-        # 重新布局挑战卡片
-        row, col = 0, 0
+        # Collect currently visible cards
+        visible_cards = []
         for card_id, card in self.challenge_cards.items():
             if card.isVisible():
-                self.challenges_layout.removeWidget(card)
-                self.challenges_layout.addWidget(card, row, col)
-                col += 1
-                if col >= max_cols:
-                    col = 0
-                    row += 1
+                visible_cards.append(card)
 
-        self.challenges_layout.setRowStretch(row, 1)
-        self.challenges_layout.setHorizontalSpacing(15)
-        self.challenges_layout.setVerticalSpacing(15)
-        for i in range(max_cols):
-            self.challenges_layout.setColumnStretch(i, 1)
+        # Re-arrange using the consistent method
+        self._rearrange_visible_cards(visible_cards)
 
     def check_in_challenge(self, challenge_id):
         """

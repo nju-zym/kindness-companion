@@ -67,8 +67,10 @@ THEME_COLORS = {
     },
 }
 
+
 class ChevronIcon(QIcon):
     """自定义箭头图标类"""
+
     def __init__(self, direction="right"):
         super().__init__()
         self.direction = direction
@@ -79,16 +81,16 @@ class ChevronIcon(QIcon):
         size = QSize(24, 24)
         pixmap = QPixmap(size)
         pixmap.fill(Qt.transparent)
-        
+
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.Antialiasing)
-        
+
         # 设置画笔
         pen = painter.pen()
         pen.setWidth(2)
         pen.setColor(QColor("#666666"))
         painter.setPen(pen)
-        
+
         # 绘制箭头
         path = QPainterPath()
         if self.direction == "right":
@@ -99,11 +101,12 @@ class ChevronIcon(QIcon):
             path.moveTo(15, 6)
             path.lineTo(9, 12)
             path.lineTo(15, 18)
-        
+
         painter.drawPath(path)
         painter.end()
-        
+
         return pixmap
+
 
 class MainWindow(QMainWindow):
     """
@@ -122,6 +125,7 @@ class MainWindow(QMainWindow):
         wall_manager,
         theme_manager,
         ai_manager,
+        sync_manager=None,
     ):
         """
         Initialize the main window.
@@ -134,6 +138,7 @@ class MainWindow(QMainWindow):
             wall_manager: Wall manager instance
             theme_manager: Theme manager instance
             ai_manager: AI manager instance
+            sync_manager: Sync manager instance (optional)
         """
         super().__init__()
 
@@ -151,6 +156,7 @@ class MainWindow(QMainWindow):
         self.wall_manager = wall_manager
         self.theme_manager = theme_manager
         self.ai_manager = ai_manager
+        self.sync_manager = sync_manager
 
         # 设置窗口标题和大小
         self.setWindowTitle("Kindness Companion")
@@ -315,9 +321,11 @@ class MainWindow(QMainWindow):
         # 将导航栏添加到容器
         nav_content_layout.addWidget(self.nav_widget)
         nav_container_layout.addWidget(self.nav_content)
-        
+
         # 将导航容器添加到主布局的最左侧
-        self.main_layout.insertWidget(0, self.nav_container, 1)  # 使用 insertWidget 确保在最左侧
+        self.main_layout.insertWidget(
+            0, self.nav_container, 1
+        )  # 使用 insertWidget 确保在最左侧
 
     def apply_theme(self, theme="light"):
         """移除，全部交由全局QSS管理"""
@@ -373,7 +381,9 @@ class MainWindow(QMainWindow):
         self.reminder_widget = ReminderWidget(
             self.reminder_scheduler, self.challenge_manager, theme_manager
         )
-        self.community_widget = CommunityWidget(self.wall_manager, self.user_manager)
+        self.community_widget = CommunityWidget(
+            self.wall_manager, self.user_manager, self.sync_manager
+        )
         self.profile_widget = ProfileWidget(
             self.user_manager, self.progress_tracker, self.challenge_manager
         )
@@ -391,7 +401,9 @@ class MainWindow(QMainWindow):
         self.content_widget.addWidget(self.profile_widget)
 
         # 将内容区域添加到主布局的中间
-        self.main_layout.insertWidget(1, self.content_widget, 3)  # 使用 insertWidget 确保在中间位置
+        self.main_layout.insertWidget(
+            1, self.content_widget, 3
+        )  # 使用 insertWidget 确保在中间位置
 
     def setup_pet_area(self):
         """Sets up the area for the PetWidget."""
@@ -422,7 +434,9 @@ class MainWindow(QMainWindow):
         self.pet_container_layout.addWidget(self.pet_widget)
 
         # 将宠物区域容器添加到主布局的最右侧
-        self.main_layout.insertWidget(2, self.pet_area_container, 1)  # 使用 insertWidget 确保在最右侧
+        self.main_layout.insertWidget(
+            2, self.pet_area_container, 1
+        )  # 使用 insertWidget 确保在最右侧
         pet_area_layout.addWidget(self.pet_container)
 
     def connect_signals(self):
@@ -468,11 +482,11 @@ class MainWindow(QMainWindow):
             user (dict): User information
         """
         logging.info("Login successful, preparing UI updates...")
-        
+
         # 显示导航栏和宠物区域（包括它们的容器）
         self.nav_container.show()
         self.pet_area_container.show()
-        
+
         # Enable navigation buttons
         for button in self.nav_buttons.values():
             button.setEnabled(True)
@@ -494,7 +508,9 @@ class MainWindow(QMainWindow):
         # Show a non-modal animated welcome message
         welcome_msg = AnimatedMessageBox(self)
         welcome_msg.setWindowTitle("登录成功")
-        welcome_msg.setText(f"欢迎回来，{user['username']}！\n准备好今天的善行挑战了吗？")
+        welcome_msg.setText(
+            f"欢迎回来，{user['username']}！\n准备好今天的善行挑战了吗？"
+        )
         welcome_msg.setIcon(QMessageBox.Icon.Information)
         welcome_msg.showNonModal()
         logging.info("Non-modal animated welcome message shown.")

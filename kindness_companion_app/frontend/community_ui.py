@@ -26,19 +26,28 @@ class CommunityWidget(QWidget):
     Widget for displaying and managing the kindness wall.
     """
 
-    def __init__(self, wall_manager, user_manager):
+    def __init__(self, wall_manager, user_manager, sync_manager=None):
         """
         Initialize the community widget.
 
         Args:
             wall_manager: Wall manager instance
             user_manager: User manager instance
+            sync_manager: Sync manager instance (optional)
         """
         super().__init__()
         self.wall_manager = wall_manager
         self.user_manager = user_manager
         self.current_user = None
-        self.sync_manager = SyncManager(wall_manager.db_manager)  # Add sync manager
+
+        # Use provided sync_manager or create new one
+        if sync_manager:
+            self.sync_manager = sync_manager
+        else:
+            self.sync_manager = SyncManager(
+                wall_manager.db_manager
+            )  # Fallback to creating new instance
+
         self.setup_ui()
 
     def setup_ui(self):
@@ -75,8 +84,14 @@ class CommunityWidget(QWidget):
         import_btn.clicked.connect(self.import_data)
         sync_layout.addWidget(import_btn)
 
+        # Sync status button
+        status_btn = QPushButton("同步状态")
+        status_btn.setIcon(QIcon(":/icons/info.png"))
+        status_btn.clicked.connect(self.show_sync_status)
+        sync_layout.addWidget(status_btn)
+
         # Stats button
-        stats_btn = QPushButton("同步统计")
+        stats_btn = QPushButton("数据统计")
         stats_btn.setIcon(QIcon(":/icons/stats.png"))
         stats_btn.clicked.connect(self.show_sync_stats)
         sync_layout.addWidget(stats_btn)
@@ -430,10 +445,17 @@ class CommunityWidget(QWidget):
                 if success:
                     message = (
                         f"导入完成！\n\n"
-                        f"总计：{stats['total']} 条\n"
-                        f"已导入：{stats['imported']} 条\n"
-                        f"已跳过：{stats['skipped']} 条\n"
-                        f"冲突：{stats['conflicts']} 条"
+                        f"帖子导入情况：\n"
+                        f"• 总计：{stats['total']} 条\n"
+                        f"• 已导入：{stats['imported']} 条\n"
+                        f"• 已跳过：{stats['skipped']} 条\n"
+                        f"• 冲突：{stats['conflicts']} 条\n\n"
+                        f"评论导入情况：\n"
+                        f"• 总计：{stats['comments_total']} 条\n"
+                        f"• 已导入：{stats['comments_imported']} 条\n"
+                        f"• 已跳过：{stats['comments_skipped']} 条\n"
+                        f"• 冲突：{stats['comments_conflicts']} 条\n\n"
+                        f"用户创建：{stats['users_created']} 位新用户"
                     )
                     AnimatedMessageBox.information(self, "导入成功", message)
                     self.load_posts()  # Reload posts after import
@@ -445,20 +467,97 @@ class CommunityWidget(QWidget):
             )
 
     def show_sync_stats(self):
-        """Show synchronization statistics."""
+        """Show comprehensive synchronization statistics."""
         try:
             stats = self.sync_manager.get_sync_stats()
             if stats:
                 message = (
-                    f"同步统计：\n\n"
-                    f"总帖子数：{stats['total_posts']}\n"
-                    f"总点赞数：{stats['total_likes']}\n"
-                    f"最新帖子：{stats['latest_post'] or '无'}"
+                    f"数据统计：\n\n"
+                    f"内容概览：\n"
+                    f"• 总帖子数：{stats['total_posts']}\n"
+                    f"• 总点赞数：{stats['total_likes']}\n"
+                    f"• 总评论数：{stats['total_comments']}\n"
+                    f"• 评论点赞数：{stats['total_comment_likes']}\n\n"
+                    f"最新活动：\n"
+                    f"• 最新帖子：{stats['latest_post'] or '无'}\n"
+                    f"• 最新评论：{stats['latest_comment'] or '无'}"
                 )
-                AnimatedMessageBox.information(self, "同步统计", message)
+                AnimatedMessageBox.information(self, "数据统计", message)
             else:
                 raise Exception("获取统计信息失败")
         except Exception as e:
             AnimatedMessageBox.critical(
                 self, "统计失败", f"获取统计信息时发生错误：{str(e)}"
+            )
+
+    def show_sync_status(self):
+        """Show detailed synchronization status."""
+        try:
+            # Get sync status summary
+            status = self.sync_manager.get_sync_status_summary()
+            if status:
+                sync_ready_text = (
+                    "✅ 已就绪" if status["sync_ready"] else "⚠️ 需要初始化"
+                )
+
+                message = (
+                    f"同步状态：{sync_ready_text}\n\n"
+                    f"用户统计：\n"
+                    f"• 总用户数：{status['total_users']}\n"
+                    f"• 已启用同步：{status['users_with_sync']}\n"
+                    f"• 未启用同步：{status['users_without_sync']}\n\n"
+                    f"内容统计：\n"
+                    f"• 总帖子数：{status['total_posts']}\n"
+                    f"• 总评论数：{status['total_comments']}\n\n"
+                )
+
+                if not status["sync_ready"]:
+                    message += "提示：部分用户尚未初始化同步功能。\n点击下方按钮可为所有用户初始化同步。"
+                else:
+                    message += "所有用户均已启用同步功能，可以正常进行数据同步。"
+
+                # Create message box with initialize button if needed
+                msg_box = AnimatedMessageBox(self)
+                msg_box.setWindowTitle("同步状态")
+                msg_box.setText(message)
+                msg_box.setIcon(QMessageBox.Icon.Information)
+
+                if not status["sync_ready"]:
+                    init_button = msg_box.addButton(
+                        "初始化同步", QMessageBox.ButtonRole.ActionRole
+                    )
+                    msg_box.addButton("关闭", QMessageBox.ButtonRole.RejectRole)
+
+                    # Show the message box and handle button clicks
+                    msg_box.exec()
+
+                    if msg_box.clickedButton() == init_button:
+                        self.initialize_sync_for_all_users()
+                else:
+                    msg_box.showNonModal()
+
+            else:
+                raise Exception("获取同步状态失败")
+        except Exception as e:
+            AnimatedMessageBox.critical(
+                self, "状态检查失败", f"获取同步状态时发生错误：{str(e)}"
+            )
+
+    def initialize_sync_for_all_users(self):
+        """Initialize sync for all users."""
+        try:
+            initialized_count = self.sync_manager.initialize_all_users_sync()
+            if initialized_count > 0:
+                AnimatedMessageBox.information(
+                    self,
+                    "初始化完成",
+                    f"已为 {initialized_count} 位用户初始化同步功能。\n现在可以正常进行数据同步了。",
+                )
+            else:
+                AnimatedMessageBox.information(
+                    self, "无需初始化", "所有用户已经启用了同步功能。"
+                )
+        except Exception as e:
+            AnimatedMessageBox.critical(
+                self, "初始化失败", f"初始化同步功能时发生错误：{str(e)}"
             )

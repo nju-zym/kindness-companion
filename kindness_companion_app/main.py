@@ -34,6 +34,7 @@ from kindness_companion_app.backend.challenge_manager import ChallengeManager
 from kindness_companion_app.backend.progress_tracker import ProgressTracker
 from kindness_companion_app.backend.reminder_scheduler import ReminderScheduler
 from kindness_companion_app.backend.wall_manager import WallManager
+from kindness_companion_app.backend.sync_manager import SyncManager
 from kindness_companion_app.backend.utils import setup_logging
 import kindness_companion_app.resources.resources_rc  # Import the compiled resources
 
@@ -284,6 +285,17 @@ def main():
     print("DEBUG: Initializing WallManager...")
     wall_manager = WallManager(db_manager)
     print("DEBUG: WallManager initialized.")
+    print("DEBUG: Initializing SyncManager...")
+    sync_manager = SyncManager(db_manager)
+    print("DEBUG: SyncManager initialized.")
+
+    # Initialize sync for all existing users
+    print("DEBUG: Initializing sync for existing users...")
+    try:
+        initialized_count = sync_manager.initialize_all_users_sync()
+        print(f"DEBUG: Initialized sync for {initialized_count} users.")
+    except Exception as e:
+        print(f"DEBUG: Error initializing user sync: {e}")
 
     # Initialize enhanced dialogue generator
     try:
@@ -312,6 +324,7 @@ def main():
         wall_manager=wall_manager,
         theme_manager=theme_manager,
         ai_manager=db_manager,
+        sync_manager=sync_manager,
     )
     print("DEBUG: MainWindow created.")
     print("DEBUG: Showing MainWindow...")

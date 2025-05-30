@@ -118,3 +118,9 @@ db.sqlite3-journal
 
 # Configuration files containing secrets
 kindness_companion_app/config.py
+
+# Qt compiled resource files (can be large and should be regenerated)
+**/resources_rc.py
+**/resources.py
+kindness_companion_app/resources/resources_rc.py
+kindness_companion_app/resources/resources.py

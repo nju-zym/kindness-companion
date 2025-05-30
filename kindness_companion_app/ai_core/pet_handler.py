@@ -57,13 +57,14 @@ def handle_pet_event(
     # 1. Analyze emotion if it's a reflection event or user message
     emotion = None
     suggested_animation = "idle"  # Default animation
+    smart_status_text = None  # Store smart status text
 
     if event_type == "reflection_added" and "text" in event_data:
         reflection_text = event_data.get("text", "")
         if reflection_text:
             try:
-                emotion, suggested_animation = analyze_emotion_for_pet(
-                    user_id, reflection_text
+                emotion, suggested_animation, smart_status_text = (
+                    analyze_emotion_for_pet(user_id, reflection_text)
                 )
                 if emotion:
                     dialogue_prompt_context["analyzed_emotion"] = (
@@ -72,9 +73,13 @@ def handle_pet_event(
                     dialogue_prompt_context["suggested_animation"] = (
                         suggested_animation  # Add suggested animation
                     )
+                    dialogue_prompt_context["smart_status_text"] = (
+                        smart_status_text  # Add smart status text
+                    )
                     logger.info(
                         f"Analyzed emotion for reflection: {emotion}, suggested animation: {suggested_animation}"
                     )
+                    logger.info(f"Smart status text: {smart_status_text}")
                 else:
                     logger.warning("Emotion analysis returned None.")
             except Exception as e:
@@ -88,15 +93,17 @@ def handle_pet_event(
         if user_message:
             try:
                 # Analyze emotion for user messages
-                emotion, suggested_animation = analyze_emotion_for_pet(
-                    user_id, user_message
+                emotion, suggested_animation, smart_status_text = (
+                    analyze_emotion_for_pet(user_id, user_message)
                 )
                 if emotion:
                     dialogue_prompt_context["analyzed_emotion"] = emotion
                     dialogue_prompt_context["suggested_animation"] = suggested_animation
+                    dialogue_prompt_context["smart_status_text"] = smart_status_text
                     logger.info(
                         f"Analyzed emotion for user message: {emotion}, suggested animation: {suggested_animation}"
                     )
+                    logger.info(f"Smart status text: {smart_status_text}")
             except Exception as e:
                 logger.error(f"Error during emotion analysis for user message: {e}")
         else:
@@ -124,6 +131,7 @@ def handle_pet_event(
                 "dialogue": dialogue,
                 "emotion_detected": emotion,  # Include detected emotion if any
                 "suggested_animation": suggested_animation,
+                "smart_status_text": smart_status_text,  # Include smart status text
                 "context_id": response.get("context_id"),
                 "profile_available": response.get("profile_available", False),
             }
@@ -188,6 +196,7 @@ def handle_pet_event(
                 "dialogue": dialogue,
                 "emotion_detected": emotion,  # Include detected emotion if any
                 "suggested_animation": suggested_animation,
+                "smart_status_text": smart_status_text,  # Include smart status text
             }
     except Exception as e:
         logger.error(f"Error during dialogue generation: {e}")
@@ -198,6 +207,7 @@ def handle_pet_event(
             "dialogue": dialogue,
             "emotion_detected": emotion,
             "suggested_animation": "confused",
+            "smart_status_text": "我好像有点困惑...",  # Fallback smart status text
         }
 
 

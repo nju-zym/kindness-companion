@@ -398,36 +398,47 @@ class PetWidget(QWidget):
             self.add_message_to_history(dialogue, is_user=False)
 
         # --- Update Status Label Text based on animation ---
-        status_text_map = {
-            "idle": "正在休息...",
-            "happy": "看起来很开心！",
-            "excited": "好兴奋呀！",
-            "concerned": "有点担心...",
-            "confused": "嗯？怎么了？",
-            # Add emotion-specific status texts
-            "sad": "看起来有点难过...",
-            "anxious": "似乎有些焦虑...",
-            "worried": "好像在担心什么...",
-            "frustrated": "看起来有点沮丧...",
-            "angry": "似乎有些生气...",
-            "disappointed": "看起来有点失望...",
-            "stressed": "好像压力有点大...",
-            "calm": "看起来很平静...",
-            "reflective": "正在思考...",
-            "curious": "好奇地看着你...",
-            "surprised": "看起来很惊讶！",
-            "uncertain": "似乎有些犹豫...",
-        }
+        # 检查是否有智能生成的状态文字
+        smart_status_text = response.get("smart_status_text", "")
 
-        # Get emotion from response if available
-        emotion = response.get("emotion_detected", "")
-
-        # First try to get status text based on emotion
-        if emotion and emotion in status_text_map:
-            status_text = status_text_map[emotion]
-        # Otherwise use animation
+        if smart_status_text:
+            # 使用智能生成的状态文字
+            status_text = smart_status_text
         else:
-            status_text = status_text_map.get(suggested_animation, "正在休息...")
+            # 回退到原有的简单映射
+            status_text_map = {
+                "idle": "我在这里陪着你呢~",
+                "happy": "看起来很开心！",
+                "excited": "好兴奋呀！",
+                "concerned": "有点担心...",
+                "confused": "嗯？怎么了？",
+                "thinking": "让我想想...",
+                # Add emotion-specific status texts
+                "sad": "看起来有点难过...",
+                "anxious": "似乎有些焦虑...",
+                "worried": "好像在担心什么...",
+                "frustrated": "看起来有点沮丧...",
+                "angry": "似乎有些生气...",
+                "disappointed": "看起来有点失望...",
+                "stressed": "好像压力有点大...",
+                "calm": "看起来很平静...",
+                "reflective": "正在思考...",
+                "curious": "好奇地看着你...",
+                "surprised": "看起来很惊讶！",
+                "uncertain": "似乎有些犹豫...",
+            }
+
+            # Get emotion from response if available
+            emotion = response.get("emotion_detected", "")
+
+            # First try to get status text based on emotion
+            if emotion and emotion in status_text_map:
+                status_text = status_text_map[emotion]
+            # Otherwise use animation
+            else:
+                status_text = status_text_map.get(
+                    suggested_animation, "我在这里陪着你呢~"
+                )
 
         self.pet_status_label.setText(status_text)
 

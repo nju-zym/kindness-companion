@@ -239,6 +239,126 @@ ANIMATION_STATES = {
     "excited": "excited",
 }
 
+# 为每种动画状态配置合适的文字提示
+ANIMATION_TEXT_PROMPTS = {
+    "thinking": [
+        "让我想想...",
+        "嗯，我在思考你说的话...",
+        "我正在仔细考虑这个问题...",
+        "给我一点时间思考一下...",
+        "我需要好好想想这个...",
+        "让我分析一下你的想法...",
+        "这很有趣，让我想想...",
+        "我在琢磨你的意思...",
+    ],
+    "idle": [
+        "我在这里陪着你呢~",
+        "有什么想聊的吗？",
+        "我在静静地听着...",
+        "我会一直陪伴在你身边",
+        "随时可以和我说话哦",
+        "我在这里等你...",
+        "有什么需要帮助的吗？",
+        "我们可以慢慢聊~",
+    ],
+    "happy": [
+        "这真是太好了！",
+        "我为你感到开心呢~",
+        "听起来真不错呀！",
+        "这让我也觉得很愉快！",
+        "真是个好消息！",
+        "我能感受到你的快乐~",
+        "这样的好事值得庆祝！",
+        "你的开心也感染了我呢！",
+        "这真的很棒！",
+        "我替你高兴！",
+    ],
+    "concerned": [
+        "我有点担心你呢...",
+        "听起来你似乎有些困扰？",
+        "我能理解你的感受...",
+        "这确实是令人担忧的事情",
+        "我想为你分担一些担忧",
+        "你现在还好吗？",
+        "我会陪着你度过难关的",
+        "如果你需要倾诉，我在这里",
+        "我关心你的感受...",
+        "让我们一起面对这个问题",
+    ],
+    "confused": [
+        "咦？这是什么意思呀？",
+        "我有点不太明白...",
+        "能再解释一下吗？",
+        "这让我感到有些困惑呢",
+        "我需要理解得更清楚一些",
+        "这个...我还没太懂呢",
+        "你能说得详细一点吗？",
+        "我好像跟不上你的思路了",
+        "这有点超出我的理解了",
+        "能帮我澄清一下吗？",
+    ],
+    "excited": [
+        "哇！这太令人兴奋了！",
+        "太棒了！我都激动起来了！",
+        "这真是太赞了！",
+        "我和你一样兴奋呢！",
+        "这简直太精彩了！",
+        "我都忍不住要为你欢呼了！",
+        "这种感觉真是太好了！",
+        "太厉害了！我都被感染了！",
+        "这让我充满了活力！",
+        "真是太令人振奋了！",
+    ],
+}
+
+# 根据情感强度调整文字提示的词典
+INTENSITY_TEXT_MODIFIERS = {
+    EmotionIntensity.LOW: {
+        "happy": ["还不错呢~", "挺好的~", "听起来还可以", "这样挺好的"],
+        "concerned": ["稍微有点担心", "有一点点担忧", "似乎有些不太对"],
+        "excited": ["有点小兴奋呢", "听起来不错", "还挺有意思的"],
+    },
+    EmotionIntensity.MEDIUM: {
+        "happy": ["真的很不错！", "这很好呀！", "听起来很棒！"],
+        "concerned": ["我有些担心", "这确实让人忧虑", "我能理解你的困扰"],
+        "excited": ["太好了！", "真不错！", "这很令人兴奋！"],
+    },
+    EmotionIntensity.HIGH: {
+        "happy": ["太棒了！", "这简直太好了！", "我为你感到超级开心！"],
+        "concerned": ["我非常担心你", "这真的很令人担忧", "我们必须重视这个问题"],
+        "excited": ["哇！太令人兴奋了！", "这简直太赞了！", "我都激动得不行了！"],
+    },
+}
+
+# 基于用户情感历史的个性化文字提示
+CONTEXTUAL_TEXT_PROMPTS = {
+    "first_interaction": [
+        "很高兴认识你！",
+        "欢迎来找我聊天~",
+        "我很期待和你的交流！",
+    ],
+    "frequent_positive": [
+        "你总是能带给我正能量呢！",
+        "和你聊天真的很愉快~",
+        "你的乐观态度很感染人！",
+    ],
+    "frequent_negative": [
+        "我会一直陪伴着你的",
+        "无论遇到什么，我都在这里",
+        "我们一起慢慢来，不着急",
+    ],
+    "mood_improvement": [
+        "看到你心情变好，我也很开心！",
+        "你的状态越来越好了呢~",
+        "感觉你今天比之前更开朗了！",
+    ],
+    "emotional_volatility": [
+        "我注意到你的情绪有些波动",
+        "无论你现在什么感受，我都理解",
+        "情绪起伏是很正常的，我陪着你",
+    ],
+}
+
 # 动画过渡兼容性矩阵（定义哪些动画之间可以直接切换）
 ANIMATION_TRANSITIONS = {
     "idle": ["happy", "concerned", "confused", "excited", "thinking"],
@@ -1333,6 +1453,214 @@ class EmotionAnalyzer:
 
         return None  # 不是特殊类型，使用正常的情感分析
 
+    def generate_smart_status_text(
+        self,
+        emotion_state: EmotionState,
+        animation_state: str,
+        user_id: Optional[int] = None,
+        user_input: Optional[str] = None,
+    ) -> str:
+        """
+        生成智能的状态文字提示，配合动画状态和情感分析结果
+
+        Args:
+            emotion_state: 情感状态
+            animation_state: 动画状态
+            user_id: 用户ID，用于个性化提示
+            user_input: 用户输入，用于生成更贴切的回应
+
+        Returns:
+            str: 合适的状态文字提示
+        """
+        import random
+
+        try:
+            # 使用全局常量 - 确保正确引用
+            global ANIMATION_TEXT_PROMPTS, INTENSITY_TEXT_MODIFIERS, CONTEXTUAL_TEXT_PROMPTS
+
+            # 1. 获取基础文字提示
+            base_prompts = ANIMATION_TEXT_PROMPTS.get(
+                animation_state, ["我在这里陪着你~"]
+            )
+
+            # 2. 根据情感强度调整文字
+            intensity_prompts = INTENSITY_TEXT_MODIFIERS.get(
+                emotion_state.intensity, {}
+            ).get(animation_state, [])
+
+            # 3. 获取上下文相关的个性化提示
+            contextual_prompts = self._get_contextual_prompts(user_id, emotion_state)
+
+            # 4. 合并所有可能的提示
+            all_prompts = base_prompts.copy()
+
+            # 如果有强度相关的提示，优先使用
+            if intensity_prompts:
+                all_prompts.extend(intensity_prompts)
+
+            # 如果有上下文相关的提示，也加入候选
+            if contextual_prompts:
+                all_prompts.extend(contextual_prompts)
+
+            # 5. 根据置信度决定是否使用更具体的提示
+            if emotion_state.confidence > 0.7:
+                # 高置信度时，可以使用更具体的情感表达
+                specific_prompts = self._get_emotion_specific_prompts(
+                    emotion_state, user_input
+                )
+                if specific_prompts:
+                    all_prompts.extend(specific_prompts)
+
+            # 6. 随机选择一个提示
+            selected_prompt = random.choice(all_prompts)
+
+            # 7. 根据次要情感进行微调
+            if emotion_state.secondary_emotions:
+                selected_prompt = self._adjust_prompt_for_secondary_emotions(
+                    selected_prompt, emotion_state.secondary_emotions
+                )
+
+            logger.debug(
+                f"Generated status text: '{selected_prompt}' for animation: {animation_state}"
+            )
+            return selected_prompt
+
+        except Exception as e:
+            logger.error(f"Error generating smart status text: {e}")
+            # 安全回退 - 使用全局常量
+            try:
+                return ANIMATION_TEXT_PROMPTS.get(animation_state, ["我在这里陪着你~"])[
+                    0
+                ]
+            except:
+                return "我在这里陪着你~"
+
+    def _get_contextual_prompts(
+        self, user_id: Optional[int], emotion_state: EmotionState
+    ) -> List[str]:
+        """获取基于用户历史的上下文相关提示"""
+        global CONTEXTUAL_TEXT_PROMPTS
+
+        if not user_id or user_id not in self.emotion_history:
+            return CONTEXTUAL_TEXT_PROMPTS.get("first_interaction", [])
+
+        history = self.emotion_history[user_id]
+        if len(history) < 2:
+            return CONTEXTUAL_TEXT_PROMPTS.get("first_interaction", [])
+
+        # 分析用户的情感模式
+        recent_emotions = history[-5:]  # 最近5次情感
+        positive_count = sum(1 for e in recent_emotions if e.dimensions.valence > 0.2)
+        negative_count = sum(1 for e in recent_emotions if e.dimensions.valence < -0.2)
+
+        # 检查情感改善
+        if len(history) >= 3:
+            prev_valence = history[-3].dimensions.valence
+            curr_valence = emotion_state.dimensions.valence
+            if prev_valence < -0.3 and curr_valence > 0.1:
+                return CONTEXTUAL_TEXT_PROMPTS.get("mood_improvement", [])
+
+        # 检查情感波动
+        if self._is_emotional_volatility_high(recent_emotions):
+            return CONTEXTUAL_TEXT_PROMPTS.get("emotional_volatility", [])
+
+        # 基于整体情感倾向
+        if positive_count > negative_count * 2:
+            return CONTEXTUAL_TEXT_PROMPTS.get("frequent_positive", [])
+        elif negative_count > positive_count:
+            return CONTEXTUAL_TEXT_PROMPTS.get("frequent_negative", [])
+
+        return []
+
+    def _get_emotion_specific_prompts(
+        self, emotion_state: EmotionState, user_input: Optional[str]
+    ) -> List[str]:
+        """根据特定情感和用户输入生成更贴切的提示"""
+        if not user_input:
+            return []
+
+        user_input_lower = user_input.lower()
+        primary_emotion = emotion_state.primary_emotion
+        intensity = emotion_state.intensity
+
+        # 根据用户输入和情感生成特定回应
+        specific_prompts = []
+
+        # Joy/happiness 相关
+        if primary_emotion == PlutchikEmotions.JOY:
+            if any(
+                word in user_input_lower
+                for word in ["成功", "通过", "考试", "工作", "升职"]
+            ):
+                if intensity == EmotionIntensity.HIGH:
+                    specific_prompts.extend(
+                        [
+                            "哇！这个好消息让我都兴奋起来了！",
+                            "太棒了！我为你的成功感到骄傲！",
+                        ]
+                    )
+                else:
+                    specific_prompts.extend(["真为你高兴！", "这是个好消息呢~"])
+            elif any(word in user_input_lower for word in ["开心", "快乐", "高兴"]):
+                specific_prompts.extend(
+                    ["你的快乐也感染了我！", "看到你开心，我也很开心~"]
+                )
+
+        # Fear/anxiety 相关
+        elif primary_emotion == PlutchikEmotions.FEAR:
+            if any(
+                word in user_input_lower for word in ["考试", "面试", "工作", "明天"]
+            ):
+                specific_prompts.extend(
+                    ["我理解你的紧张，我会陪着你的", "深呼吸，我相信你可以的"]
+                )
+            elif any(word in user_input_lower for word in ["担心", "害怕", "紧张"]):
+                specific_prompts.extend(
+                    ["我能感受到你的不安...", "让我陪你一起面对这些担忧"]
+                )
+
+        # Sadness 相关
+        elif primary_emotion == PlutchikEmotions.SADNESS:
+            if any(word in user_input_lower for word in ["失败", "没通过", "不行"]):
+                specific_prompts.extend(
+                    ["虽然这次没有成功，但我相信你！", "挫折是成长的一部分，我陪着你"]
+                )
+            elif any(word in user_input_lower for word in ["难过", "伤心", "失望"]):
+                specific_prompts.extend(
+                    ["我能理解你现在的感受...", "难过的时候，我在这里陪你"]
+                )
+
+        # Surprise 相关
+        elif primary_emotion == PlutchikEmotions.SURPRISE:
+            if "没想到" in user_input_lower or "惊讶" in user_input_lower:
+                specific_prompts.extend(
+                    ["这确实很出人意料呢！", "我也被你说的话惊到了！"]
+                )
+
+        return specific_prompts
+
+    def _adjust_prompt_for_secondary_emotions(
+        self, prompt: str, secondary_emotions: List[Tuple[PlutchikEmotions, float]]
+    ) -> str:
+        """根据次要情感微调提示语"""
+        if not secondary_emotions:
+            return prompt
+
+        # 如果有强烈的次要情感，可能需要在提示中体现
+        for emotion, weight in secondary_emotions:
+            if weight > 0.6:  # 权重较高的次要情感
+                if emotion == PlutchikEmotions.FEAR and "开心" in prompt:
+                    # 如果主要情感是开心但有恐惧的次要情感
+                    return prompt + "不过你好像还有一些担心？"
+                elif emotion == PlutchikEmotions.SADNESS and "兴奋" in prompt:
+                    # 如果主要情感是兴奋但有悲伤的次要情感
+                    return prompt + "但是我感觉你心情有些复杂..."
+                elif emotion == PlutchikEmotions.JOY and "担心" in prompt:
+                    # 如果主要情感是担心但有快乐的次要情感
+                    return prompt + "不过我也感受到了一些积极的情绪~"
+
+        return prompt
+
 
 # 全局情感分析器实例
 emotion_analyzer = EmotionAnalyzer()
@@ -1343,15 +1671,18 @@ def analyze_emotion_for_pet(
     user_id: int,
     reflection_text: str,
     status_callback: Optional[Callable[[str], None]] = None,
-) -> Tuple[Optional[str], Optional[str]]:
+) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """
     为宠物系统提供情感分析（兼容性包装器）
+
+    Returns:
+        Tuple[Optional[str], Optional[str], Optional[str]]: (情感名称, 动画状态, 状态文字)
     """
     if not reflection_text:
         logger.warning(f"Cannot analyze empty reflection text for user {user_id}.")
         if status_callback:
             status_callback(ANIMATION_STATES["idle"])
-        return None, ANIMATION_STATES["idle"]
+        return None, ANIMATION_STATES["idle"], "我在这里陪着你呢~"
 
     # 立即切换到thinking动画
     if status_callback:
@@ -1370,6 +1701,14 @@ def analyze_emotion_for_pet(
             )
         )
 
+        # 生成智能状态文字
+        smart_status_text = emotion_analyzer.generate_smart_status_text(
+            emotion_state=emotion_state,
+            animation_state=optimal_animation,
+            user_id=user_id,
+            user_input=reflection_text,
+        )
+
         # 转换为旧格式
         emotion_name = emotion_state.primary_emotion.value
 
@@ -1379,17 +1718,18 @@ def analyze_emotion_for_pet(
             f"置信度: {emotion_state.confidence:.2f}, "
             f"需要过渡: {needs_transition})"
         )
+        logger.info(f"智能状态文字: {smart_status_text}")
 
         if status_callback:
             status_callback(optimal_animation)
 
-        return emotion_name, optimal_animation
+        return emotion_name, optimal_animation, smart_status_text
 
     except Exception as e:
         logger.error(f"情感分析失败: {e}")
         if status_callback:
             status_callback(ANIMATION_STATES["concerned"])
-        return None, ANIMATION_STATES["concerned"]
+        return None, ANIMATION_STATES["concerned"], "我有点担心你呢..."
 
 
 def test_emotion_analysis():
@@ -1414,6 +1754,10 @@ def test_emotion_analysis():
 
     analyzer = EmotionAnalyzer()
 
+    print("=" * 60)
+    print("测试智能状态文字功能")
+    print("=" * 60)
+
     for i, (text, expected) in enumerate(test_cases, 1):
         print(f"\n测试 {i}: {text}")
         print(f"预期: {expected}")
@@ -1425,6 +1769,14 @@ def test_emotion_analysis():
             # 获取动画
             animation, needs_transition = (
                 analyzer.get_optimal_animation_with_transition(emotion_state, user_id=1)
+            )
+
+            # 生成智能状态文字
+            smart_text = analyzer.generate_smart_status_text(
+                emotion_state=emotion_state,
+                animation_state=animation,
+                user_id=1,
+                user_input=text,
             )
 
             print(f"结果:")
@@ -1439,6 +1791,7 @@ def test_emotion_analysis():
             print(f"  次要情感: {emotion_state.secondary_emotions}")
             print(f"  动画状态: {animation}")
             print(f"  需要过渡: {needs_transition}")
+            print(f"  智能状态文字: '{smart_text}'")
 
             # 如果是特殊类型，显示特殊标记
             if (
@@ -1450,10 +1803,28 @@ def test_emotion_analysis():
         except Exception as e:
             print(f"错误: {e}")
 
+    # 测试兼容性函数
+    print(f"\n" + "=" * 60)
+    print("测试兼容性函数 analyze_emotion_for_pet")
+    print("=" * 60)
+
+    test_text = "我今天考试考了满分！太开心了！"
+    try:
+        emotion_name, animation_state, status_text = analyze_emotion_for_pet(
+            user_id=1, reflection_text=test_text
+        )
+        print(f"输入: {test_text}")
+        print(f"情感名称: {emotion_name}")
+        print(f"动画状态: {animation_state}")
+        print(f"状态文字: {status_text}")
+    except Exception as e:
+        print(f"兼容性函数测试错误: {e}")
+
     # 测试动画过渡
     print(f"\n动画过渡测试:")
     print(f"当前动画历史: {analyzer.animation_history.get(1, [])}")
     print(f"当前动画状态: {analyzer.current_animation.get(1, 'idle')}")
+    print("=" * 60)
 
 
 if __name__ == "__main__":

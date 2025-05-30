@@ -55,14 +55,14 @@ class ChallengeCard(QFrame):
         self.setLineWidth(1)
 
         # 优化卡片尺寸和布局
-        self.setMinimumHeight(200)  # 增加最小高度
-        self.setMaximumHeight(350)  # 增加最大高度
+        self.setMinimumHeight(240)  # 增加最小高度，从200增加到240
+        self.setMaximumHeight(400)  # 增加最大高度，从350增加到400
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         # Main layout
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(20, 20, 20, 20)  # 增加内边距
-        self.main_layout.setSpacing(12)  # 增加元素间距
+        self.main_layout.setContentsMargins(20, 25, 20, 25)  # 增加上下内边距
+        self.main_layout.setSpacing(15)  # 增加元素间距，从12增加到15
 
         # Title
         self.title_label = QLabel(self.challenge["title"])
@@ -98,11 +98,11 @@ class ChallengeCard(QFrame):
             Qt.TextInteractionFlag.TextSelectableByMouse
         )
         self.main_layout.addWidget(self.description_label)
-        self.main_layout.addSpacing(8)  # 增加间距
+        self.main_layout.addSpacing(12)  # 增加间距，从8增加到12
 
         # Metadata layout
         self.meta_layout = QHBoxLayout()
-        self.meta_layout.setSpacing(12)  # 增加间距
+        self.meta_layout.setSpacing(15)  # 增加间距，从12增加到15
 
         # 分类
         self.category_box = QFrame()
@@ -152,18 +152,11 @@ class ChallengeCard(QFrame):
 
         self.main_layout.addLayout(self.meta_layout)
 
-        # 添加分隔线
-        separator2 = QFrame()
-        separator2.setFrameShape(QFrame.Shape.HLine)
-        separator2.setFrameShadow(QFrame.Shadow.Sunken)
-        separator2.setLineWidth(1)
-        self.main_layout.addWidget(separator2)
-
         # Button layout
         self.button_layout = QHBoxLayout()
         self.button_layout.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.button_layout.setSpacing(10)  # 增加按钮间距
-        self.button_layout.setContentsMargins(0, 10, 0, 0)  # 增加上边距
+        self.button_layout.setContentsMargins(0, 15, 0, 0)  # 增加上边距，从10增加到15
 
         # 设置按钮样式
         self.icon_size = QSize(20, 20)  # 增加图标尺寸
@@ -404,8 +397,10 @@ class ChallengeListWidget(QWidget):
             "challenges_container"
         )  # 设置对象名，便于样式表定制
         self.challenges_layout = QGridLayout(self.challenges_widget)
-        self.challenges_layout.setContentsMargins(5, 10, 5, 10)  # 调整内边距
-        self.challenges_layout.setSpacing(20)  # 增加卡片间距
+        self.challenges_layout.setContentsMargins(
+            10, 15, 10, 15
+        )  # 增加内边距，特别是上下边距
+        self.challenges_layout.setSpacing(30)  # 增加卡片间距，从20增加到30
         self.challenges_layout.setAlignment(
             Qt.AlignmentFlag.AlignTop
         )  # 确保卡片从顶部开始排列

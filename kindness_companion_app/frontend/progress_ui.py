@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QApplication,
+    QTableView,
 )
 from PySide6.QtCore import Qt, Signal, Slot, QDate, QSize, QTimer, QThread, QMargins
 from PySide6.QtGui import (
@@ -234,93 +235,140 @@ class ProgressWidget(QWidget):
         self.report_history = []  # Store report history
         self.ai_report_generator = None  # Initialize AI report generator
 
-        # 添加图表相关属性
-        self.pie_chart = None
-        self.pie_view = None
-
         # Initialize UI attributes to None for clarity
         self.main_layout = None
-        self.header_layout = None
         self.title_label = None
-        self.filter_layout = None
         self.challenge_label = None
         self.challenge_combo = None
         self.range_label = None
         self.range_combo = None
-        self.main_content_layout = None
-        self.left_panel_widget = None  # Initialize here
-        self.left_panel_layout = None
         self.calendar_widget = None
-        self.stats_group = None
-        self.stats_layout = None
         self.total_label = None
         self.streak_label = None
         self.rate_label = None
-        self.weekly_report_group = None
         self.weekly_report_text_edit = None
         self.generate_report_button = None
-        self.achievements_group = None
+        self.history_button = None
+        self.report_progress_bar = None
         self.achievements_scroll_area = None
         self.achievements_container = None
         self.achievements_layout = None
         self.achievements_placeholder = None
         self.achievements_spacer = None
         self.progress_table = None
-        self.bottom_split_widget = None
-        self.bottom_split = None
+
+        # New tab-based layout attributes
+        self.tab_widget = None
+        self.overview_tab = None
+        self.details_tab = None
+        self.analysis_tab = None
+        self.pie_chart = None
+        self.pie_view = None
 
         self.setup_ui()
 
     def setup_ui(self):
-        """重构打卡记录界面布局，提升美观性和信息层次。"""
+        """重构打卡记录界面布局，优化小窗口显示和饼图布局。"""
         # 主布局
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(28, 28, 28, 28)
-        self.main_layout.setSpacing(22)
-        self.main_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinAndMaxSize)
+        self.main_layout.setContentsMargins(
+            2, 2, 2, 2
+        )  # 最大化减少边距为日历腾出最多空间
+        self.main_layout.setSpacing(4)  # 最大化减少间距为日历腾出最多空间
 
-        # 设置整体大小策略
-        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
+        # 移除过度严格的尺寸约束
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
 
         # 顶部标题与筛选器
         header_layout = QHBoxLayout()
         header_layout.setContentsMargins(0, 0, 0, 0)
         header_layout.setSpacing(10)
+
         self.title_label = QLabel("打卡记录")
         self.title_label.setObjectName("title_label")
-        self.title_label.setFont(QFont("Hiragino Sans GB", 22, QFont.Weight.Bold))
+        self.title_label.setFont(QFont("Hiragino Sans GB", 20, QFont.Weight.Bold))
         header_layout.addWidget(self.title_label, alignment=Qt.AlignmentFlag.AlignLeft)
         header_layout.addStretch()
+
+        # 筛选器组
+        filter_widget = QWidget()
+        filter_layout = QHBoxLayout(filter_widget)
+        filter_layout.setContentsMargins(0, 0, 0, 0)
+        filter_layout.setSpacing(8)
+
         self.challenge_label = QLabel("挑战:")
         self.challenge_combo = QComboBox()
-        self.challenge_combo.setFixedWidth(160)
+        self.challenge_combo.setMinimumWidth(140)
+        self.challenge_combo.setMaximumWidth(200)
         self.challenge_combo.addItem("全部挑战", None)
         self.challenge_combo.currentIndexChanged.connect(self.load_progress)
-        header_layout.addWidget(self.challenge_label)
-        header_layout.addWidget(self.challenge_combo)
-        self.range_label = QLabel("时间范围:")
+
+        self.range_label = QLabel("时间:")
         self.range_combo = QComboBox()
-        self.range_combo.setFixedWidth(120)
+        self.range_combo.setMinimumWidth(100)
+        self.range_combo.setMaximumWidth(150)
         self.range_combo.addItem("最近7天", 7)
         self.range_combo.addItem("最近30天", 30)
         self.range_combo.addItem("最近90天", 90)
         self.range_combo.addItem("全部记录", None)
         self.range_combo.currentIndexChanged.connect(self.load_progress)
-        header_layout.addWidget(self.range_label)
-        header_layout.addWidget(self.range_combo)
+
+        filter_layout.addWidget(self.challenge_label)
+        filter_layout.addWidget(self.challenge_combo)
+        filter_layout.addWidget(self.range_label)
+        filter_layout.addWidget(self.range_combo)
+
+        header_layout.addWidget(filter_widget)
         self.main_layout.addLayout(header_layout)
 
-        # 主内容区：左右分栏
-        main_content_layout = QHBoxLayout()
-        main_content_layout.setSpacing(32)
+        # 使用TabWidget来节省空间并改善组织
+        self.tab_widget = QTabWidget()
+        self.tab_widget.setObjectName("progress_tab_widget")
 
-        # 左侧：日历+统计
-        left_panel = QVBoxLayout()
-        left_panel.setSpacing(24)
-        # 日历
+        # 概览标签页 - 包含日历、统计和图表
+        self.overview_tab = QWidget()
+        self.setup_overview_tab()
+        self.tab_widget.addTab(self.overview_tab, "📊 概览")
+
+        # 详细记录标签页 - 包含表格
+        self.details_tab = QWidget()
+        self.setup_details_tab()
+        self.tab_widget.addTab(self.details_tab, "📋 详细记录")
+
+        # AI分析标签页 - 包含AI周报和成就
+        self.analysis_tab = QWidget()
+        self.setup_analysis_tab()
+        self.tab_widget.addTab(self.analysis_tab, "🤖 AI分析")
+
+        # 连接Tab切换事件
+        self.tab_widget.currentChanged.connect(self.on_tab_changed)
+
+        self.main_layout.addWidget(self.tab_widget)
+
+    def setup_overview_tab(self):
+        """设置概览标签页"""
+        layout = QVBoxLayout(self.overview_tab)
+        layout.setContentsMargins(2, 2, 2, 2)  # 最大化减少内边距为日历腾出最多空间
+        layout.setSpacing(6)  # 最大化减少间距为日历腾出最多空间
+
+        # 上半部分：日历和基础统计
+        top_layout = QHBoxLayout()
+        top_layout.setSpacing(6)  # 最大化减少间距为日历腾出最多空间
+
+        # 日历部分
+        calendar_group = QGroupBox("日历视图")
+        calendar_group.setObjectName("calendar_group")
+        calendar_layout = QVBoxLayout(calendar_group)
+        calendar_layout.setContentsMargins(
+            1, 1, 1, 1
+        )  # 最大化减少内边距，为日历腾出最多空间
+
         self.calendar_widget = QCalendarWidget()
         self.calendar_widget.setObjectName("calendar_widget")
-        self.calendar_widget.setFixedHeight(220)
+        # 设置更大的高度，确保有足够空间显示日历内容
+        self.calendar_widget.setMaximumHeight(
+            320
+        )  # 进一步增加到320px给日历最充足的显示空间
         self.calendar_widget.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
@@ -330,40 +378,51 @@ class ProgressWidget(QWidget):
         self.calendar_widget.setSelectionMode(
             QCalendarWidget.SelectionMode.SingleSelection
         )
+
+        # 配置日历样式，隐藏相邻月份的日期
+        self.setup_calendar_style()
+
         self.calendar_widget.clicked.connect(self.calendar_date_clicked)
-        left_panel.addWidget(self.calendar_widget)
-        # 统计数据
-        stats_group = QGroupBox("统计数据")
-        stats_group.setObjectName("stats_group")
-        stats_group.setMinimumHeight(540)
-        stats_layout = QVBoxLayout(stats_group)
-        stats_layout.setContentsMargins(16, 18, 16, 12)
-        stats_layout.setSpacing(10)
+        calendar_layout.addWidget(self.calendar_widget)
 
         # 基础统计信息
-        basic_stats_layout = QHBoxLayout()
+        stats_widget = QWidget()
+        stats_layout = QVBoxLayout(stats_widget)
+        stats_layout.setSpacing(8)
+
         self.total_label = QLabel("总打卡次数: 0")
         self.total_label.setObjectName("stat_label")
         self.streak_label = QLabel("当前连续打卡: 0 天")
         self.streak_label.setObjectName("stat_label")
         self.rate_label = QLabel("完成率: 0%")
         self.rate_label.setObjectName("stat_label")
-        basic_stats_layout.addWidget(self.total_label)
-        basic_stats_layout.addWidget(self.streak_label)
-        basic_stats_layout.addWidget(self.rate_label)
-        stats_layout.addLayout(basic_stats_layout)
 
-        # 添加图表容器
-        charts_layout = QVBoxLayout()
+        stats_layout.addWidget(self.total_label)
+        stats_layout.addWidget(self.streak_label)
+        stats_layout.addWidget(self.rate_label)
+        stats_layout.addStretch()
 
-        # 饼图：显示各类别占比
+        top_layout.addWidget(calendar_group, 2)
+        top_layout.addWidget(stats_widget, 1)
+
+        layout.addLayout(top_layout)
+
+        # 下半部分：饼图
+        chart_group = QGroupBox("类别分布")
+        chart_group.setObjectName("chart_group")
+        chart_layout = QVBoxLayout(chart_group)
+        chart_layout.setContentsMargins(
+            3, 3, 3, 3
+        )  # 进一步减少内边距为日历腾出更多空间
+
+        # 优化饼图设置
         self.pie_chart = QChart()
         self.pie_chart.setTitle("挑战类别分布")
         self.pie_chart.setAnimationOptions(QChart.AnimationOption.SeriesAnimations)
         self.pie_chart.legend().setVisible(True)
-        self.pie_chart.legend().setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.pie_chart.legend().setAlignment(Qt.AlignmentFlag.AlignBottom)
 
-        # 设置标题颜色：浅色模式为深色，深色模式为浅色
+        # 设置主题适配的标题颜色
         app = QApplication.instance()
         theme = "light"
         if app:
@@ -377,39 +436,46 @@ class ProgressWidget(QWidget):
 
         self.pie_view = QChartView(self.pie_chart)
         self.pie_view.setRenderHint(QPainter.RenderHint.Antialiasing)
-        self.pie_view.setMinimumHeight(320)
-        self.pie_view.setMaximumHeight(400)
+        self.pie_view.setMinimumHeight(
+            400
+        )  # 增加最小高度，配合增加的上边距给上方标签更多空间
+        self.pie_view.setMaximumHeight(530)  # 相应增加最大高度
         self.pie_view.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
-        charts_layout.addWidget(self.pie_view)
+        # 设置图表视图的渲染提示以获得更好的文字显示效果
+        self.pie_view.setRubberBand(QChartView.RubberBand.NoRubberBand)
 
-        stats_layout.addLayout(charts_layout)
-        stats_layout.addStretch()
-        left_panel.addWidget(stats_group)
-        left_panel.addStretch()
-        main_content_layout.addLayout(left_panel, 1)
+        chart_layout.addWidget(self.pie_view)
+        layout.addWidget(chart_group)
 
-        # 右侧：表格+AI周报+成就
-        right_panel = QVBoxLayout()
-        right_panel.setSpacing(18)
+    def setup_details_tab(self):
+        """设置详细记录标签页"""
+        layout = QVBoxLayout(self.details_tab)
+        layout.setContentsMargins(2, 2, 2, 2)  # 最大化减少内边距为日历腾出最多空间
+        layout.setSpacing(4)  # 最大化减少间距为日历腾出最多空间
+
+        # 表格
         self.progress_table = QTableWidget()
         self.progress_table.setObjectName("progress_table")
         self.progress_table.setColumnCount(4)
         self.progress_table.setHorizontalHeaderLabels(["日期", "挑战", "分类", "操作"])
+
         header = self.progress_table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
         header.setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
+
         self.progress_table.setColumnWidth(0, 120)
         self.progress_table.setColumnWidth(2, 110)
         self.progress_table.setColumnWidth(3, 100)
+
         self.progress_table.verticalHeader().setVisible(False)
         self.progress_table.verticalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Fixed
         )
-        self.progress_table.verticalHeader().setDefaultSectionSize(44)
+        self.progress_table.verticalHeader().setDefaultSectionSize(40)
         self.progress_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.progress_table.setSelectionBehavior(
             QTableWidget.SelectionBehavior.SelectRows
@@ -418,58 +484,68 @@ class ProgressWidget(QWidget):
         self.progress_table.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
-        self.progress_table.setMinimumHeight(260)
-        right_panel.addWidget(self.progress_table, 3)
-        # 横向分栏（AI周报+成就）
-        self.bottom_split = QHBoxLayout()
-        self.bottom_split.setSpacing(18)
+
+        layout.addWidget(self.progress_table)
+
+    def setup_analysis_tab(self):
+        """设置AI分析标签页"""
+        layout = QVBoxLayout(self.analysis_tab)
+        layout.setContentsMargins(2, 2, 2, 2)  # 最大化减少内边距为日历腾出最多空间
+        layout.setSpacing(4)  # 最大化减少间距为日历腾出最多空间
+
+        # AI周报部分
         ai_group = QGroupBox("AI 周报")
         ai_group.setObjectName("weekly_report_group")
-        ai_group.setMinimumWidth(260)
-        ai_group.setMinimumHeight(180)
-        ai_group.setVisible(True)
         ai_layout = QVBoxLayout(ai_group)
-        ai_layout.setContentsMargins(14, 18, 14, 14)
-        ai_layout.setSpacing(10)
+        ai_layout.setContentsMargins(3, 3, 3, 3)  # 进一步减少内边距为日历腾出更多空间
+        ai_layout.setSpacing(6)  # 进一步减少间距为日历腾出更多空间
+
         self.weekly_report_text_edit = QTextEdit()
         self.weekly_report_text_edit.setReadOnly(True)
         self.weekly_report_text_edit.setPlaceholderText(
             "点击下方按钮生成本周善行报告..."
         )
-        self.weekly_report_text_edit.setMinimumHeight(70)
-        self.weekly_report_text_edit.setMaximumHeight(110)
+        self.weekly_report_text_edit.setMinimumHeight(120)
+        self.weekly_report_text_edit.setMaximumHeight(200)
         ai_layout.addWidget(self.weekly_report_text_edit)
+
         self.report_progress_bar = QProgressBar()
         self.report_progress_bar.setVisible(False)
-        self.report_progress_bar.setRange(0, 0)  # Indeterminate progress
+        self.report_progress_bar.setRange(0, 0)
         self.report_progress_bar.setTextVisible(False)
         ai_layout.addWidget(self.report_progress_bar)
+
+        # 按钮布局
         ai_btn_layout = QHBoxLayout()
         ai_btn_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
         self.generate_report_button = QPushButton("生成周报")
         self.generate_report_button.setObjectName("generate_report_button")
         self.generate_report_button.setIcon(QIcon(":/icons/refresh-cw.svg"))
         self.generate_report_button.setFixedSize(110, 32)
         self.generate_report_button.clicked.connect(self.generate_weekly_report)
-        ai_btn_layout.addWidget(self.generate_report_button)
+
         self.history_button = QPushButton("历史记录")
         self.history_button.setObjectName("history_button")
         self.history_button.setIcon(QIcon(":/icons/history.svg"))
         self.history_button.setFixedSize(110, 32)
         self.history_button.clicked.connect(self.show_report_history)
+
+        ai_btn_layout.addWidget(self.generate_report_button)
         ai_btn_layout.addWidget(self.history_button)
         ai_layout.addLayout(ai_btn_layout)
-        ai_group.setLayout(ai_layout)
-        self.bottom_split.addWidget(ai_group, 1)
-        # 成就显示
+
+        layout.addWidget(ai_group)
+
+        # 成就部分
         achievements_group = QGroupBox("我的成就")
         achievements_group.setObjectName("achievements_group")
-        achievements_group.setMinimumWidth(260)
-        achievements_group.setMinimumHeight(180)
-        achievements_group.setVisible(True)
         achievements_layout = QVBoxLayout(achievements_group)
-        achievements_layout.setContentsMargins(14, 18, 14, 14)
-        achievements_layout.setSpacing(10)
+        achievements_layout.setContentsMargins(
+            2, 2, 2, 2
+        )  # 减少内边距为日历腾出更多空间
+        achievements_layout.setSpacing(6)  # 减少间距为日历腾出更多空间
+
         self.achievements_scroll_area = QScrollArea()
         self.achievements_scroll_area.setWidgetResizable(True)
         self.achievements_scroll_area.setHorizontalScrollBarPolicy(
@@ -479,97 +555,118 @@ class ProgressWidget(QWidget):
             Qt.ScrollBarPolicy.ScrollBarAsNeeded
         )
         self.achievements_scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+
         self.achievements_container = QWidget()
         self.achievements_layout = QVBoxLayout(self.achievements_container)
         self.achievements_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.achievements_layout.setSpacing(10)
-        self.achievements_layout.setContentsMargins(4, 4, 4, 4)
+        self.achievements_layout.setSpacing(6)  # 减少间距为日历腾出更多空间
+        self.achievements_layout.setContentsMargins(
+            2, 2, 2, 2
+        )  # 减少内边距为日历腾出更多空间
+
         self.achievements_placeholder = QLabel("暂无成就，继续努力吧！")
         self.achievements_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.achievements_placeholder.setObjectName("achievements_placeholder")
         self.achievements_layout.addWidget(self.achievements_placeholder)
+
         self.achievements_spacer = QSpacerItem(
             20, 10, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
         )
         self.achievements_layout.addSpacerItem(self.achievements_spacer)
+
         self.achievements_scroll_area.setWidget(self.achievements_container)
         achievements_layout.addWidget(self.achievements_scroll_area)
-        self.bottom_split.addWidget(achievements_group, 1)
-        bottom_split_widget = QWidget()
-        bottom_split_widget.setLayout(self.bottom_split)
-        bottom_split_widget.setMinimumHeight(220)
-        right_panel.addWidget(bottom_split_widget, 2)
-        main_content_layout.addLayout(right_panel, 2)
-        self.main_layout.addLayout(main_content_layout)
 
-        # 设置表格行高固定且充足
-        self.progress_table.verticalHeader().setSectionResizeMode(
-            QHeaderView.ResizeMode.Fixed
-        )
-        self.progress_table.verticalHeader().setDefaultSectionSize(44)
-        # 保证AI周报与成就区块强制显示
-        ai_group.setVisible(True)
-        achievements_group.setVisible(True)
+        layout.addWidget(achievements_group)
 
     def resizeEvent(self, event):
+        """优化响应式布局"""
         width = self.width()
+        height = self.height()
 
-        # Get the main content layout
-        main_content_layout = None
-        if self.main_layout is not None:
-            for i in range(self.main_layout.count()):
-                item = self.main_layout.itemAt(i)
-                if item and item.layout():
-                    main_content_layout = item.layout()
-                    break
+        # 根据窗口大小调整字体和间距
+        if width < 800 or height < 600:  # 小窗口
+            # 调整字体大小
+            if hasattr(self, "title_label") and self.title_label:
+                self.title_label.setFont(
+                    QFont("Hiragino Sans GB", 18, QFont.Weight.Bold)
+                )
 
-        if main_content_layout is not None:
-            if width < 1000:  # 窄屏布局
-                if isinstance(main_content_layout, QBoxLayout):
-                    main_content_layout.setDirection(QBoxLayout.Direction.TopToBottom)
-                    # 移除横向分栏
-                    for i in range(main_content_layout.count()):
-                        item = main_content_layout.itemAt(i)
-                        if (
-                            item is not None
-                            and item.layout() is not None
-                            and item.layout() is self.bottom_split
-                        ):
-                            if self.bottom_split is not None:
-                                main_content_layout.removeItem(item)
-                            break
-                    # 添加纵向分栏
-                    if self.bottom_split is not None:
-                        main_content_layout.addLayout(self.bottom_split)
-                self.setStyleSheet(
-                    "font-size: 13px; QGroupBox {margin-top: 8px;} QTableWidget {font-size: 12px;}"
+            # 调整间距
+            if hasattr(self, "main_layout") and self.main_layout:
+                self.main_layout.setContentsMargins(2, 2, 2, 2)  # 最大化减少小窗口边距
+                self.main_layout.setSpacing(4)  # 最大化减少小窗口间距
+
+            # 调整饼图高度
+            if hasattr(self, "pie_view") and self.pie_view:
+                self.pie_view.setMinimumHeight(330)  # 小窗口时也增加高度给上方标签空间
+                self.pie_view.setMaximumHeight(430)
+
+            # 调整日历高度
+            if hasattr(self, "calendar_widget") and self.calendar_widget:
+                self.calendar_widget.setMaximumHeight(220)  # 小窗口时也给更多空间
+
+        else:  # 大窗口
+            # 恢复正常字体大小
+            if hasattr(self, "title_label") and self.title_label:
+                self.title_label.setFont(
+                    QFont("Hiragino Sans GB", 20, QFont.Weight.Bold)
                 )
-                if self.progress_table is not None:
-                    self.progress_table.setMinimumHeight(180)
-            else:  # 宽屏布局
-                if isinstance(main_content_layout, QBoxLayout):
-                    main_content_layout.setDirection(QBoxLayout.Direction.LeftToRight)
-                    # 移除纵向分栏
-                    for i in range(main_content_layout.count()):
-                        item = main_content_layout.itemAt(i)
-                        if (
-                            item is not None
-                            and item.layout() is not None
-                            and item.layout() is self.bottom_split
-                        ):
-                            if self.bottom_split is not None:
-                                main_content_layout.removeItem(item)
-                            break
-                    # 添加横向分栏
-                    if self.bottom_split is not None:
-                        main_content_layout.addLayout(self.bottom_split)
-                self.setStyleSheet(
-                    "font-size: 15px; QGroupBox {margin-top: 14px;} QTableWidget {font-size: 14px;}"
-                )
-                if self.progress_table is not None:
-                    self.progress_table.setMinimumHeight(260)
+
+            # 恢复正常间距
+            if hasattr(self, "main_layout") and self.main_layout:
+                self.main_layout.setContentsMargins(6, 6, 6, 6)  # 进一步优化大窗口边距
+                self.main_layout.setSpacing(6)  # 进一步优化大窗口间距
+
+            # 恢复饼图高度
+            if hasattr(self, "pie_view") and self.pie_view:
+                self.pie_view.setMinimumHeight(400)  # 大窗口时使用更大高度
+                self.pie_view.setMaximumHeight(530)
+
+            # 恢复日历高度
+            if hasattr(self, "calendar_widget") and self.calendar_widget:
+                self.calendar_widget.setMaximumHeight(320)  # 大窗口时使用最大高度
+
+        # 强制刷新图表以适应新的尺寸
+        if hasattr(self, "pie_view") and self.pie_view:
+            # 使用QTimer延迟刷新，确保布局已经完成
+            QTimer.singleShot(100, self.refresh_chart_layout)
 
         super().resizeEvent(event)
+
+    def refresh_chart_layout(self):
+        """刷新图表布局以确保标签正确显示"""
+        if self.pie_view and self.current_user:
+            # 重新绘制图表
+            self.pie_view.update()
+            # 如果有数据，重新更新图表
+            if hasattr(self, "current_user") and self.current_user:
+                # 获取当前的check_ins数据并重新更新图表
+                challenge_id = (
+                    self.challenge_combo.currentData() if self.challenge_combo else None
+                )
+                days = self.range_combo.currentData() if self.range_combo else None
+
+                end_date = datetime.date.today()
+                start_date = None
+                if days:
+                    start_date = end_date - datetime.timedelta(days=days - 1)
+
+                if challenge_id:
+                    check_ins = self.progress_tracker.get_check_ins(
+                        self.current_user["id"],
+                        challenge_id,
+                        start_date.isoformat() if start_date else None,
+                        end_date.isoformat(),
+                    )
+                else:
+                    check_ins = self.progress_tracker.get_all_user_check_ins(
+                        self.current_user["id"],
+                        start_date.isoformat() if start_date else None,
+                        end_date.isoformat(),
+                    )
+
+                self.update_charts(check_ins)
 
     @Slot(dict)
     def set_user(self, user):
@@ -674,64 +771,53 @@ class ProgressWidget(QWidget):
 
     def update_calendar(self, check_ins):
         """Update the calendar view with check-in dates."""
-        # Clear previous formatting by setting a default format for a null date
-        default_format = QTextCharFormat()
-        if self.calendar_widget is not None and hasattr(
-            self.calendar_widget, "setDateTextFormat"
-        ):
-            self.calendar_widget.setDateTextFormat(QDate(), default_format)
+        # Clear previous formatting for all dates in the current view
+        if self.calendar_widget is not None:
+            # Get the currently visible month range
+            if hasattr(self.calendar_widget, "monthShown"):
+                current_month = self.calendar_widget.monthShown()
+                current_year = self.calendar_widget.yearShown()
+            else:
+                current_month = QDate.currentDate().month()
+                current_year = QDate.currentDate().year()
 
-        # Highlight check-in dates
+            # Clear formatting for the entire visible month
+            start_date = QDate(current_year, current_month, 1)
+            end_date = start_date.addMonths(1).addDays(-1)
+
+            default_format = QTextCharFormat()
+            date_iter = start_date
+            while date_iter <= end_date:
+                if hasattr(self.calendar_widget, "setDateTextFormat"):
+                    self.calendar_widget.setDateTextFormat(date_iter, default_format)
+                date_iter = date_iter.addDays(1)
+
+        # Get current theme for color adaptation
+        current_theme = self.get_current_theme()
+
+        # Highlight check-in dates with theme-adapted colors
         check_in_format = QTextCharFormat()
-        check_in_format.setBackground(
-            QBrush(QColor("#A5D6A7"))
-        )  # Use a theme-friendly color
-        check_in_format.setForeground(
-            QBrush(QColor("#212121"))
-        )  # Ensure text is readable
+        if current_theme == "dark":
+            # Dark theme: use lighter background with dark text
+            check_in_format.setBackground(QBrush(QColor("#4CAF50")))  # Medium green
+            check_in_format.setForeground(QBrush(QColor("#FFFFFF")))  # White text
+        else:
+            # Light theme: use darker background with light text for better contrast
+            check_in_format.setBackground(QBrush(QColor("#2E7D32")))  # Dark green
+            check_in_format.setForeground(QBrush(QColor("#FFFFFF")))  # White text
 
         check_in_dates = {
             QDate.fromString(ci["check_in_date"], "yyyy-MM-dd") for ci in check_ins
         }
 
-        # Iterate through visible month to apply/clear formats efficiently
-        if self.calendar_widget is not None and hasattr(
-            self.calendar_widget, "monthShown"
-        ):
-            current_month = self.calendar_widget.monthShown()
-            current_year = self.calendar_widget.yearShown()
-        else:
-            current_month = QDate.currentDate().month()
-            current_year = QDate.currentDate().year()
-        start_date = QDate(current_year, current_month, 1)
-        end_date = start_date.addMonths(1).addDays(-1)
+        # Apply highlighting to check-in dates
+        for date in check_in_dates:
+            if date.isValid() and self.calendar_widget is not None:
+                if hasattr(self.calendar_widget, "setDateTextFormat"):
+                    self.calendar_widget.setDateTextFormat(date, check_in_format)
 
-        date_iter = start_date
-        while date_iter <= end_date:
-            if self.calendar_widget is not None and hasattr(
-                self.calendar_widget, "dateTextFormat"
-            ):
-                existing_format = self.calendar_widget.dateTextFormat(date_iter)
-            else:
-                existing_format = QTextCharFormat()
-            if date_iter in check_in_dates:
-                # Apply check-in background, keep other properties
-                existing_format.setBackground(check_in_format.background())
-                existing_format.setForeground(check_in_format.foreground())
-            else:
-                # Explicitly remove check-in background if date is not in check_ins
-                # Check if the current background is the check-in color before resetting
-                if existing_format.background() == check_in_format.background():
-                    existing_format.setBackground(default_format.background())
-                    # Reset foreground only if it was set by check-in format
-                    if existing_format.foreground() == check_in_format.foreground():
-                        existing_format.setForeground(default_format.foreground())
-
-            if self.calendar_widget is not None and hasattr(
-                self.calendar_widget, "setDateTextFormat"
-            ):
-                self.calendar_widget.setDateTextFormat(date_iter, existing_format)
-            date_iter = date_iter.addDays(1)
+        # 隐藏相邻月份的日期
+        QTimer.singleShot(50, self.update_calendar_display)
 
     def update_table(self, check_ins):
         """
@@ -1377,57 +1463,311 @@ class ProgressWidget(QWidget):
                 f"RuntimeError in clear_achievements accessing placeholder: {e}"
             )
 
+    def get_current_theme(self):
+        """获取当前主题"""
+        app = QApplication.instance()
+        if app:
+            theme_manager = app.property("theme_manager")
+            if theme_manager:
+                return theme_manager.current_theme
+        return "light"  # 默认浅色主题
+
     def update_charts(self, check_ins):
-        """更新统计图表"""
-        if not check_ins:
+        """更新统计图表，优化饼图显示，解决文字显示不全问题"""
+        if not self.pie_chart:
             return
 
-        # 更新饼图
-        if self.pie_chart:
-            self.pie_chart.removeAllSeries()
-            pie_series = QPieSeries()
-            category_counts = {}
-            for check_in in check_ins:
-                category = check_in.get("category", "未分类")
-                category_counts[category] = category_counts.get(category, 0) + 1
-            if not category_counts:
-                self.pie_chart.setTitle("暂无打卡数据")
-                return
-            colors = [
-                "#4CAF50",
-                "#2196F3",
-                "#FFC107",
-                "#F44336",
-                "#9C27B0",
-                "#00BCD4",
-                "#FF9800",
-                "#8BC34A",
-            ]
-            total = sum(category_counts.values())
-            for i, (category, count) in enumerate(category_counts.items()):
-                percent = count / total * 100
-                label = f"{category} ({count}次, {percent:.1f}%)"
-                slice = QPieSlice(label, count)
-                slice.setColor(QColor(colors[i % len(colors)]))
+        # 清空之前的数据
+        self.pie_chart.removeAllSeries()
+
+        if not check_ins:
+            self.pie_chart.setTitle("暂无打卡数据")
+            return
+
+        # 统计各类别数据
+        category_counts = {}
+        for check_in in check_ins:
+            category = check_in.get("category", "未分类")
+            category_counts[category] = category_counts.get(category, 0) + 1
+
+        if not category_counts:
+            self.pie_chart.setTitle("暂无打卡数据")
+            return
+
+        # 创建饼图数据
+        pie_series = QPieSeries()
+        colors = [
+            "#4CAF50",  # 绿色
+            "#2196F3",  # 蓝色
+            "#FFC107",  # 黄色
+            "#FF5722",  # 橙红色
+            "#9C27B0",  # 紫色
+            "#00BCD4",  # 青色
+            "#FF9800",  # 橙色
+            "#8BC34A",  # 浅绿色
+        ]
+
+        total = sum(category_counts.values())
+        current_theme = self.get_current_theme()
+
+        # 按数量排序，显示最大的几个类别
+        sorted_categories = sorted(
+            category_counts.items(), key=lambda x: x[1], reverse=True
+        )
+
+        # 获取图表视图的当前尺寸来动态调整显示策略
+        chart_width = self.pie_view.width() if self.pie_view else 400
+        chart_height = self.pie_view.height() if self.pie_view else 300
+
+        # 根据图表大小决定显示策略
+        is_small_chart = chart_width < 320 or chart_height < 240  # 降低小图表的判断阈值
+        max_categories = 4 if is_small_chart else 6
+
+        # 动态调整字体大小
+        if is_small_chart:
+            label_font_size = 9  # 增加小图表的字体大小
+            title_font_size = 12
+            legend_font_size = 8
+        else:
+            label_font_size = 10  # 增加大图表的字体大小
+            title_font_size = 14
+            legend_font_size = 9
+
+        for i, (category, count) in enumerate(sorted_categories):
+            percent = count / total * 100
+
+            # 如果类别太多，合并小的类别
+            if i >= max_categories and percent < 8:  # 调整合并阈值
+                if "其他" not in [item[0] for item in sorted_categories[:i]]:
+                    remaining_count = sum([item[1] for item in sorted_categories[i:]])
+                    remaining_percent = remaining_count / total * 100
+
+                    # 简化"其他"类别的标签
+                    other_label = (
+                        f"其他\n{remaining_percent:.1f}%"
+                        if not is_small_chart
+                        else "其他"
+                    )
+                    slice = QPieSlice(other_label, remaining_count)
+                    slice.setColor(QColor("#90A4AE"))  # 灰色用于"其他"
+                    slice.setLabelVisible(not is_small_chart)  # 小图表时隐藏标签
+
+                    # 为"其他"类别也应用主题适配的标签颜色
+                    if current_theme == "dark":
+                        slice.setLabelColor(QColor("#E6E6E6"))
+                    else:
+                        slice.setLabelColor(QColor("#000000"))  # 纯黑色，最大对比度
+
+                    slice.setLabelFont(
+                        QFont("Hiragino Sans GB", label_font_size, QFont.Weight.Bold)
+                    )
+                    slice.setLabelPosition(QPieSlice.LabelPosition.LabelOutside)
+                    slice.setLabelArmLengthFactor(0.18 if is_small_chart else 0.25)
+
+                    # 设置边框
+                    if current_theme == "dark":
+                        slice.setBorderColor(QColor("#90A4AE").darker(120))
+                    else:
+                        slice.setBorderColor(QColor("#2C2C2C"))
+                    slice.setBorderWidth(2)
+
+                    pie_series.append(slice)
+                break
+
+            # 优化标签文本 - 根据图表大小调整
+            if is_small_chart:
+                # 小图表：显示简化的类别名，去掉详细统计
+                display_category = (
+                    category[:3] + "..." if len(category) > 4 else category
+                )
+                label = f"{display_category}\n{percent:.0f}%"
+            else:
+                # 大图表：显示完整的类别名和百分比
+                display_category = (
+                    category[:6] + "..." if len(category) > 8 else category
+                )
+                label = f"{display_category}\n{percent:.1f}%"
+
+            slice = QPieSlice(label, count)
+            slice.setColor(QColor(colors[i % len(colors)]))
+
+            # 只突出显示最大的类别，且调整突出程度
+            if i == 0 and len(sorted_categories) > 1:
                 slice.setExploded(True)
-                slice.setLabelVisible(True)
-                slice.setLabelFont(QFont("Hiragino Sans GB", 13, QFont.Weight.Bold))
+                slice.setExplodeDistanceFactor(0.05)  # 减小突出距离
+
+            # 设置标签显示 - 确保显示类别信息
+            slice.setLabelVisible(True)  # 始终显示标签
+
+            # 根据主题设置标签颜色
+            if current_theme == "dark":
                 slice.setLabelColor(QColor("#E6E6E6"))
-                slice.setLabelPosition(QPieSlice.LabelPosition.LabelOutside)
-                pie_series.append(slice)
-            self.pie_chart.addSeries(pie_series)
-            self.pie_chart.setTitleFont(
-                QFont("Hiragino Sans GB", 18, QFont.Weight.Bold)
+            else:
+                slice.setLabelColor(QColor("#000000"))  # 纯黑色，最大对比度
+
+            slice.setLabelFont(
+                QFont(
+                    "Hiragino Sans GB", label_font_size, QFont.Weight.Bold
+                )  # 使用粗体增强可见性
             )
+            slice.setLabelPosition(QPieSlice.LabelPosition.LabelOutside)
+
+            # 调整标签臂长度 - 找到平衡点：避免重叠但不要太长
+            slice.setLabelArmLengthFactor(
+                0.18 if is_small_chart else 0.25
+            )  # 显著减少臂长度
+
+            # 设置边框以增强标签可见性 - 在浅色主题下使用更深的边框
+            if current_theme == "dark":
+                slice.setBorderColor(QColor(colors[i % len(colors)]).darker(120))
+            else:
+                slice.setBorderColor(QColor("#2C2C2C"))  # 浅色主题下使用深色边框
+            slice.setBorderWidth(2)  # 增加边框宽度
+
+            pie_series.append(slice)
+
+        # 添加数据到图表
+        self.pie_chart.addSeries(pie_series)
+
+        # 手动调整扇形起始角度以优化标签分布
+        if pie_series.count() > 0:
+            # 设置起始角度，让第一个扇形从12点钟方向开始
+            pie_series.setPieStartAngle(90)
+            pie_series.setPieEndAngle(450)  # 完整的360度
+
+            # 只对第一个最大的类别设置轻微爆炸效果
+            if len(sorted_categories) >= 2:
+                slices = pie_series.slices()
+                # 确保所有标签都可见
+                for slice_obj in slices:
+                    slice_obj.setLabelVisible(True)
+                # 只有第一个切片设置爆炸效果
+                if len(slices) > 0:
+                    slices[0].setExploded(True)
+                    slices[0].setExplodeDistanceFactor(0.05)
+
+        # 优化图表样式
+        title = "类别分布" if is_small_chart else "挑战类别分布"
+        self.pie_chart.setTitle(title)
+        self.pie_chart.setTitleFont(
+            QFont("Hiragino Sans GB", title_font_size, QFont.Weight.Bold)
+        )
+
+        # 根据主题设置标题颜色
+        if current_theme == "dark":
             self.pie_chart.setTitleBrush(QBrush(QColor("#E6E6E6")))
-            self.pie_chart.setBackgroundVisible(False)
-            self.pie_chart.legend().setVisible(True)
-            self.pie_chart.legend().setFont(
-                QFont("Hiragino Sans GB", 15, QFont.Weight.Bold)
+        else:
+            self.pie_chart.setTitleBrush(QBrush(QColor("#333333")))
+
+        self.pie_chart.setBackgroundVisible(False)
+
+        # 优化图例设置 - 图例显示完整信息
+        legend = self.pie_chart.legend()
+        legend.setVisible(True)
+        legend.setAlignment(Qt.AlignmentFlag.AlignBottom)
+        legend.setFont(QFont("Hiragino Sans GB", legend_font_size, QFont.Weight.Normal))
+
+        if current_theme == "dark":
+            legend.setColor(QColor("#E6E6E6"))
+        else:
+            legend.setColor(QColor("#333333"))
+
+        # 设置合适的图表边距，确保标签和图例有足够空间
+        if is_small_chart:
+            margins = QMargins(
+                25, 60, 25, 40
+            )  # 显著增加上边距从35到60，给上方标签更多空间
+        else:
+            margins = QMargins(
+                35, 75, 35, 50
+            )  # 显著增加上边距从45到75，确保上方标签完整显示
+
+        self.pie_chart.setMargins(margins)
+
+        # 只在极端小尺寸时才隐藏标签（非常严格的条件）
+        if chart_width < 250 or chart_height < 180:  # 进一步降低隐藏标签的阈值
+            series = self.pie_chart.series()[0]
+            if hasattr(series, "slices"):
+                for slice_obj in series.slices():
+                    slice_obj.setLabelVisible(False)
+                # 在隐藏标签时，确保图例显示更详细的信息
+                legend.setVisible(True)
+                legend.setAlignment(
+                    Qt.AlignmentFlag.AlignRight
+                )  # 改为右侧对齐节省底部空间
+
+    def on_tab_changed(self, index):
+        """处理Tab切换事件，刷新相应内容"""
+        if index == 0:  # 概览标签页
+            # 刷新图表
+            if self.current_user:
+                self.load_progress()
+        elif index == 1:  # 详细记录标签页
+            # 表格已经在load_progress中更新，无需额外操作
+            pass
+        elif index == 2:  # AI分析标签页
+            # 刷新成就
+            if self.current_user:
+                self.load_achievements()
+
+    def setup_calendar_style(self):
+        """配置日历样式，隐藏相邻月份的日期"""
+        try:
+            # 连接月份变化信号来更新显示
+            self.calendar_widget.currentPageChanged.connect(
+                self.update_calendar_display
             )
-            self.pie_chart.legend().setColor(QColor("#E6E6E6"))
-            self.pie_chart.legend().setAlignment(Qt.AlignmentFlag.AlignBottom)
-            self.pie_chart.setMargins(QMargins(40, 40, 40, 40))
+            # 初始调用一次来设置当前显示
+            QTimer.singleShot(100, self.update_calendar_display)
+
+        except Exception as e:
+            print(f"设置日历样式时出错: {e}")
+
+    def update_calendar_display(self):
+        """更新日历显示，隐藏相邻月份的日期"""
+        try:
+            current_date = self.calendar_widget.selectedDate()
+            current_month = current_date.month()
+            current_year = current_date.year()
+
+            # 设置格式来隐藏相邻月份的日期
+            transparent_format = QTextCharFormat()
+            transparent_format.setForeground(
+                QBrush(QColor(255, 255, 255, 0))
+            )  # 完全透明
+
+            normal_format = QTextCharFormat()
+            current_theme = self.get_current_theme()
+            if current_theme == "dark":
+                normal_format.setForeground(QBrush(QColor("#E6E6E6")))
+            else:
+                normal_format.setForeground(QBrush(QColor("#2D2A26")))
+
+            # 获取当前显示月份的范围
+            first_day_of_month = QDate(current_year, current_month, 1)
+            last_day_of_month = QDate(
+                current_year, current_month, first_day_of_month.daysInMonth()
+            )
+
+            # 隐藏当前月份之外的所有日期
+            # 遍历整个日历视图的可能日期范围
+            start_date = first_day_of_month.addDays(-42)  # 前6周
+            end_date = first_day_of_month.addDays(42)  # 后6周
+
+            current_iter = start_date
+            while current_iter <= end_date:
+                if current_iter.month() != current_month:
+                    # 隐藏相邻月份的日期
+                    self.calendar_widget.setDateTextFormat(
+                        current_iter, transparent_format
+                    )
+                else:
+                    # 确保当前月份的日期可见
+                    self.calendar_widget.setDateTextFormat(current_iter, normal_format)
+                current_iter = current_iter.addDays(1)
+
+        except Exception as e:
+            print(f"更新日历显示时出错: {e}")
 
 
 class WeeklyReportWidget(QWidget):

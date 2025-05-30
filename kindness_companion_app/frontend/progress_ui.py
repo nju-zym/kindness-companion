@@ -412,12 +412,22 @@ class ProgressWidget(QWidget):
         chart_group.setObjectName("chart_group")
         chart_layout = QVBoxLayout(chart_group)
         chart_layout.setContentsMargins(
-            3, 3, 3, 3
+            3, 5, 3, 3  # 减少上边距，把空间留给内部元素控制
         )  # 进一步减少内边距为日历腾出更多空间
+
+        # 添加一个空白空间确保顶部标签有显示空间
+        top_spacer = QSpacerItem(
+            20,
+            40,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Fixed,  # 固定40px高度的顶部留白
+        )
+        chart_layout.addSpacerItem(top_spacer)
 
         # 优化饼图设置
         self.pie_chart = QChart()
-        self.pie_chart.setTitle("挑战类别分布")
+        # 移除图表内部的标题，只使用GroupBox的标题来节省空间
+        # self.pie_chart.setTitle("挑战类别分布")  # 注释掉内部标题
         self.pie_chart.setAnimationOptions(QChart.AnimationOption.SeriesAnimations)
         self.pie_chart.legend().setVisible(True)
         self.pie_chart.legend().setAlignment(Qt.AlignmentFlag.AlignBottom)
@@ -437,9 +447,9 @@ class ProgressWidget(QWidget):
         self.pie_view = QChartView(self.pie_chart)
         self.pie_view.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.pie_view.setMinimumHeight(
-            400
+            380  # 减少高度，为上方留白腾出空间
         )  # 增加最小高度，配合增加的上边距给上方标签更多空间
-        self.pie_view.setMaximumHeight(530)  # 相应增加最大高度
+        self.pie_view.setMaximumHeight(480)  # 相应减少最大高度
         self.pie_view.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
@@ -597,10 +607,10 @@ class ProgressWidget(QWidget):
                 self.main_layout.setContentsMargins(2, 2, 2, 2)  # 最大化减少小窗口边距
                 self.main_layout.setSpacing(4)  # 最大化减少小窗口间距
 
-            # 调整饼图高度
+            # 调整饼图高度 - 由于有了顶部留白，减少图表本身高度
             if hasattr(self, "pie_view") and self.pie_view:
-                self.pie_view.setMinimumHeight(330)  # 小窗口时也增加高度给上方标签空间
-                self.pie_view.setMaximumHeight(430)
+                self.pie_view.setMinimumHeight(320)  # 小窗口时减少高度
+                self.pie_view.setMaximumHeight(400)
 
             # 调整日历高度
             if hasattr(self, "calendar_widget") and self.calendar_widget:
@@ -618,10 +628,10 @@ class ProgressWidget(QWidget):
                 self.main_layout.setContentsMargins(6, 6, 6, 6)  # 进一步优化大窗口边距
                 self.main_layout.setSpacing(6)  # 进一步优化大窗口间距
 
-            # 恢复饼图高度
+            # 恢复饼图高度 - 由于有了顶部留白，使用适中的高度
             if hasattr(self, "pie_view") and self.pie_view:
-                self.pie_view.setMinimumHeight(400)  # 大窗口时使用更大高度
-                self.pie_view.setMaximumHeight(530)
+                self.pie_view.setMinimumHeight(380)  # 大窗口时使用适中高度
+                self.pie_view.setMaximumHeight(480)
 
             # 恢复日历高度
             if hasattr(self, "calendar_widget") and self.calendar_widget:
@@ -1481,7 +1491,8 @@ class ProgressWidget(QWidget):
         self.pie_chart.removeAllSeries()
 
         if not check_ins:
-            self.pie_chart.setTitle("暂无打卡数据")
+            # 没有数据时不设置标题，保持一致性
+            # self.pie_chart.setTitle("暂无打卡数据")
             return
 
         # 统计各类别数据
@@ -1491,7 +1502,8 @@ class ProgressWidget(QWidget):
             category_counts[category] = category_counts.get(category, 0) + 1
 
         if not category_counts:
-            self.pie_chart.setTitle("暂无打卡数据")
+            # 没有数据时不设置标题，保持一致性
+            # self.pie_chart.setTitle("暂无打卡数据")
             return
 
         # 创建饼图数据
@@ -1550,11 +1562,13 @@ class ProgressWidget(QWidget):
                     )
                     slice = QPieSlice(other_label, remaining_count)
                     slice.setColor(QColor("#90A4AE"))  # 灰色用于"其他"
-                    slice.setLabelVisible(not is_small_chart)  # 小图表时隐藏标签
+                    slice.setLabelVisible(True)  # 确保"其他"类别标签始终可见
 
                     # 为"其他"类别也应用主题适配的标签颜色
                     if current_theme == "dark":
-                        slice.setLabelColor(QColor("#E6E6E6"))
+                        slice.setLabelColor(
+                            QColor("#FFFFFF")
+                        )  # 使用纯白色确保在深色主题下最大对比度
                     else:
                         slice.setLabelColor(QColor("#000000"))  # 纯黑色，最大对比度
 
@@ -1562,7 +1576,9 @@ class ProgressWidget(QWidget):
                         QFont("Hiragino Sans GB", label_font_size, QFont.Weight.Bold)
                     )
                     slice.setLabelPosition(QPieSlice.LabelPosition.LabelOutside)
-                    slice.setLabelArmLengthFactor(0.18 if is_small_chart else 0.25)
+                    slice.setLabelArmLengthFactor(
+                        0.22 if is_small_chart else 0.30
+                    )  # 使用统一的臂长度
 
                     # 设置边框
                     if current_theme == "dark":
@@ -1601,7 +1617,9 @@ class ProgressWidget(QWidget):
 
             # 根据主题设置标签颜色
             if current_theme == "dark":
-                slice.setLabelColor(QColor("#E6E6E6"))
+                slice.setLabelColor(
+                    QColor("#FFFFFF")
+                )  # 使用纯白色确保在深色主题下最大对比度
             else:
                 slice.setLabelColor(QColor("#000000"))  # 纯黑色，最大对比度
 
@@ -1614,7 +1632,7 @@ class ProgressWidget(QWidget):
 
             # 调整标签臂长度 - 找到平衡点：避免重叠但不要太长
             slice.setLabelArmLengthFactor(
-                0.18 if is_small_chart else 0.25
+                0.22 if is_small_chart else 0.30  # 适当增加臂长度，配合增加的空间
             )  # 显著减少臂长度
 
             # 设置边框以增强标签可见性 - 在浅色主题下使用更深的边框
@@ -1624,6 +1642,9 @@ class ProgressWidget(QWidget):
                 slice.setBorderColor(QColor("#2C2C2C"))  # 浅色主题下使用深色边框
             slice.setBorderWidth(2)  # 增加边框宽度
 
+            # 强制确保标签可见性
+            slice.setLabelVisible(True)  # 再次确认标签可见
+
             pie_series.append(slice)
 
         # 添加数据到图表
@@ -1631,33 +1652,36 @@ class ProgressWidget(QWidget):
 
         # 手动调整扇形起始角度以优化标签分布
         if pie_series.count() > 0:
-            # 设置起始角度，让第一个扇形从12点钟方向开始
-            pie_series.setPieStartAngle(90)
+            # 设置起始角度，让第一个扇形从12点钟方向开始，确保最大类别在顶部
+            pie_series.setPieStartAngle(90)  # 90度表示从12点钟方向开始
             pie_series.setPieEndAngle(450)  # 完整的360度
 
             # 只对第一个最大的类别设置轻微爆炸效果
             if len(sorted_categories) >= 2:
                 slices = pie_series.slices()
-                # 确保所有标签都可见
+                # 强制确保所有标签都可见
                 for slice_obj in slices:
-                    slice_obj.setLabelVisible(True)
-                # 只有第一个切片设置爆炸效果
+                    slice_obj.setLabelVisible(True)  # 强制设置每个切片的标签可见
+                    # 确保标签位置在外侧
+                    slice_obj.setLabelPosition(QPieSlice.LabelPosition.LabelOutside)
+                # 只有第一个切片设置爆炸效果，让它更显眼
                 if len(slices) > 0:
                     slices[0].setExploded(True)
                     slices[0].setExplodeDistanceFactor(0.05)
 
         # 优化图表样式
-        title = "类别分布" if is_small_chart else "挑战类别分布"
-        self.pie_chart.setTitle(title)
-        self.pie_chart.setTitleFont(
-            QFont("Hiragino Sans GB", title_font_size, QFont.Weight.Bold)
-        )
+        # 移除标题设置，只使用GroupBox标题
+        # title = "类别分布" if is_small_chart else "挑战类别分布"
+        # self.pie_chart.setTitle(title)
+        # self.pie_chart.setTitleFont(
+        #     QFont("Hiragino Sans GB", title_font_size, QFont.Weight.Bold)
+        # )
 
-        # 根据主题设置标题颜色
-        if current_theme == "dark":
-            self.pie_chart.setTitleBrush(QBrush(QColor("#E6E6E6")))
-        else:
-            self.pie_chart.setTitleBrush(QBrush(QColor("#333333")))
+        # 根据主题设置标题颜色（已移除标题，保留注释供参考）
+        # if current_theme == "dark":
+        #     self.pie_chart.setTitleBrush(QBrush(QColor("#E6E6E6")))
+        # else:
+        #     self.pie_chart.setTitleBrush(QBrush(QColor("#333333")))
 
         self.pie_chart.setBackgroundVisible(False)
 
@@ -1673,28 +1697,31 @@ class ProgressWidget(QWidget):
             legend.setColor(QColor("#333333"))
 
         # 设置合适的图表边距，确保标签和图例有足够空间
+        # 由于移除了内部标题，可以减少上边距，为标签留出更多空间
+        # 大幅增加上边距，确保最上方的标签能完整显示
         if is_small_chart:
             margins = QMargins(
-                25, 60, 25, 40
-            )  # 显著增加上边距从35到60，给上方标签更多空间
+                25, 50, 25, 40  # 大幅增加上边距到50，确保顶部标签完整显示
+            )  # 为饼图上方标签留出足够的显示空间
         else:
             margins = QMargins(
-                35, 75, 35, 50
-            )  # 显著增加上边距从45到75，确保上方标签完整显示
+                35, 60, 35, 50  # 大幅增加上边距到60，确保顶部标签完整显示
+            )  # 为饼图上方标签留出足够的显示空间
 
         self.pie_chart.setMargins(margins)
 
-        # 只在极端小尺寸时才隐藏标签（非常严格的条件）
-        if chart_width < 250 or chart_height < 180:  # 进一步降低隐藏标签的阈值
-            series = self.pie_chart.series()[0]
-            if hasattr(series, "slices"):
-                for slice_obj in series.slices():
-                    slice_obj.setLabelVisible(False)
-                # 在隐藏标签时，确保图例显示更详细的信息
-                legend.setVisible(True)
-                legend.setAlignment(
-                    Qt.AlignmentFlag.AlignRight
-                )  # 改为右侧对齐节省底部空间
+        # 移除隐藏标签的逻辑，确保标签始终可见
+        # 由于我们已经为上方预留了足够空间，不再需要隐藏标签
+        # if chart_width < 250 or chart_height < 180:  # 进一步降低隐藏标签的阈值
+        #     series = self.pie_chart.series()[0]
+        #     if hasattr(series, "slices"):
+        #         for slice_obj in series.slices():
+        #             slice_obj.setLabelVisible(False)
+        #         # 在隐藏标签时，确保图例显示更详细的信息
+        #         legend.setVisible(True)
+        #         legend.setAlignment(
+        #             Qt.AlignmentFlag.AlignRight
+        #         )  # 改为右侧对齐节省底部空间
 
     def on_tab_changed(self, index):
         """处理Tab切换事件，刷新相应内容"""
